@@ -5,27 +5,26 @@ import os
 import random
 import re
 import smtplib
-import tempfile
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional
+from typing import Any, Dict, List
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fpdf import FPDF
 from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
+from pydantic import BaseModel
 import google.generativeai as genai
 
-app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
+app = FastAPI(title="Benh An Lam Sang Win2K")
 templates = Jinja2Templates(directory="templates")
 
-# Cấu hình biến môi trường hoặc file cục bộ
+# Cấu hình biến môi trường
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
 SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
@@ -33,10 +32,10 @@ APP_PASSWORD = os.getenv("APP_PASSWORD", "123456")
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "clinical_secret_2026")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-# Bộ nhớ tạm cho mã OTP phiên đăng nhập
-otp_storage = {}
+# Bộ nhớ tạm mã OTP
+otp_storage: Dict[str, str] = {}
 
-def get_ai_model(model_name="gemini-3.1-flash-lite"):
+def get_ai_model(model_name: str = "gemini-2.5-flash"):
     if not GEMINI_API_KEY:
         return None
     genai.configure(api_key=GEMINI_API_KEY)
@@ -53,8 +52,8 @@ def send_otp_email(target_email: str, otp_code: str) -> bool:
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
         msg['To'] = target_email
-        msg['Subject'] = f"🔑 Mã xác thực truy cập Bệnh án Lâm sàng: {otp_code}"
-        body = f"Mã xác thực OTP đăng nhập của bạn là:\n\n👉 {otp_code} 👈"
+        msg['Subject'] = f"🔑 Ma xac thuc OTP Benh an Lam sang: {otp_code}"
+        body = f"Ma xac thuc OTP cua ban la:\n\n👉 {otp_code} 👈"
         msg.attach(MIMEText(body, 'plain'))
         server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
         server.starttls()
@@ -65,45 +64,58 @@ def send_otp_email(target_email: str, otp_code: str) -> bool:
     except Exception:
         return False
 
+# --- CÁC PYDANTIC SCHEMA AN TOÀN TUYỆT ĐỐI (TRÁNH LỖI TUPLE) ---
+class SendOTPRequest(BaseModel):
+    email: str
+
+class LoginRequest(BaseModel):
+    email: str
+    otp: str
+    password: str
+
 # --- GIAO DIỆN CHÍNH ---
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# --- AUTHENTICATION ENDPOINTS ---
+# --- AUTHENTICATION ---
 @app.post("/api/auth/send-otp")
-async def api_send_otp(email: str = Form(...)):
-    email = email.strip().lower()
+async def api_send_otp(req: SendOTPRequest):
+    email = req.email.strip().lower()
     if not re.match(r"^[a-zA-Z0-9](\.?[a-zA-Z0-9_-]){5,29}@gmail\.com$", email):
-        raise HTTPException(status_code=400, detail="Vui lòng nhập Gmail hợp lệ!")
+        raise HTTPException(status_code=400, detail="Vui long nhap Gmail hop le (@gmail.com)!")
     otp = str(random.randint(100000, 999999))
     otp_storage[email] = otp
     if send_otp_email(email, otp):
-        return {"success": True, "message": f"Đã gửi OTP đến {email}"}
-    raise HTTPException(status_code=500, detail="Lỗi kết nối máy chủ gửi email.")
+        return {"success": True, "message": f"Da gui OTP toi {email}"}
+    raise HTTPException(status_code=500, detail="Loi ket noi gui email.")
 
 @app.post("/api/auth/login")
-async def api_login(email: str = Form(...), otp: str = Form(...), password: str = Form(...)):
-    email = email.strip().lower()
-    if email not in otp_storage or otp_storage[email] != otp.strip():
-        raise HTTPException(status_code=400, detail="Mã OTP không chính xác!")
-    if password.strip() != APP_PASSWORD:
-        raise HTTPException(status_code=400, detail="Mật khẩu nội bộ không chính xác!")
+async def api_login(req: LoginRequest):
+    email = req.email.strip().lower()
+    if email not in otp_storage or otp_storage[email] != req.otp.strip():
+        raise HTTPException(status_code=400, detail="Ma OTP khong chinh xac!")
+    if req.password.strip() != APP_PASSWORD:
+        raise HTTPException(status_code=400, detail="Mat khau khong dung!")
     token = generate_auth_token(email)
     otp_storage.pop(email, None)
     return {"success": True, "token": token, "email": email}
 
-# --- AI DIAGNOSIS & LOGIC ---
+# --- AI CHẨN ĐOÁN ---
 @app.post("/api/ai/cdpb")
-async def api_ai_cdpb(request: Request):
-    data = await request.json()
-    model = get_ai_model("gemini-3.1-flash-lite")
+async def api_ai_cdpb(payload: Dict[str, Any]):
+    model = get_ai_model("gemini-2.5-flash")
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY")
+        raise HTTPException(status_code=500, detail="Chua cau hinh GEMINI_API_KEY")
     prompt = f"""
-    Bạn là bác sĩ lâm sàng giàu kinh nghiệm. Dựa vào ca bệnh dưới đây, hãy đưa ra danh sách Chẩn đoán phân biệt và Biện luận lâm sàng:
-    {json.dumps(data, ensure_ascii=False)}
-    Xuất ra đúng 2 khối:
+    Ban la bac si lam sang. Phan tich ca benh sau va dua ra:
+    1. Danh sach Chan doan phan biet
+    2. Bien luan lam sang
+    
+    Du lieu:
+    {json.dumps(payload, ensure_ascii=False)}
+
+    Xuat dung 2 the:
     [CHAN_DOAN_PHAN_BIET]
     ...
     [BIEN_LUAN_SO_BO]
@@ -119,14 +131,14 @@ async def api_ai_cdpb(request: Request):
         cdpb = resp.strip()
     return {"chan_doan_phan_biet": cdpb, "bien_luan": bl}
 
-# --- OCR PHIẾU CẬN LÂM SÀNG ---
+# --- OCR PHIẾU XÉT NGHIỆM ---
 @app.post("/api/ocr/batch")
 async def api_ocr_batch(files: List[UploadFile] = File(...)):
-    model = get_ai_model("gemini-3.1-flash-lite")
+    model = get_ai_model("gemini-2.5-flash")
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY")
+        raise HTTPException(status_code=500, detail="Chua cau hinh GEMINI_API_KEY")
     results = []
-    ocr_prompt = "Bạn là bác sĩ xét nghiệm. Đọc phiếu này và trả về JSON chuẩn có 2 khóa: 'ket_qua' (chuỗi chỉ số xuống dòng) và 'phien_giai' (biện luận chỉ số bất thường)."
+    ocr_prompt = "Doc phieu xet nghiem va tra ve JSON co 2 key: 'ket_qua' (chi so) va 'phien_giai' (bien luan)."
     for file in files:
         contents = await file.read()
         img = Image.open(io.BytesIO(contents))
@@ -137,10 +149,10 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
         try:
             results.append(json.loads(resp.strip()))
         except Exception:
-            results.append({"ket_qua": "Không phân tích được", "phien_giai": "-"})
+            results.append({"ket_qua": "Khong phan tich duoc", "phien_giai": "-"})
     return {"results": results}
 
-# --- XUẤT FILE PDF ---
+# --- XUẤT PDF ---
 class SimpleMedicalPDF(FPDF):
     def header(self):
         self.set_font("Helvetica", "B", 14)
@@ -148,22 +160,20 @@ class SimpleMedicalPDF(FPDF):
         self.ln(3)
 
 @app.post("/api/export/pdf")
-async def api_export_pdf(request: Request):
-    data = await request.json()
+async def api_export_pdf(payload: Dict[str, Any]):
     pdf = SimpleMedicalPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=10)
-    pdf.multi_cell(0, 6, f"Ho ten: {data.get('ho_ten', '').upper()} - Tuoi: {data.get('tuoi')} - Gioi tinh: {data.get('gioi_tinh')}")
-    pdf.multi_cell(0, 6, f"Ly do vao vien: {data.get('ly_do_vao_vien', '')}")
-    pdf.multi_cell(0, 6, f"Chan doan so bo: {data.get('chan_doan_so_bo', '')}")
-    pdf.multi_cell(0, 6, f"Chan doan xac dinh: {data.get('chan_doan_xac_dinh', '')}")
+    pdf.multi_cell(0, 6, f"Ho ten: {str(payload.get('ho_ten', '')).upper()} - Tuoi: {payload.get('tuoi')} - Gioi tinh: {payload.get('gioi_tinh')}")
+    pdf.multi_cell(0, 6, f"Ly do vao vien: {payload.get('ly_do_vao_vien', '')}")
+    pdf.multi_cell(0, 6, f"Chan doan so bo: {payload.get('chan_doan_so_bo', '')}")
+    pdf.multi_cell(0, 6, f"Chan doan xac dinh: {payload.get('chan_doan_xac_dinh', '')}")
     pdf_bytes = bytes(pdf.output())
     return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": "inline; filename=benh_an.pdf"})
 
-# --- XUẤT FILE POWERPOINT ---
+# --- XUẤT POWERPOINT ---
 @app.post("/api/export/pptx")
-async def api_export_pptx(request: Request):
-    data = await request.json()
+async def api_export_pptx(payload: Dict[str, Any]):
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
@@ -171,12 +181,12 @@ async def api_export_pptx(request: Request):
     box = slide.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.5))
     tf = box.text_frame
     p1 = tf.paragraphs[0]
-    p1.text = "BỆNH ÁN LÂM SÀNG"
+    p1.text = "BENH AN LAM SANG"
     p1.font.size = Pt(36)
     p1.font.bold = True
     p1.font.color.rgb = RGBColor(10, 36, 106)
     p2 = tf.add_paragraph()
-    p2.text = f"Bệnh nhân: {data.get('ho_ten', '').upper()} | {data.get('tuoi')} tuổi"
+    p2.text = f"Benh nhan: {str(payload.get('ho_ten', '')).upper()} | {payload.get('tuoi')} tuoi"
     p2.font.size = Pt(20)
     pptx_io = io.BytesIO()
     prs.save(pptx_io)
