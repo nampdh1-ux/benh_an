@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bệnh Án Lâm Sàng - Retro OS</title>
+    <!-- Thư viện giao diện Windows cổ điển chính thống -->
+    <link rel="stylesheet" href="[https://unpkg.com/98.css](https://unpkg.com/98.css)">
+    <style>
+        body {
+            background-color: #008080; /* Màu nền Desktop Teal kinh điển */
+            font-family: 'Tahoma', sans-serif;
+            padding: 15px;
+            margin: 0;
+        }
+        .main-window {
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 12px;
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"], select, textarea {
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080 !important;
+            background: #ffffff !important;
+            border-radius: 0 !important;
+            box-shadow: inset 1px 1px 0px #000000 !important;
+            outline: none !important;
+            padding: 4px 6px;
+            font-family: 'Tahoma', sans-serif;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none !important;
+            border-color: #000000 #ffffff #ffffff #000000 !important;
+        }
+        .tab-content {
+            display: none;
+            padding: 12px;
+            background: #ece9d8;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="window main-window">
+    <div class="title-bar">
+        <div class="title-bar-text">Hệ Thống Quản Lý Bệnh Án Lâm Sàng - [Win2K Edition]</div>
+        <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="window-body">
+        <!-- THANH TABS CHUẨN RETRO OS -->
+        <menu role="tablist">
+            <li role="tab" class="active" onclick="switchTab(event, 'tab-nhap-lieu')"><a href="#tabs">Nhập liệu hồ sơ</a></li>
+            <li role="tab" onclick="switchTab(event, 'tab-xuat-file')"><a href="#tabs">Xuất tập tin</a></li>
+        </menu>
+
+        <!-- TAB 1: NHẬP LIỆU -->
+        <div class="window tab-content active" id="tab-nhap-lieu">
+            <fieldset>
+                <legend>I. Phần Hành Chính</legend>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Họ và tên người bệnh:</label>
+                        <input type="text" id="ho_ten" oninput="autoSave()">
+                    </div>
+                    <div class="form-group">
+                        <label>Tuổi:</label>
+                        <input type="number" id="tuoi" value="45" oninput="autoSave()">
+                    </div>
+                    <div class="form-group">
+                        <label>Giới tính:</label>
+                        <select id="gioi_tinh" onchange="autoSave()">
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset style="margin-top: 10px;">
+                <legend>II. Chẩn Đoán & Biện Luận</legend>
+                <div class="form-group">
+                    <label>Lý do vào viện:</label>
+                    <textarea id="ly_do_vao_vien" rows="2" oninput="autoSave()"></textarea>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button type="button" onclick="callAIDiagnosis()">🪄 Làm phép (AI chẩn đoán phân biệt)</button>
+                </div>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 8px;">
+                    <div class="form-group">
+                        <label>Chẩn đoán sơ bộ:</label>
+                        <textarea id="chan_doan_so_bo" rows="3" oninput="autoSave()"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Chẩn đoán phân biệt:</label>
+                        <textarea id="chan_doan_phan_biet" rows="3" oninput="autoSave()"></textarea>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 8px;">
+                    <label>Chẩn đoán xác định:</label>
+                    <input type="text" id="chan_doan_xac_dinh" oninput="autoSave()">
+                </div>
+            </fieldset>
+
+            <div class="status-bar" style="margin-top: 10px;">
+                <p class="status-bar-field" id="save-status">Trạng thái: Đã đồng bộ bộ nhớ máy bay</p>
+                <p class="status-bar-field">Kỷ nguyên: Windows 2000 Pro</p>
+            </div>
+        </div>
+
+        <!-- TAB 2: XUẤT TẬP TIN -->
+        <div class="window tab-content" id="tab-xuat-file">
+            <fieldset>
+                <legend>Kết Xuất Hồ Sơ Lâm Sàng</legend>
+                <p>Chọn định dạng tập tin cần kết xuất cho giảng viên hoặc lưu trữ:</p>
+                <button onclick="exportDoc('pdf')">📄 Tải Tập Tin PDF</button>
+                <button onclick="exportDoc('pptx')">📊 Tải Bản Trình Chiếu PowerPoint (PPTX)</button>
+            </fieldset>
+            <div style="margin-top: 15px;">
+                <iframe id="pdf-preview" style="width: 100%; height: 500px; border: 2px inset #808080;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Quản lý chuyển tab
+    function switchTab(evt, tabId) {
+        document.querySelectorAll('menu[role="tablist"] li').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        evt.currentTarget.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // Tự động lưu form vào LocalStorage mà không bị giật lag
+    const FIELDS = ['ho_ten', 'tuoi', 'gioi_tinh', 'ly_do_vao_vien', 'chan_doan_so_bo', 'chan_doan_phan_biet', 'chan_doan_xac_dinh'];
+    function autoSave() {
+        const payload = {};
+        FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) payload[id] = el.value;
+        });
+        localStorage.setItem('clinical_draft_fastapi', JSON.stringify(payload));
+        document.getElementById('save-status').innerText = 'Trạng thái: Đã tự động lưu lúc ' + new Date().toLocaleTimeString();
+    }
+
+    // Nạp lại khi mở web
+    window.onload = function() {
+        const raw = localStorage.getItem('clinical_draft_fastapi');
+        if (raw) {
+            const data = JSON.parse(raw);
+            FIELDS.forEach(id => {
+                if (data[id] && document.getElementById(id)) document.getElementById(id).value = data[id];
+            });
+        }
+    };
+
+    // Gọi API AI chẩn đoán
+    async function callAIDiagnosis() {
+        const payload = {
+            ho_ten: document.getElementById('ho_ten').value,
+            chan_doan_so_bo: document.getElementById('chan_doan_so_bo').value,
+            ly_do_vao_vien: document.getElementById('ly_do_vao_vien').value
+        };
+        document.getElementById('save-status').innerText = 'AI đang suy luận...';
+        const res = await fetch('/api/ai/cdpb', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        document.getElementById('chan_doan_phan_biet').value = result.chan_doan_phan_biet;
+        autoSave();
+    }
+
+    // Xuất PDF / PPTX
+    async function exportDoc(type) {
+        const payload = {};
+        FIELDS.forEach(id => payload[id] = document.getElementById(id).value);
+        const res = await fetch(`/api/export/${type}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        if (type === 'pdf') {
+            document.getElementById('pdf-preview').src = url;
+        } else {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'benh_an.pptx';
+            a.click();
+        }
+    }
+</script>
+</body>
+</html>
