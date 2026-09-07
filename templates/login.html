@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập hệ thống - [Windows 2000 Pro]</title>
+    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <style>
+        body {
+            background-color: #008080;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .login-window {
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+        .win2k-banner {
+            background: linear-gradient(90deg, #0a246a 0%, #a6caf0 100%);
+            padding: 12px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #808080;
+        }
+        .win2k-banner h2 {
+            margin: 0;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        .form-row label {
+            width: 110px;
+            font-weight: bold;
+            text-align: right;
+            font-size: 11.5px;
+        }
+        .form-row input {
+            flex: 1;
+            padding: 4px 6px;
+            font-size: 12px;
+        }
+        .btn-panel {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #d4d0c8;
+        }
+        .btn-panel button {
+            min-width: 80px;
+            padding: 4px 12px;
+            font-weight: bold;
+        }
+        #alert-box {
+            display: none;
+            padding: 6px;
+            margin-bottom: 10px;
+            background: #fff8f8;
+            border: 1px solid #d9534f;
+            color: #d9534f;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="window login-window">
+    <div class="title-bar">
+        <div class="title-bar-text">Xác thực quyền truy cập bệnh án - Windows 2000</div>
+        <div class="title-bar-controls">
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="win2k-banner">
+        <span style="font-size: 24px;">🔑</span>
+        <div>
+            <h2>Log On to Clinical System</h2>
+            <div style="font-size: 10.5px; opacity: 0.9;">Bảo mật hai lớp (Mật khẩu & OTP)</div>
+        </div>
+    </div>
+
+    <div class="window-body" style="padding: 15px;">
+        <div id="alert-box"></div>
+
+        <!-- BƯỚC 1: NHẬP TÀI KHOẢN VÀ MẬT KHẨU -->
+        <div id="step-password">
+            <div class="form-row">
+                <label for="username">Tài khoản/Email:</label>
+                <input type="text" id="username" value="bacsi@gmail.com" placeholder="bacsi@gmail.com">
+            </div>
+            <div class="form-row">
+                <label for="password">Mật khẩu:</label>
+                <input type="password" id="password" value="MatKhau123@" placeholder="••••••••">
+            </div>
+            <div class="btn-panel">
+                <button type="button" id="btn-submit-step1" onclick="handleRequestOtp()">Gửi OTP ❯</button>
+            </div>
+        </div>
+
+        <!-- BƯỚC 2: NHẬP MÃ OTP -->
+        <div id="step-otp" style="display: none;">
+            <p style="margin: 0 0 10px 0; color: #0a246a; font-weight: bold;">
+                ✔ Mật khẩu chính xác! Nhập mã OTP 6 chữ số vừa được gửi:
+            </p>
+            <div class="form-row">
+                <label for="otp_code">Mã OTP (6 số):</label>
+                <input type="text" id="otp_code" maxlength="6" placeholder="123456" style="letter-spacing: 4px; font-weight: bold; font-size: 14px;">
+            </div>
+            <div class="btn-panel">
+                <button type="button" onclick="backToStep1()">❮ Quay lại</button>
+                <button type="button" id="btn-submit-step2" onclick="handleVerifyOtp()">Đăng nhập</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showAlert(msg) {
+        const b = document.getElementById('alert-box');
+        b.innerText = msg;
+        b.style.display = 'block';
+    }
+
+    function hideAlert() {
+        document.getElementById('alert-box').style.display = 'none';
+    }
+
+    function backToStep1() {
+        hideAlert();
+        document.getElementById('step-otp').style.display = 'none';
+        document.getElementById('step-password').style.display = 'block';
+    }
+
+    async function handleRequestOtp() {
+        hideAlert();
+        const u = document.getElementById('username').value.trim();
+        const p = document.getElementById('password').value;
+        if (!u || !p) {
+            showAlert('Vui lòng điền đầy đủ tài khoản và mật khẩu!');
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-step1');
+        btn.disabled = true;
+        btn.innerText = 'Đang kiểm tra...';
+
+        try {
+            const res = await fetch('/api/auth/request-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Xác thực thất bại');
+
+            document.getElementById('step-password').style.display = 'none';
+            document.getElementById('step-otp').style.display = 'block';
+            document.getElementById('otp_code').focus();
+        } catch (e) {
+            showAlert(e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Gửi OTP ❯';
+        }
+    }
+
+    async function handleVerifyOtp() {
+        hideAlert();
+        const u = document.getElementById('username').value.trim();
+        const otp = document.getElementById('otp_code').value.trim();
+        if (!otp || otp.length < 6) {
+            showAlert('Vui lòng nhập đúng mã OTP gồm 6 chữ số!');
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-step2');
+        btn.disabled = true;
+        btn.innerText = 'Đang xác thực...';
+
+        try {
+            const res = await fetch('/api/auth/verify-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, otp: otp})
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Mã OTP không đúng');
+
+            // Thành công: Trình duyệt nhận Cookie 30 ngày và chuyển hướng thẳng vào web
+            window.location.href = '/';
+        } catch (e) {
+            showAlert(e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Đăng nhập';
+        }
+    }
+</script>
+</body>
+</html>
