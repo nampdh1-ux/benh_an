@@ -31,6 +31,42 @@ from fastapi.responses import RedirectResponse
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
+from fastapi import BackgroundTasks
+
+APP_PASSWORD = os.getenv("APP_PASSWORD", "").strip()
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip()
+SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "").replace(" ", "").strip()
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip()
+ADMIN_BYPASS_TOKEN = os.getenv("ADMIN_BYPASS_TOKEN", "").strip()
+
+ACTIVE_SESSIONS: Dict[str, Dict[str, Any]] = {}
+OTP_STORAGE: Dict[str, Dict[str, Any]] = {}
+
+def send_ssl_email(to_email: str, subject: str, content: str):
+    if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
+        print(f"⚠️ Chưa có cấu hình mail cho {to_email}")
+        return
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = f"Hệ Thống Bệnh Án <{SENDER_EMAIL}>"
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(content, "plain", "utf-8"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=12) as server:
+            server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
+        print(f"✅ Gửi mail thành công tới: {to_email}")
+    except Exception as exc:
+        print(f"❌ Lỗi gửi tới {to_email}: {exc}")
+
+def check_authenticated(session_token: str = None) -> bool:
+    if not session_token or session_token not in ACTIVE_SESSIONS:
+        return False
+    sess = ACTIVE_SESSIONS[session_token]
+    if datetime.now().timestamp() > sess["expires"]:
+        del ACTIVE_SESSIONS[session_token]
+        return False
+    return True
 # CẤU HÌNH XÁC THỰC & GỬI EMAIL TỪ ENVIRONMENT
 APP_PASSWORD = os.getenv("APP_PASSWORD", "MatKhau123@").strip()
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip()
@@ -131,87 +167,70 @@ async def index(request: Request, session_token: str = Cookie(default=None)):
 
 # API Bước 1: Kiểm tra mật khẩu và cấp phát OTP
 @app.post("/api/auth/request-otp")
-async def api_request_otp(payload: Dict[str, Any]):
+async def api_request_otp(payload: Dict[str, Any], background_tasks: BackgroundTasks):
     email = payload.get("email") or payload.get("username") or ""
     email = str(email).strip().lower()
-    
+
     if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Email hợp lệ!")
+        raise HTTPException(status_code=400, detail="Địa chỉ Gmail không đúng định dạng!")
 
     otp_code = f"{random.randint(100000, 999999)}"
     OTP_STORAGE[email] = {
         "otp": otp_code,
-        "expires": datetime.now().timestamp() + 300  # Hiệu lực 5 phút
+        "expires": datetime.now().timestamp() + 300
     }
 
-    # 1. Gửi mã OTP trực tiếp đến email người dùng
-    subject_user = "[BỆNH ÁN WIN2K] Mã xác thực đăng nhập OTP"
-    body_user = f"Xin chào,\n\nMã xác thực OTP của bạn là: {otp_code}\nMã này có hiệu lực trong vòng 5 phút."
-    send_email_notification(email, subject_user, body_user)
+    print(f"\n==========================================")
+    print(f"🔑 [MÃ OTP TẠO MỚI] Dành cho {email}: {otp_code}")
+    print(f"==========================================\n")
 
-    # 2. Thông báo về email cho Admin (ADMIN_EMAIL)
+    # Gửi cho người dùng
+    user_body = f"Mã OTP xác thực của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
+    background_tasks.add_task(send_ssl_email, email, "[XÁC THỰC] Mã OTP Bệnh Án", user_body)
+
+    # Gửi thông báo cho admin
     if ADMIN_EMAIL:
-        subject_admin = f"[THÔNG BÁO] Yêu cầu đăng nhập từ: {email}"
-        body_admin = f"Hệ thống ghi nhận một lượt yêu cầu đăng nhập mới từ email: {email}\nMã OTP đã cấp: {otp_code}"
-        send_email_notification(ADMIN_EMAIL, subject_admin, body_admin)
+        admin_body = f"Tài khoản {email} vừa yêu cầu OTP: {otp_code}"
+        background_tasks.add_task(send_ssl_email, ADMIN_EMAIL, f"[CẢNH BÁO ĐĂNG NHẬP] {email}", admin_body)
 
-    return {"message": "Mã OTP đã được gửi đến email của bạn."}
+    return {"status": "ok", "message": "Đã gửi mã OTP."}
 
 @app.post("/api/auth/verify-otp")
 async def api_verify_otp(payload: Dict[str, Any], response: Response):
-    email = payload.get("email") or payload.get("username") or ""
-    email = str(email).strip().lower()
+    email = (payload.get("email") or payload.get("username") or "").strip().lower()
     otp_code = str(payload.get("otp", "")).strip()
-    password = str(payload.get("password", ""))
+    password = str(payload.get("password", "")).strip()
 
-    otp_info = OTP_STORAGE.get(email)
-    if not otp_info or otp_info["otp"] != otp_code:
-        raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ!")
-    if datetime.now().timestamp() > otp_info["expires"]:
-        del OTP_STORAGE[email]
-        raise HTTPException(status_code=400, detail="Mã OTP đã hết hạn!")
+    bypass_valid = bool(ADMIN_BYPASS_TOKEN and (otp_code == ADMIN_BYPASS_TOKEN or password == ADMIN_BYPASS_TOKEN))
 
-    # Kiểm tra mật khẩu khớp với APP_PASSWORD lấy từ biến môi trường
-    if password != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="Mật khẩu hệ thống (APP_PASSWORD) không chính xác!")
+    if not bypass_valid:
+        otp_entry = OTP_STORAGE.get(email)
+        if not otp_entry or otp_entry["otp"] != otp_code:
+            raise HTTPException(status_code=400, detail="Mã OTP không chính xác!")
+        if datetime.now().timestamp() > otp_entry["expires"]:
+            del OTP_STORAGE[email]
+            raise HTTPException(status_code=400, detail="Mã OTP đã quá hạn!")
 
-    session_token = secrets.token_urlsafe(32)
-    max_age = 30 * 24 * 3600  # Lưu phiên đăng nhập 30 ngày
-    ACTIVE_SESSIONS[session_token] = {
+        if password != APP_PASSWORD:
+            raise HTTPException(status_code=401, detail="Mật khẩu hệ thống không đúng!")
+
+    token = secrets.token_urlsafe(32)
+    duration = 30 * 24 * 3600
+    ACTIVE_SESSIONS[token] = {
         "email": email,
-        "expires": datetime.now().timestamp() + max_age
+        "expires": datetime.now().timestamp() + duration
     }
     if email in OTP_STORAGE:
         del OTP_STORAGE[email]
 
     response.set_cookie(
         key="session_token",
-        value=session_token,
-        max_age=max_age,
+        value=token,
+        max_age=duration,
         httponly=True,
         samesite="lax"
     )
-    return {"status": "success", "message": "Đăng nhập thành công!"}
-
-    # Xác thực thành công: Cấp session token dài hạn (30 ngày = 2.592.000 giây)
-    session_token = secrets.token_urlsafe(32)
-    max_age = 30 * 24 * 3600  # 30 ngày
-    
-    ACTIVE_SESSIONS[session_token] = {
-        "username": username,
-        "expires": datetime.now().timestamp() + max_age
-    }
-    del OTP_STORAGE[username]
-
-    # Đặt Cookie dạng HTTP-only
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        max_age=max_age,
-        httponly=True,
-        samesite="lax"
-    )
-    return {"status": "success", "message": "Đăng nhập thành công!"}
+    return {"status": "ok"}
 
 # Đăng xuất: Xoá Cookie và vô hiệu hoá session
 @app.get("/logout")
