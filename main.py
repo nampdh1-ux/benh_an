@@ -108,8 +108,12 @@ Bạn là một bác sĩ chuyên khoa thực thụ. Dưới đây là toàn bộ
 ==================================================
 
 Dựa trên nguyên lý biện luận lâm sàng (Clinical Reasoning):
-1. Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên hoặc mức độ nguy cấp.
-2. Viết đoạn Biện luận chẩn đoán sơ bộ: Phân tích logic tại sao hướng tới chẩn đoán sơ bộ (dấu hiệu chỉ điểm, yếu tố nguy cơ) và tại sao chưa thể loại trừ các chẩn đoán phân biệt.
+1. Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên đúng hoặc mức độ nguy cấp, dạng
+    1. A
+    2. B
+    3. C
+    ... Không giải thích hay câu từ gì thêm
+2. Viết đoạn Biện luận chẩn đoán sơ bộ: Phân tích logic tại sao hướng tới chẩn đoán sơ bộ (dấu hiệu chỉ điểm, yếu tố nguy cơ) và tại sao chưa thể loại trừ các chẩn đoán phân biệt, vào thẳng vấn đề, dưới dạng xuống dòng đơn giản.
 
 YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
 [CHAN_DOAN_PHAN_BIET]
@@ -145,10 +149,10 @@ Bạn là bác sĩ điều trị. Dưới đây là toàn bộ hồ sơ bệnh n
 ==================================================
 
 Hãy xây dựng kế hoạch điều trị toàn diện theo y học thực chứng:
-1. Mục tiêu điều trị (Ngắn hạn & Dài hạn).
+1. Mục tiêu điều trị.
 2. Điều trị cụ thể: Bao gồm chế độ chăm sóc/dinh dưỡng, dùng thuốc (tên hoạt chất, liều lượng, đường dùng nếu cần thiết) hoặc can thiệp ngoại khoa/chăm sóc hậu phẫu chuyên biệt.
 3. Kế hoạch theo dõi: Các dấu hiệu sinh tồn, dẫn lưu, biến chứng cần tầm soát.
-
+    Vào thẳng vấn đề, dưới dạng xuống dòng, đơn giản, không màu mè.
 YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 3 thẻ:
 [MUC_TIEU]
 ...
@@ -187,7 +191,7 @@ Bạn là bác sĩ lâm sàng. Dưới đây là toàn bộ diễn biến ca b�
 Hãy phân tích:
 1. Tiên lượng: Gồm tiên lượng gần (biến chứng cấp, khả năng hồi phục trong đợt điều trị) và tiên lượng xa (tái phát, di chứng, chức năng cơ quan).
 2. Tư vấn & Giáo dục sức khỏe: Hướng dẫn chăm sóc, chế độ vận động/ăn uống, dấu hiệu báo động đỏ cần tái khám ngay.
-
+    Vào thẳng vấn đề, dưới dạng xuống dòng, đơn giản, không màu mè.
 YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
 [TIEN_LUONG]
 ...
@@ -253,7 +257,7 @@ async def api_ocr_batch(
         except Exception:
             clinical_ctx_str = str(context)
 
-    ocr_prompt = f"""Bạn là bác sĩ lâm sàng. Đọc cận lâm sàng đính kèm dựa trên ngữ cảnh:\n{clinical_ctx_str}\nTrả về JSON có 2 key: 'ket_qua' (chỉ số đo được) và 'phien_giai' (biện luận theo bệnh cảnh)."""
+    ocr_prompt = f"""Bạn là bác sĩ lâm sàng. Đọc cận lâm sàng đính kèm dựa trên ngữ cảnh, không câu dẫn, vào thẳng vấn đề:\n{clinical_ctx_str}\nTrả về JSON có 2 key: 'ket_qua' (chỉ số đo được) và 'phien_giai' (biện luận theo bệnh cảnh)."""
     results = []
     for file in files:
         try:
