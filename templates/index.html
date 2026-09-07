@@ -1022,7 +1022,9 @@
     }
 
     function getFormPayload() {
-        const loaiBa = document.getElementById('current_loai_ba').value || "Nội khoa / Tiền phẫu";
+        const isHauPhau = document.getElementById('ba_hauphau').checked;
+        const loaiBa = isHauPhau ? "Hậu phẫu" : "Nội khoa / Tiền phẫu";
+
         const payload = {
             loai_benh_an: loaiBa,
             so_hang_cls: clsRowCount
@@ -1030,11 +1032,19 @@
 
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
-            if (el.id && el.type !== 'file' && el.id !== 'loai_benh_an') {
+            if (el.id && el.type !== 'radio' && el.type !== 'file' && el.id !== 'loai_benh_an') {
                 payload[el.id] = el.value;
             }
         });
 
+        // Gắn chính xác chuỗi ảnh Base64 của từng hàng vào payload
+        for (let i = 0; i < clsRowCount; i++) {
+            if (clsRowImages[i]) {
+                payload[`cls_img_b64_${i}`] = clsRowImages[i];
+            }
+        }
+
+        // Tính BMI gửi kèm
         const w = parseFloat(document.getElementById('sh_can_nang').value) || 0;
         const h = parseFloat(document.getElementById('sh_chieu_cao').value) || 0;
         if (w > 0 && h > 0) {
