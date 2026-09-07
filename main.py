@@ -147,7 +147,7 @@ async def api_ai_treatment(payload: Dict[str, Any]):
     if not model:
         raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     context = f"Loại: {payload.get('loai_benh_an')}\nChẩn đoán: {payload.get('chan_doan_xac_dinh')}\nTiền sử: {payload.get('ts_noi_khoa')}"
-    prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
+    prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh, trả lời ngắn gọn, thẳng vấn đề, ở dạng xuống dòng, chữ đầu viết hoa đơn giản. ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
     try:
         txt = model.generate_content(prompt).text
         mt, ct, td = "", "", ""
@@ -167,7 +167,7 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
     if not model:
         raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     context = f"Chẩn đoán: {payload.get('chan_doan_xac_dinh')}\nĐiều trị: {payload.get('dt_cu_the')}"
-    prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
+    prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh, vào thẳng vấn đề, đơn giản, dạng xuống dòng. ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
     try:
         res_text = model.generate_content(prompt).text
         tl, tv = "", ""
