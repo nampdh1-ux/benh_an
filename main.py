@@ -339,7 +339,9 @@ async def api_ocr_batch(
 
     return {"results": results}
 
-# --- BỘ TẠO PDF TIẾNG VIỆT UNICODE ---
+import base64
+
+# --- TRONG CLASS RobustUnicodePDF ---
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -387,42 +389,95 @@ class RobustUnicodePDF(FPDF):
         self.ln(2)
 
     def render_table_cls(self, cls_rows):
+        """Vẽ bảng cận lâm sàng 2 cột kèm chèn ảnh trực tiếp vào cột kết quả"""
         col_w = (self.w - self.l_margin - self.r_margin) / 2.0
         line_h = 5.0
+        
         self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
         self.set_fill_color(230, 235, 245)
-        if self.get_y() > 260:
+        if self.get_y() > 250:
             self.add_page()
-        self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
-        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+            
+        self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
+        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
         
         self.set_font(self.font_family_name, "", 9)
-        for kq, pg in cls_rows:
-            txt_kq = format_bullet_points(kq) if kq else "-"
-            txt_pg = format_bullet_points(pg) if pg else "-"
-            
+
+        for row_item in cls_rows:
+            txt_kq = format_bullet_points(row_item.get("kq", "")) if row_item.get("kq") else "-"
+            txt_pg = format_bullet_points(row_item.get("pg", "")) if row_item.get("pg") else "-"
+            imgs_b64 = row_item.get("imgs", [])
+
+            # 1. Tính chiều cao của đoạn text
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
-            row_h = max(max(nb_l, nb_r) * line_h + 4, 8)
-            
+            text_height_l = nb_l * line_h
+            text_height_r = nb_r * line_h
+
+            # 2. Xử lý giải mã ảnh base64 và tính tổng chiều cao ảnh trong cột trái
+            img_objs = []
+            total_img_h = 0
+            max_img_w = col_w - 6  # Chừa lề 3mm mỗi bên
+
+            for b64 in imgs_b64:
+                try:
+                    if "," in b64:
+                        b64 = b64.split(",", 1)[1]
+                    raw = base64.b64decode(b64)
+                    im = Image.open(io.BytesIO(raw))
+                    w, h = im.size
+                    # Tỷ lệ co ảnh theo độ rộng cột
+                    render_w = min(max_img_w, 65.0)  # Giới hạn tối đa 65mm
+                    render_h = (h / w) * render_w
+                    if render_h > 65.0:  # Giới hạn chiều cao tối đa mỗi ảnh
+                        render_h = 65.0
+                        render_w = (w / h) * render_h
+
+                    temp_io = io.BytesIO()
+                    im.convert("RGB").save(temp_io, format="JPEG", quality=80)
+                    temp_io.seek(0)
+                    img_objs.append((temp_io, render_w, render_h))
+                    total_img_h += render_h + 3.0
+                except Exception as e:
+                    print(f"Lỗi nạp ảnh PDF: {e}")
+
+            # Tổng chiều cao cả dòng
+            left_col_total = text_height_l + total_img_h
+            row_h = max(max(left_col_total, text_height_r) + 6.0, 10.0)
+
+            # Sang trang mới nếu tràn
             if self.get_y() + row_h > 275:
                 self.add_page()
                 self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
                 self.set_fill_color(230, 235, 245)
-                self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
-                self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+                self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
+                self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
                 self.set_font(self.font_family_name, "", 9)
 
             curr_x = self.get_x()
             curr_y = self.get_y()
+
+            # Vẽ khung 2 ô
             self.rect(curr_x, curr_y, col_w, row_h)
             self.rect(curr_x + col_w, curr_y, col_w, row_h)
 
+            # In text cột trái (Kết quả)
             self.set_xy(curr_x + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
+
+            # Vẽ các ảnh đính kèm ngay dưới text của cột trái
+            img_start_y = curr_y + text_height_l + 4.0
+            for img_file, iw, ih in img_objs:
+                self.image(img_file, x=curr_x + 3, y=img_start_y, w=iw, h=ih)
+                img_start_y += ih + 3.0
+
+            # In text cột phải (Phiên giải)
             self.set_xy(curr_x + col_w + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
+
+            # Chuyển trỏ xuống dòng tiếp theo
             self.set_xy(curr_x, curr_y + row_h)
+
         self.ln(3)
 
 @app.post("/api/export/pdf")
@@ -556,8 +611,9 @@ async def api_export_pdf(payload: Dict[str, Any]):
             for i in range(so_hang):
                 kq = payload.get(f"cls_kq_{i}", "").strip()
                 pg = payload.get(f"cls_pg_{i}", "").strip()
-                if kq or pg:
-                    cls_rows.append((kq, pg))
+                imgs = payload.get(f"cls_imgs_{i}", [])
+                if kq or pg or imgs:
+                    cls_rows.append({"kq": kq, "pg": pg, "imgs": imgs})
             if cls_rows:
                 pdf.render_table_cls(cls_rows)
             else:
