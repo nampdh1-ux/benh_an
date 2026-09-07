@@ -386,31 +386,38 @@ class RobustUnicodePDF(FPDF):
         self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
         self.ln(2)
 
+    import base64
+
+# Trong class RobustUnicodePDF, cập nhật lại hàm render_table_cls:
     def render_table_cls(self, cls_rows):
         col_w = (self.w - self.l_margin - self.r_margin) / 2.0
         line_h = 5.0
         self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
         self.set_fill_color(230, 235, 245)
-        if self.get_y() > 260:
+        if self.get_y() > 250:
             self.add_page()
-        self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
-        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
+        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
         
         self.set_font(self.font_family_name, "", 9)
-        for kq, pg in cls_rows:
+        for kq, pg, img_b64 in cls_rows:
             txt_kq = format_bullet_points(kq) if kq else "-"
             txt_pg = format_bullet_points(pg) if pg else "-"
             
+            # Tính chiều cao văn bản mỗi cột
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
-            row_h = max(max(nb_l, nb_r) * line_h + 4, 8)
+            
+            # Nếu có ảnh Base64, cộng thêm chiều cao dự kiến cho khung ảnh (khoảng 45mm)
+            img_h = 45 if img_b64 else 0
+            row_h = max(max(nb_l * line_h + img_h, nb_r * line_h) + 6, 12)
             
             if self.get_y() + row_h > 275:
                 self.add_page()
                 self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
                 self.set_fill_color(230, 235, 245)
-                self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
-                self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+                self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
+                self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
                 self.set_font(self.font_family_name, "", 9)
 
             curr_x = self.get_x()
@@ -418,10 +425,27 @@ class RobustUnicodePDF(FPDF):
             self.rect(curr_x, curr_y, col_w, row_h)
             self.rect(curr_x + col_w, curr_y, col_w, row_h)
 
+            # In nội dung cột trái (kết quả + ảnh)
             self.set_xy(curr_x + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
+            
+            # Vẽ ảnh nếu có dữ liệu Base64 hợp lệ
+            if img_b64:
+                try:
+                    if "," in img_b64:
+                        img_b64 = img_b64.split(",", 1)[1]
+                    img_bytes = base64.b64decode(img_b64)
+                    img_stream = io.BytesIO(img_bytes)
+                    img_y = self.get_y() + 2
+                    self.image(img_stream, x=curr_x + 4, y=img_y, w=col_w - 8, h=40)
+                except Exception as e:
+                    print(f"Lỗi chèn ảnh vào PDF: {e}")
+
+            # In nội dung cột phải (phiên giải)
             self.set_xy(curr_x + col_w + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
+            
+            # Chuyển trỏ xuống dòng tiếp theo
             self.set_xy(curr_x, curr_y + row_h)
         self.ln(3)
 
@@ -556,8 +580,9 @@ async def api_export_pdf(payload: Dict[str, Any]):
             for i in range(so_hang):
                 kq = payload.get(f"cls_kq_{i}", "").strip()
                 pg = payload.get(f"cls_pg_{i}", "").strip()
-                if kq or pg:
-                    cls_rows.append((kq, pg))
+                img_b64 = payload.get(f"cls_img_b64_{i}", "")
+                if kq or pg or img_b64:
+                    cls_rows.append((kq, pg, img_b64))
             if cls_rows:
                 pdf.render_table_cls(cls_rows)
             else:
