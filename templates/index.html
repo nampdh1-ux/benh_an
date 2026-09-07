@@ -139,10 +139,6 @@
         .toc-link { display: block; padding: 6px 8px; color: #000; text-decoration: none; font-size: 11.5px; font-weight: bold; }
         .toc-link:hover { background-color: #0a246a; color: #fff; }
 
-        .cls-table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #ffffff; }
-        .cls-table th { background: #d4d0c8; border: 1px solid #808080; padding: 5px; text-align: center; font-weight: bold; }
-        .cls-table td { border: 1px solid #808080; padding: 6px; vertical-align: top; }
-
         .draft-toolbar {
             background: #d4d0c8;
             border-top: 1px solid #ffffff;
@@ -158,8 +154,7 @@
             gap: 6px;
         }
 
-        /* TỐI ƯU GIAO DIỆN DI ĐỘNG (MOBILE RESPONSIVE) - CHUẨN XÁC */
-        /* Khung cuộn ngang bảo vệ bảng trên mọi kích thước màn hình */
+        /* KHUNG CUỘN BẢNG TRÊN ĐIỆN THOẠI */
         .cls-table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -171,7 +166,7 @@
 
         .cls-table { 
             width: 100%; 
-            min-width: 500px; /* Đảm bảo 2 cột không bị bóp nghẹt trên màn hình nhỏ */
+            min-width: 550px;
             border-collapse: collapse; 
             background: #ffffff; 
         }
@@ -189,7 +184,7 @@
             vertical-align: top; 
         }
 
-        /* TỐI ƯU GIAO DIỆN DI ĐỘNG (MOBILE RESPONSIVE) - HOÀN TOÀN KHÔNG DÙNG ::before */
+        /* TỐI ƯU GIAO DIỆN DI ĐỘNG */
         @media (max-width: 768px) {
             body { padding: 4px; }
             .form-grid-3, .form-grid-2 { grid-template-columns: 1fr !important; gap: 6px; }
@@ -582,16 +577,16 @@
                         </div>
 
                         <div class="cls-table-wrapper">
-    <table class="cls-table">
-        <thead>
-            <tr>
-                <th style="width: 50%;">KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH</th>
-                <th style="width: 50%;">PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ</th>
-            </tr>
-        </thead>
-        <tbody id="cls-tbody"></tbody>
-    </table>
-</div>
+                            <table class="cls-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50%;">KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH</th>
+                                        <th style="width: 50%;">PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cls-tbody"></tbody>
+                            </table>
+                        </div>
                         <div style="margin-top: 6px;">
                             <button type="button" onclick="addClsRow()">➕ Thêm hàng</button>
                             <button type="button" onclick="removeClsRow()">➖ Bớt hàng</button>
@@ -864,16 +859,56 @@
     }
 
     let clsRowCount = 0;
-    function addClsRow(kq = '', pg = '') {
+
+    // HÀM TẠO HÀNG CẬN LÂM SÀNG CÓ ĐẦY ĐỦ NÚT ĐÍNH KÈM ẢNH & PREVIEW
+    function addClsRow(kq = '', pg = '', imgSrc = '') {
         const tbody = document.getElementById('cls-tbody');
         const rIdx = clsRowCount++;
         const tr = document.createElement('tr');
         tr.id = `cls-row-${rIdx}`;
         tr.innerHTML = `
-            <td><textarea id="cls_kq_${rIdx}" rows="3" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()">${kq}</textarea></td>
-            <td><textarea id="cls_pg_${rIdx}" rows="3" placeholder="Biện giải lâm sàng..." oninput="autoSave()">${pg}</textarea></td>
+            <td>
+                <textarea id="cls_kq_${rIdx}" rows="3" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()">${kq}</textarea>
+                <div style="margin-top: 5px; padding-top: 4px; border-top: 1px dashed #808080;">
+                    <label style="font-size: 11px; font-weight: bold; color: #0a246a;">📷 Đính kèm ảnh:</label>
+                    <input type="file" id="cls_img_${rIdx}" accept="image/*" onchange="previewRowImg(event, ${rIdx})" style="font-size: 11px; width: auto; margin-top: 2px;">
+                    <input type="hidden" id="cls_img_data_${rIdx}" value="${imgSrc}">
+                    <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
+                        ${imgSrc ? `<img src="${imgSrc}" style="max-width: 160px; max-height: 120px; border: 1px solid #808080; display: block;">` : ''}
+                    </div>
+                </div>
+            </td>
+            <td>
+                <textarea id="cls_pg_${rIdx}" rows="6" placeholder="Biện giải lâm sàng..." oninput="autoSave()">${pg}</textarea>
+            </td>
         `;
         tbody.appendChild(tr);
+    }
+
+    function previewRowImg(e, idx) {
+        const file = e.target.files[0];
+        const container = document.getElementById(`cls_preview_${idx}`);
+        const hiddenInput = document.getElementById(`cls_img_data_${idx}`);
+        container.innerHTML = "";
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const b64 = evt.target.result;
+                hiddenInput.value = b64;
+                const img = document.createElement('img');
+                img.src = b64;
+                img.style.maxWidth = '160px';
+                img.style.maxHeight = '120px';
+                img.style.border = '1px solid #808080';
+                img.style.display = 'block';
+                container.appendChild(img);
+                autoSave();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            hiddenInput.value = "";
+            autoSave();
+        }
     }
 
     function removeClsRow() {
@@ -901,7 +936,6 @@
             }
         });
 
-        // Tính và gửi kèm BMI cho PDF
         const w = parseFloat(document.getElementById('sh_can_nang').value) || 0;
         const h = parseFloat(document.getElementById('sh_chieu_cao').value) || 0;
         if (w > 0 && h > 0) {
@@ -1044,7 +1078,7 @@
         }
     }
 
-    // 1. Chuyển đổi an toàn dữ liệu từ AI nếu trả về dạng Object / Array thành văn bản nhiều dòng
+    // 1. Chuyển đổi an toàn dữ liệu từ AI nếu trả về dạng Object / Array thành text thuần
     function stringifyOcrData(val) {
         if (!val) return "";
         if (typeof val === 'string') return val.trim();
@@ -1074,7 +1108,6 @@
         const textKq = stringifyOcrData(kq);
         const textPg = stringifyOcrData(pg);
 
-        // Tìm hàng đầu tiên đang để trống cả ô Kết quả và ô Biện giải
         let emptyRowIdx = -1;
         for (let i = 0; i < clsRowCount; i++) {
             const elKq = document.getElementById(`cls_kq_${i}`);
@@ -1086,11 +1119,9 @@
         }
 
         if (emptyRowIdx !== -1) {
-            // Điền trực tiếp vào hàng trống có sẵn
             document.getElementById(`cls_kq_${emptyRowIdx}`).value = textKq;
             document.getElementById(`cls_pg_${emptyRowIdx}`).value = textPg;
         } else {
-            // Nếu không còn hàng trống nào thì mới tạo thêm hàng mới ở cuối
             addClsRow(textKq, textPg);
         }
     }
@@ -1140,7 +1171,7 @@
     }
 
     // =========================================================================
-    // XEM TRƯỚC VÀ XUẤT TẬP TIN (TÁCH RIÊNG XEM TRƯỚC VÀ TẢI VỀ)
+    // XEM TRƯỚC VÀ XUẤT TẬP TIN
     // =========================================================================
     let currentPdfBlobUrl = null;
 
@@ -1275,7 +1306,11 @@
         clsRowCount = 0;
         const numRows = data.so_hang_cls || 3;
         for (let i = 0; i < numRows; i++) {
-            addClsRow(data[`cls_kq_${i}`] || '', data[`cls_pg_${i}`] || '');
+            addClsRow(
+                data[`cls_kq_${i}`] || '', 
+                data[`cls_pg_${i}`] || '', 
+                data[`cls_img_data_${i}`] || ''
+            );
         }
         calcBMI();
         reorderOrgans();
