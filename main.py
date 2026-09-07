@@ -260,9 +260,12 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
 
 @app.post("/api/auth/request-otp")
 async def api_request_otp(payload: Dict[str, Any]):
-    email = payload.get("email", "").strip().lower()
+    # Hỗ trợ nhận cả trường 'email' hoặc 'username' từ frontend gửi lên
+    email = payload.get("email") or payload.get("username") or ""
+    email = str(email).strip().lower()
+    
     if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Gmail hợp lệ!")
+        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Email hợp lệ!")
 
     otp_code = f"{random.randint(100000, 999999)}"
     OTP_STORAGE[email] = {
