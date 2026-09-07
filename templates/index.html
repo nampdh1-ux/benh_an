@@ -957,7 +957,7 @@
             wrap.style = "position: relative; display: inline-block; border: 1px solid #808080; background: #fff; padding: 2px;";
             wrap.innerHTML = `
                 <img src="${b64}" style="height: 50px; display: block;">
-                <button type="button" onclick="removeSingleImage(${idx}, ${imgIdx})" style="position: absolute; top: -5px; right: -5px; background: red; color: #fff; border: 1px solid #000; font-size: 9px; cursor: pointer; border-radius: 50%; width: 16px; height: 16px; line-height: 12px; padding: 0;">×</button>
+                <button type="button" onclick="removeSingleImage(${idx}, ${imgIdx})" style="position: absolute; top: -5px; right: -5px; min-width: 0 !important; width: 15px !important; height: 15px !important; line-height: 11px !important; padding: 0 !important; background: #c00 !important; color: #fff !important; border: 1px solid #000 !important; font-size: 10px !important; font-weight: bold !important; border-radius: 50% !important; cursor: pointer;">×</button>
             `;
             container.appendChild(wrap);
         });
