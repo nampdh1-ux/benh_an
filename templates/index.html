@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Bệnh Án Lâm Sàng - Retro OS</title>
-    <!-- Thư viện 98.css hỗ trợ các khối điều khiển Windows nguyên bản -->
+    <title>Bệnh Án Lâm Sàng & Hậu Phẫu - Win2K Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
-            background-color: #008080; /* Màu nền Desktop Teal kinh điển */
+            background-color: #008080; /* Teal Desktop kinh điển */
             font-family: 'Tahoma', 'Segoe UI', sans-serif;
             font-size: 12px;
             padding: 15px;
@@ -23,7 +21,7 @@
             max-width: 1250px;
             margin: 0 auto;
         }
-        /* Style khung chìm 3D (Sunken Box) cho input, select, textarea */
+        /* Ô nhập liệu chìm 3D (Sunken Inset Box) */
         input[type="text"], input[type="number"], select, textarea {
             border-top: 2px solid #404040 !important;
             border-left: 2px solid #404040 !important;
@@ -45,36 +43,48 @@
             border-bottom: 2px solid #ffffff !important;
             box-shadow: inset 1px 1px 0px #000000 !important;
         }
-        .form-grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 8px;
+        .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+        .form-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 6px; }
+        .form-group label { font-weight: bold; margin-bottom: 3px; }
+        .tab-content { display: none; padding: 10px; background: #ece9d8; }
+        .tab-content.active { display: block; }
+        
+        /* EXPANDER WIN2K (DETAILS / SUMMARY) */
+        details.win2k-expander {
+            border-top: 2px solid #ffffff !important;
+            border-left: 2px solid #ffffff !important;
+            border-right: 2px solid #404040 !important;
+            border-bottom: 2px solid #404040 !important;
+            background-color: #ece9d8 !important;
+            margin-bottom: 12px;
+            box-shadow: 1px 1px 0px #000000;
         }
-        .form-grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 6px;
-        }
-        .form-group label {
+        details.win2k-expander > summary {
+            background: linear-gradient(90deg, #0a246a 0%, #a6caf0 100%);
+            padding: 6px 12px;
+            color: #ffffff;
             font-weight: bold;
-            margin-bottom: 3px;
+            font-size: 13px;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+            text-shadow: 1px 1px 1px #000000;
         }
-        .tab-content {
-            display: none;
-            padding: 10px;
-            background: #ece9d8;
+        details.win2k-expander > summary::-webkit-details-marker { display: none; }
+        details.win2k-expander > summary::before {
+            content: "▼ ";
+            font-size: 10px;
+            display: inline-block;
+            margin-right: 6px;
+            transition: transform 0.2s;
         }
-        .tab-content.active {
-            display: block;
+        details.win2k-expander:not([open]) > summary::before {
+            transform: rotate(-90deg);
         }
-        /* Thanh tiêu đề phân mục (Menubar / Strip) */
+        .expander-body { padding: 10px; }
+
+        /* HEADER DẢI PHỤ */
         .sub-section-header {
             background: #e4e2d5;
             border-top: 1px solid #ffffff;
@@ -86,79 +96,87 @@
             color: #0a246a;
             margin: 10px 0 6px 0;
         }
-        fieldset {
-            border-top: 2px solid #ffffff !important;
-            border-left: 2px solid #ffffff !important;
-            border-right: 2px solid #808080 !important;
-            border-bottom: 2px solid #808080 !important;
-            margin-bottom: 12px;
-            padding: 10px;
-        }
-        legend {
-            font-weight: bold;
-            color: #0a246a;
-            padding: 0 4px;
-        }
-        .btn-ai {
-            font-weight: bold;
-            padding: 4px 10px;
-            cursor: pointer;
-        }
-        /* Bảng cận lâm sàng 2 cột */
-        .cls-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-            background: #ffffff;
-        }
-        .cls-table th {
-            background: #d4d0c8;
-            border: 1px solid #808080;
-            padding: 5px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .cls-table td {
-            border: 1px solid #808080;
-            padding: 6px;
-            vertical-align: top;
-        }
-        /* Thanh nổi điều hướng nhanh (Floating TOC) */
-        .floating-toc {
+        .btn-ai { font-weight: bold; padding: 3px 8px; cursor: pointer; }
+
+        /* DROPDOWN MỤC LỤC THU GỌN */
+        .toc-dropdown-wrapper {
             position: fixed;
-            top: 25px;
+            top: 15px;
             right: 25px;
-            z-index: 99999;
+            z-index: 999999;
+        }
+        .toc-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 28px;
+            width: 240px;
+            background: #ece9d8;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            box-shadow: 3px 3px 0px #000000;
+            padding: 4px;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        .toc-dropdown-wrapper:hover .toc-dropdown-content { display: block; }
+        .toc-link {
+            display: block;
+            padding: 5px 8px;
+            color: #000000;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .toc-link:hover {
+            background-color: #0a246a;
+            color: #ffffff;
+        }
+
+        /* BẢNG CẬN LÂM SÀNG */
+        .cls-table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #ffffff; }
+        .cls-table th { background: #d4d0c8; border: 1px solid #808080; padding: 5px; text-align: center; font-weight: bold; }
+        .cls-table td { border: 1px solid #808080; padding: 6px; vertical-align: top; }
+
+        /* THANH CÔNG CỤ NHÁP TRÊN ĐẦU */
+        .draft-toolbar {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080;
+            border-bottom: 1px solid #808080;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-<!-- MỤC LỤC ĐIỀU HƯỚNG NHANH -->
-<div class="floating-toc">
-    <div class="window" style="width: 220px;">
-        <div class="title-bar">
-            <div class="title-bar-text">📑 Điều Hướng Nhanh</div>
-        </div>
-        <div class="window-body" style="max-height: 70vh; overflow-y: auto; padding: 4px;">
-            <ul class="tree-view">
-                <li><a href="#sec-hanh-chinh">I. Hành chính</a></li>
-                <li><a href="#sec-ly-do-benh-su">II-III. Lý do & Bệnh sử</a></li>
-                <li><a href="#sec-tien-su">IV. Tiền sử</a></li>
-                <li><a href="#sec-kham-lam-sang">V. Thăm khám lâm sàng</a></li>
-                <li><a href="#sec-tom-tat-so-bo">VI. Tóm tắt & Chẩn đoán sơ bộ</a></li>
-                <li><a href="#sec-can-lam-sang">VII. Cận lâm sàng (OCR)</a></li>
-                <li><a href="#sec-chan-doan-xac-dinh">VIII. Chẩn đoán xác định</a></li>
-                <li><a href="#sec-dieu-tri">IX. Điều trị & Tiên lượng</a></li>
-            </ul>
-        </div>
+<!-- MỤC LỤC DROPDOWN GỌN GÀNG -->
+<div class="toc-dropdown-wrapper">
+    <button type="button" style="font-weight: bold; padding: 4px 12px; box-shadow: 1px 1px 0 #000;">📑 Mục Lục Bệnh Án ▾</button>
+    <div class="toc-dropdown-content">
+        <div style="background: #0a246a; color: #fff; padding: 3px 6px; font-weight: bold; font-size: 10px; letter-spacing: 0.5px;">ĐIỀU HƯỚNG NHANH</div>
+        <a class="toc-link" href="#sec-hanh-chinh">I. Hành chính</a>
+        <a class="toc-link" href="#sec-ly-do-benh-su">II & III. Lý do & Bệnh sử</a>
+        <a class="toc-link" href="#sec-tien-su">IV. Tiền sử</a>
+        <a class="toc-link" href="#sec-kham-lam-sang">V. Thăm khám lâm sàng</a>
+        <a class="toc-link" href="#sec-chan-doan-so-bo">VI. Chẩn đoán sơ bộ & PB</a>
+        <a class="toc-link" href="#sec-can-lam-sang">VII. Cận lâm sàng & OCR</a>
+        <a class="toc-link" href="#sec-tom-tat">VIII. Tóm tắt bệnh án</a>
+        <a class="toc-link" href="#sec-chan-doan-xac-dinh">IX. Chẩn đoán xác định</a>
+        <a class="toc-link" href="#sec-dieu-tri">X. Điều trị & Tiên lượng</a>
     </div>
 </div>
 
-<!-- KHUNG ỨNG DỤNG CHÍNH -->
 <div class="window main-window">
     <div class="title-bar">
-        <div class="title-bar-text">Hệ Thống Quản Lý Bệnh Án Lâm Sàng - [Nội Khoa / Tiền Phẫu]</div>
+        <div class="title-bar-text">Hệ Thống Bệnh Án Lâm Sàng & Hậu Phẫu - [Windows 2000 Pro]</div>
         <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
             <button aria-label="Maximize"></button>
@@ -167,355 +185,451 @@
     </div>
 
     <div class="window-body">
-        <!-- THANH MENU TABS -->
+        <!-- THANH CÔNG CỤ QUẢN LÝ BẢN NHÁP FILE .JSON -->
+        <div class="draft-toolbar">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <strong>💾 Quản lý nháp:</strong>
+                <button type="button" onclick="downloadDraftJSON()">📥 Lưu bản nháp (.json) về máy</button>
+                <button type="button" onclick="document.getElementById('input_draft_file').click()">📤 Nạp file nháp (.json) vào web</button>
+                <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
+                <button type="button" onclick="clearAllDraft()">🗑️ Làm mới bệnh án</button>
+            </div>
+            <div style="font-weight: bold; color: #0a246a;" id="status-storage">
+                🟢 Trạng thái: Bộ nhớ trình duyệt đã đồng bộ
+            </div>
+        </div>
+
+        <!-- BỘ CHỌN MẪU BỆNH ÁN (RADIO BUTTONS) -->
+        <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 20px;">
+            <strong style="color: #0a246a;">📌 LỰA CHỌN MẪU BỆNH ÁN:</strong>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <input type="radio" name="radio_loai_ba" id="ba_noikhoa" value="Nội khoa / Tiền phẫu" checked onchange="toggleFormType()">
+                <strong>Nội khoa / Tiền phẫu</strong>
+            </label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <input type="radio" name="radio_loai_ba" id="ba_hauphau" value="Hậu phẫu" onchange="toggleFormType()">
+                <strong>Hậu phẫu</strong>
+            </label>
+        </div>
+
+        <!-- TABS ĐIỀU HƯỚNG CHÍNH -->
         <menu role="tablist">
             <li role="tab" class="active" onclick="switchTab(event, 'tab-nhap-lieu')"><a href="#tabs">Nhập liệu hồ sơ</a></li>
-            <li role="tab" onclick="switchTab(event, 'tab-xuat-file')"><a href="#tabs">Xem trước & Xuất tập tin</a></li>
+            <li role="tab" onclick="switchTab(event, 'tab-xuat-file')"><a href="#tabs">Xem trước & Xuất file (PDF/PPTX)</a></li>
             <li role="tab" onclick="switchTab(event, 'tab-phan-bien')"><a href="#tabs">Giảng viên phản biện ca bệnh</a></li>
         </menu>
 
         <!-- ==================================================================== -->
-        <!-- TAB 1: NHẬP LIỆU HỒ SƠ (NỘI KHOA / TIỀN PHẪU) -->
+        <!-- TAB 1: NHẬP LIỆU HỒ SƠ (EXPANDER WINDOWS) -->
         <!-- ==================================================================== -->
         <div class="window tab-content active" id="tab-nhap-lieu">
-            
+
             <!-- I. HÀNH CHÍNH -->
             <div id="sec-hanh-chinh"></div>
-            <fieldset>
-                <legend>I. PHẦN HÀNH CHÍNH</legend>
-                <div class="form-grid-3">
-                    <div class="form-group">
-                        <label>Họ và tên người bệnh:</label>
-                        <input type="text" id="ho_ten" placeholder="NGUYỄN VĂN A" oninput="autoSave()">
+            <details class="win2k-expander" open>
+                <summary>I. PHẦN HÀNH CHÍNH</summary>
+                <div class="expander-body">
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Họ và tên người bệnh:</label>
+                            <input type="text" id="ho_ten" placeholder="NGUYỄN VĂN A" oninput="autoSave()">
+                        </div>
+                        <div class="form-group">
+                            <label>Tuổi:</label>
+                            <input type="number" id="tuoi" value="45" min="0" max="120" oninput="autoSave()">
+                        </div>
+                        <div class="form-group">
+                            <label>Giới tính:</label>
+                            <select id="gioi_tinh" onchange="autoSave()">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Dân tộc:</label>
+                            <input type="text" id="dan_tok" value="Kinh" oninput="autoSave()">
+                        </div>
+                        <div class="form-group">
+                            <label>Nghề nghiệp:</label>
+                            <input type="text" id="nghe_nghiep" placeholder="Cán bộ, Nông dân..." oninput="autoSave()">
+                        </div>
+                        <div class="form-group">
+                            <label>Khoa / Phòng điều trị:</label>
+                            <input type="text" id="khoa_phong" placeholder="Ngoại Tiêu hóa, P.301..." oninput="autoSave()">
+                        </div>
+                    </div>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Ngày giờ vào viện:</label>
+                            <input type="text" id="ngay_vao_vien" oninput="autoSave()">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày làm bệnh án:</label>
+                            <input type="text" id="ngay_lam_benh_an" readonly style="background: #ece9d8 !important;">
+                        </div>
+                        <div class="form-group">
+                            <label>Người làm bệnh án (BS/SV):</label>
+                            <input type="text" id="sinh_vien" placeholder="Bác sĩ điều trị / Sinh viên..." oninput="autoSave()">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Tuổi:</label>
-                        <input type="number" id="tuoi" value="45" min="0" max="120" oninput="autoSave()">
-                    </div>
-                    <div class="form-group">
-                        <label>Giới tính:</label>
-                        <select id="gioi_tinh" onchange="autoSave()">
-                            <option value="Nam">Nam</option>
-                            <option value="Nữ">Nữ</option>
-                            <option value="Khác">Khác</option>
-                        </select>
+                        <label>Địa chỉ:</label>
+                        <input type="text" id="dia_chi" placeholder="Quận Đống Đa, TP. Hà Nội" oninput="autoSave()">
                     </div>
                 </div>
-                <div class="form-grid-3">
-                    <div class="form-group">
-                        <label>Dân tộc:</label>
-                        <input type="text" id="dan_tok" value="Kinh" oninput="autoSave()">
-                    </div>
-                    <div class="form-group">
-                        <label>Nghề nghiệp:</label>
-                        <input type="text" id="nghe_nghiep" placeholder="Cán bộ, Nông dân..." oninput="autoSave()">
-                    </div>
-                    <div class="form-group">
-                        <label>Khoa / Phòng điều trị:</label>
-                        <input type="text" id="khoa_phong" placeholder="Nội Tổng Hợp, Phòng 402..." oninput="autoSave()">
-                    </div>
-                </div>
-                <div class="form-grid-3">
-                    <div class="form-group">
-                        <label>Ngày giờ vào viện:</label>
-                        <input type="text" id="ngay_vao_vien" oninput="autoSave()">
-                    </div>
-                    <div class="form-group">
-                        <label>Ngày làm bệnh án:</label>
-                        <input type="text" id="ngay_lam_benh_an" readonly style="background: #ece9d8 !important;">
-                    </div>
-                    <div class="form-group">
-                        <label>Người làm bệnh án (BS/SV):</label>
-                        <input type="text" id="sinh_vien" placeholder="Bác sĩ / Sinh viên..." oninput="autoSave()">
-                    </div>
-                </div>
-            </fieldset>
+            </details>
 
-            <!-- II & III. LÝ DO VÀO VIỆN & BỆNH SỬ -->
+            <!-- II & III. LÝ DO & BỆNH SỬ (CHUYỂN MẠCH NỘI KHOA / HẬU PHẪU) -->
             <div id="sec-ly-do-benh-su"></div>
-            <fieldset>
-                <legend>II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ</legend>
-                <div class="form-group">
-                    <label>Lý do vào viện:</label>
-                    <input type="text" id="ly_do_vao_vien" placeholder="Ví dụ: Đau ngực trái giờ thứ 2, khó thở tăng dần..." oninput="autoSave()">
+            <details class="win2k-expander" open>
+                <summary id="title-ly-do-benh-su">II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ</summary>
+                <div class="expander-body">
+                    <div class="form-group">
+                        <label>Lý do vào viện:</label>
+                        <input type="text" id="ly_do_vao_vien" placeholder="Ví dụ: Đau bụng hố chậu phải giờ thứ 12..." oninput="autoSave()">
+                    </div>
+
+                    <!-- Khu vực Bệnh sử Nội khoa -->
+                    <div id="wrapper-bs-noikhoa" class="form-group">
+                        <label>Bệnh sử:</label>
+                        <textarea id="benh_su" rows="4" placeholder="Khởi phát, tính chất cơn đau, triệu chứng kèm theo, xử trí tuyến trước..." oninput="autoSave()"></textarea>
+                    </div>
+
+                    <!-- Khu vực Bệnh sử Hậu phẫu (Mặc định ẩn, hiện khi tick Hậu phẫu) -->
+                    <div id="wrapper-bs-hauphau" style="display: none;">
+                        <div class="sub-section-header">DIỄN BIẾN HẬU PHẪU</div>
+                        <div class="form-group">
+                            <label>1. Tình trạng trước mổ:</label>
+                            <textarea id="bs_truoc_mo" rows="2" placeholder="Triệu chứng chính, thời gian từ khởi phát đến mổ, Chẩn đoán trước mổ..." oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Tình trạng trong mổ (Khung 5 dòng chuẩn):</label>
+                            <textarea id="bs_trong_mo" rows="5" oninput="autoSave()">- Hình thức mổ: Mổ cấp cứu / Mổ phiên
+- Phương pháp mổ: 
+- Phương pháp gây mê: 
+- Quá trình mổ: Không có biến chứng
+- Chẩn đoán sau mổ: </textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>3. Quá trình sau mổ:</label>
+                            <textarea id="bs_sau_mo" rows="3" placeholder="Từ phòng hồi tỉnh đến nay: Tri giác, đau, trung tiện, tiểu tiện, dẫn lưu, ăn uống..." oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Bệnh sử:</label>
-                    <textarea id="benh_su" rows="4" placeholder="Mô tả hoàn cảnh khởi phát, tính chất triệu chứng cơ năng điển hình, diễn biến..." oninput="autoSave()"></textarea>
-                </div>
-            </fieldset>
+            </details>
 
             <!-- IV. TIỀN SỬ -->
             <div id="sec-tien-su"></div>
-            <fieldset>
-                <legend>IV. TIỀN SỬ</legend>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label>1. Tiền sử nội khoa:</label>
-                        <textarea id="ts_noi_khoa" rows="3" placeholder="Tăng huyết áp, Đái tháo đường, điều trị thuốc gì..." oninput="autoSave()"></textarea>
+            <details class="win2k-expander" open>
+                <summary>IV. TIỀN SỬ</summary>
+                <div class="expander-body">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>1. Tiền sử nội khoa:</label>
+                            <textarea id="ts_noi_khoa" rows="3" placeholder="Tăng huyết áp, ĐTĐ..." oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Tiền sử ngoại khoa & Dị ứng:</label>
+                            <textarea id="ts_ngoai_khoa" rows="3" placeholder="Sẹo mổ cũ, mổ viêm ruột thừa 5 năm trước..." oninput="autoSave()"></textarea>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>2. Tiền sử ngoại khoa & Dị ứng:</label>
-                        <textarea id="ts_ngoai_khoa" rows="3" placeholder="Sẹo mổ cũ, tiền sử phẫu thuật, dị ứng thuốc/thức ăn..." oninput="autoSave()"></textarea>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>3. Tiền sử bản thân (Lối sống & Thói quen):</label>
+                            <textarea id="ts_loi_song" rows="3" placeholder="Thuốc lá, rượu bia, chế độ vận động..." oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>4. Tiền sử gia đình:</label>
+                            <textarea id="ts_gia_dinh" rows="3" placeholder="Bệnh lý tim mạch, ung thư, chuyển hóa..." oninput="autoSave()"></textarea>
+                        </div>
                     </div>
                 </div>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label>3. Tiền sử bản thân (Lối sống & Thói quen):</label>
-                        <textarea id="ts_loi_song" rows="3" placeholder="Hút thuốc lá (bao-năm), rượu bia, thói quen ăn uống..." oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>4. Tiền sử gia đình:</label>
-                        <textarea id="ts_gia_dinh" rows="3" placeholder="Bệnh lý tim mạch, ung thư, di truyền trong gia đình..." oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-            </fieldset>
+            </details>
 
             <!-- V. THĂM KHÁM LÂM SÀNG -->
             <div id="sec-kham-lam-sang"></div>
-            <fieldset>
-                <legend>V. THĂM KHÁM LÂM SÀNG</legend>
-                
-                <div class="form-group">
-                    <label>1. Thăm khám lúc vào viện:</label>
-                    <textarea id="kham_vao_vien" rows="2" placeholder="Ghi nhận triệu chứng lúc tiếp nhận bệnh nhân..." oninput="autoSave()"></textarea>
-                </div>
-
-                <div class="sub-section-header">2. Thăm khám hiện tại - Toàn thân & Sinh hiệu</div>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label>Mô tả khám toàn thân:</label>
-                        <textarea id="kham_toan_than" rows="5" placeholder="- Tri giác (GCS 15đ)&#10;- Da niêm mạc hồng&#10;- Không phù, không xuất huyết dưới da&#10;- Tuyến giáp không to, hạch ngoại vi không sờ thấy" oninput="autoSave()"></textarea>
+            <details class="win2k-expander" open>
+                <summary>V. THĂM KHÁM LÂM SÀNG</summary>
+                <div class="expander-body">
+                    <!-- Khám lúc vào viện (Chỉ hiện khi là Nội khoa) -->
+                    <div id="wrapper-kham-vao-vien" class="form-group">
+                        <label>1. Thăm khám lúc vào viện:</label>
+                        <textarea id="kham_vao_vien" rows="2" placeholder="Ghi nhận sinh hiệu và triệu chứng thực thể lúc vào viện..." oninput="autoSave()"></textarea>
                     </div>
-                    <div>
+
+                    <!-- Ngày hậu phẫu (Chỉ hiện khi là Hậu phẫu) -->
+                    <div id="wrapper-ngay-hau-phau" class="form-group" style="display: none;">
+                        <label>Khám hậu phẫu ngày thứ mấy? Giờ thứ mấy?</label>
+                        <input type="text" id="ngay_hau_phau" placeholder="VD: Hậu phẫu ngày thứ 3 sau mổ (Giờ thứ 72)..." oninput="autoSave()">
+                    </div>
+
+                    <div class="sub-section-header">Thăm khám hiện tại - Toàn thân & Sinh hiệu</div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Mô tả khám toàn thân:</label>
+                            <textarea id="kham_toan_than" rows="5" placeholder="- Bệnh nhân tỉnh táo, tiếp xúc tốt (GCS 15đ)&#10;- Da niêm mạc hồng&#10;- Không phù, không xuất huyết dưới da&#10;- Tuyến giáp không to, hạch ngoại vi không sờ thấy" oninput="autoSave()"></textarea>
+                        </div>
+                        <div>
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Mạch (lần/phút):</label>
+                                    <input type="text" id="sh_mach" placeholder="80" oninput="autoSave()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nhiệt độ (°C):</label>
+                                    <input type="text" id="sh_nhiet_do" placeholder="37.0" oninput="autoSave()">
+                                </div>
+                            </div>
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Huyết áp (mmHg):</label>
+                                    <input type="text" id="sh_ha" placeholder="120/80" oninput="autoSave()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nhịp thở (lần/phút):</label>
+                                    <input type="text" id="sh_nhip_tho" placeholder="18" oninput="autoSave()">
+                                </div>
+                            </div>
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Cân nặng (kg):</label>
+                                    <input type="number" id="sh_can_nang" step="0.5" placeholder="60" oninput="calcBMI()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Chiều cao (cm):</label>
+                                    <input type="number" id="sh_chieu_cao" step="1" placeholder="165" oninput="calcBMI()">
+                                </div>
+                            </div>
+                            <div style="background: #fffde6; border: 1px solid #b8860b; padding: 4px 8px; font-weight: bold; margin-top: 4px;" id="bmi-display">
+                                Chỉ số BMI: -- kg/m² | Thể trạng: --
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vết mổ & Dẫn lưu (Chỉ hiện khi là Hậu phẫu) -->
+                    <div id="wrapper-vet-mo-dan-luu" style="display: none; margin-top: 8px;">
+                        <div class="sub-section-header">Thăm khám Vết mổ & Ống dẫn lưu</div>
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label>Mạch (lần/phút):</label>
-                                <input type="text" id="sh_mach" placeholder="80" oninput="autoSave()">
+                                <label>Tình trạng vết mổ:</label>
+                                <textarea id="kham_vet_mo" rows="3" placeholder="Vết mổ khô sạch, mép phẳng liền tốt, chân chỉ không nề đỏ, không rỉ dịch..." oninput="autoSave()"></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Nhiệt độ (°C):</label>
-                                <input type="text" id="sh_nhiet_do" placeholder="37.0" oninput="autoSave()">
+                                <label>Tình trạng ống dẫn lưu:</label>
+                                <textarea id="kham_dan_luu" rows="3" placeholder="Ống dẫn lưu ổ bụng ra 20ml dịch hồng nhạt, chân dẫn lưu sạch..." oninput="autoSave()"></textarea>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-section-header">Thăm khám các cơ quan</div>
+                    <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: bold;">⭐ Cơ quan chuyên khoa ưu tiên:</label>
+                        <select id="uu_tien_co_quan" style="width: auto;" onchange="reorderOrgans()">
+                            <option value="none">Không ưu tiên (Thứ tự mặc định)</option>
+                            <option value="kham_tuan_hoan">Tuần hoàn</option>
+                            <option value="kham_ho_hap">Hô hấp</option>
+                            <option value="kham_tieu_hoa">Tiêu hóa</option>
+                            <option value="kham_than_kinh">Thần kinh</option>
+                            <option value="kham_tiet_nieu">Thận - Tiết niệu</option>
+                            <option value="kham_co_xuong_khop">Cơ xương khớp</option>
+                            <option value="kham_co_quan_khac">Cơ quan khác</option>
+                        </select>
+                        <button type="button" onclick="fillNormalOrgans()">⚡ Điền khám bình thường</button>
+                        <button type="button" onclick="clearOrgans()">🔄 Đặt lại các cơ quan</button>
+                    </div>
+
+                    <!-- Khung 7 cơ quan -->
+                    <div id="organs-container">
+                        <div class="form-group organ-box" id="box_kham_tuan_hoan">
+                            <label>Tuần hoàn:</label>
+                            <textarea id="kham_tuan_hoan" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_ho_hap">
+                            <label>Hô hấp:</label>
+                            <textarea id="kham_ho_hap" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_tieu_hoa">
+                            <label>Tiêu hóa:</label>
+                            <textarea id="kham_tieu_hoa" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_than_kinh">
+                            <label>Thần kinh:</label>
+                            <textarea id="kham_than_kinh" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_tiet_nieu">
+                            <label>Thận - Tiết niệu:</label>
+                            <textarea id="kham_tiet_nieu" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_co_xuong_khop">
+                            <label>Cơ xương khớp:</label>
+                            <textarea id="kham_co_xuong_khop" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group organ-box" id="box_kham_co_quan_khac">
+                            <label>Các cơ quan khác:</label>
+                            <textarea id="kham_co_quan_khac" rows="2" oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- VÙNG NỘI DUNG CHẨN ĐOÁN & TÓM TẮT (ĐẢO THỨ TỰ THEO HẬU PHẪU / NỘI KHOA) -->
+            <div id="dynamic-clinical-flow">
+                <!-- VI. CHẨN ĐOÁN SƠ BỘ & BIỆN LUẬN -->
+                <div id="sec-chan-doan-so-bo"></div>
+                <details class="win2k-expander" open id="expander-cdsb">
+                    <summary id="title-cdsb">VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT</summary>
+                    <div class="expander-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-weight: bold;">Chẩn đoán sơ bộ & phân biệt:</label>
+                            <button type="button" class="btn-ai" onclick="callAICD()">🪄 Làm phép (AI gợi ý Chẩn đoán phân biệt & Biện luận)</button>
                         </div>
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label>Huyết áp (mmHg):</label>
-                                <input type="text" id="sh_ha" placeholder="120/80" oninput="autoSave()">
+                                <label>Chẩn đoán sơ bộ:</label>
+                                <textarea id="chan_doan_so_bo" rows="3" placeholder="Chẩn đoán sơ bộ..." oninput="autoSave()"></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Nhịp thở (lần/phút):</label>
-                                <input type="text" id="sh_nhip_tho" placeholder="18" oninput="autoSave()">
+                                <label>Chẩn đoán phân biệt:</label>
+                                <textarea id="chan_doan_phan_biet" rows="3" placeholder="Chẩn đoán phân biệt..." oninput="autoSave()"></textarea>
                             </div>
                         </div>
-                        <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>Biện luận chẩn đoán sơ bộ:</label>
+                            <textarea id="bien_luan" rows="3" placeholder="Lập luận lâm sàng logic..." oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- VII. CẬN LÂM SÀNG & OCR -->
+                <div id="sec-can-lam-sang"></div>
+                <details class="win2k-expander" open id="expander-cls">
+                    <summary>VII. CẬN LÂM SÀNG</summary>
+                    <div class="expander-body">
+                        <div class="sub-section-header">1. Đề xuất cận lâm sàng</div>
+                        <div class="form-grid-3">
                             <div class="form-group">
-                                <label>Cân nặng (kg):</label>
-                                <input type="number" id="sh_can_nang" step="0.5" placeholder="60" oninput="calcBMI()">
+                                <label id="lbl-cls-1">1. Phục vụ chẩn đoán xác định:</label>
+                                <textarea id="cls_dx_xac_dinh" rows="3" oninput="autoSave()"></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Chiều cao (cm):</label>
-                                <input type="number" id="sh_chieu_cao" step="1" placeholder="165" oninput="calcBMI()">
+                                <label id="lbl-cls-2">2. Phục vụ điều trị:</label>
+                                <textarea id="cls_dx_dieu_tri" rows="3" oninput="autoSave()"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>3. Cận lâm sàng khác:</label>
+                                <textarea id="cls_dx_khac" rows="3" oninput="autoSave()"></textarea>
                             </div>
                         </div>
-                        <div style="background: #fffde6; border: 1px solid #b8860b; padding: 4px 8px; font-weight: bold;" id="bmi-display">
-                            Chỉ số BMI: -- kg/m² | Thể trạng: --
+
+                        <div class="sub-section-header">2. Cận lâm sàng đã có (Tích hợp OCR đa ảnh)</div>
+                        <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label>📷 Tải ảnh phiếu xét nghiệm:</label>
+                            <input type="file" id="ocr_files" multiple accept="image/*" style="width: auto;">
+                            <button type="button" class="btn-ai" onclick="runBatchOCR()">⚡ AI Phân Tích OCR & Tự Điền Bảng</button>
+                            <span id="ocr-status" style="font-weight: bold; color: #0a246a;"></span>
+                        </div>
+
+                        <table class="cls-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH</th>
+                                    <th style="width: 50%;">PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cls-tbody"></tbody>
+                        </table>
+                        <div style="margin-top: 6px;">
+                            <button type="button" onclick="addClsRow()">➕ Thêm hàng</button>
+                            <button type="button" onclick="removeClsRow()">➖ Bớt hàng</button>
                         </div>
                     </div>
-                </div>
+                </details>
 
-                <div class="sub-section-header">3. Thăm khám hiện tại - Các cơ quan</div>
-                <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center;">
-                    <label style="font-weight: bold;">⭐ Chọn cơ quan chuyên khoa ưu tiên đưa lên đầu:</label>
-                    <select id="uu_tien_co_quan" style="width: auto;" onchange="reorderOrgans()">
-                        <option value="none">Không ưu tiên (Thứ tự mặc định)</option>
-                        <option value="kham_tuan_hoan">Tuần hoàn</option>
-                        <option value="kham_ho_hap">Hô hấp</option>
-                        <option value="kham_tieu_hoa">Tiêu hóa</option>
-                        <option value="kham_than_kinh">Thần kinh</option>
-                        <option value="kham_tiet_nieu">Thận - Tiết niệu</option>
-                        <option value="kham_co_xuong_khop">Cơ xương khớp</option>
-                        <option value="kham_co_quan_khac">Cơ quan khác</option>
-                    </select>
-                    <button type="button" onclick="fillNormalOrgans()">⚡ Điền nhanh bình thường</button>
-                    <button type="button" onclick="clearOrgans()">🔄 Đặt lại các cơ quan</button>
-                </div>
+                <!-- VIII. TÓM TẮT BỆNH ÁN -->
+                <div id="sec-tom-tat"></div>
+                <details class="win2k-expander" open id="expander-tt">
+                    <summary>VIII. TÓM TẮT BỆNH ÁN</summary>
+                    <div class="expander-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-weight: bold;">Tóm tắt diễn biến ca bệnh:</label>
+                            <button type="button" onclick="generateIntroTomTat()">⚡ Tạo câu dẫn tự động</button>
+                        </div>
+                        <textarea id="tom_tat" rows="4" placeholder="Dòng 1: Câu dẫn tổng quát. Các dòng tiếp theo: Liệt kê hội chứng, triệu chứng..." oninput="autoSave()"></textarea>
+                    </div>
+                </details>
 
-                <!-- Danh sách 7 cơ quan (Tự động thay đổi vị trí theo lựa chọn) -->
-                <div id="organs-container">
-                    <div class="form-group organ-box" id="box_kham_tuan_hoan">
-                        <label>Tuần hoàn:</label>
-                        <textarea id="kham_tuan_hoan" rows="2" oninput="autoSave()"></textarea>
+                <!-- IX. CHẨN ĐOÁN XÁC ĐỊNH -->
+                <div id="sec-chan-doan-xac-dinh"></div>
+                <details class="win2k-expander" open id="expander-cdxd">
+                    <summary>IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN</summary>
+                    <div class="expander-body">
+                        <div class="form-group">
+                            <label>Chẩn đoán xác định:</label>
+                            <textarea id="chan_doan_xac_dinh" rows="2" placeholder="Chẩn đoán xác định bệnh..." oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Biện luận chẩn đoán xác định:</label>
+                            <textarea id="bien_luan_xac_dinh" rows="3" placeholder="Biện luận dựa trên lâm sàng và cận lâm sàng đã có..." oninput="autoSave()"></textarea>
+                        </div>
                     </div>
-                    <div class="form-group organ-box" id="box_kham_ho_hap">
-                        <label>Hô hấp:</label>
-                        <textarea id="kham_ho_hap" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group organ-box" id="box_kham_tieu_hoa">
-                        <label>Tiêu hóa:</label>
-                        <textarea id="kham_tieu_hoa" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group organ-box" id="box_kham_than_kinh">
-                        <label>Thần kinh:</label>
-                        <textarea id="kham_than_kinh" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group organ-box" id="box_kham_tiet_nieu">
-                        <label>Thận - Tiết niệu:</label>
-                        <textarea id="kham_tiet_nieu" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group organ-box" id="box_kham_co_xuong_khop">
-                        <label>Cơ xương khớp:</label>
-                        <textarea id="kham_co_xuong_khop" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group organ-box" id="box_kham_co_quan_khac">
-                        <label>Các cơ quan khác:</label>
-                        <textarea id="kham_co_quan_khac" rows="2" oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-            </fieldset>
+                </details>
+            </div>
 
-            <!-- VI. TÓM TẮT & CHẨN ĐOÁN SƠ BỘ -->
-            <div id="sec-tom-tat-so-bo"></div>
-            <fieldset>
-                <legend>VI. TÓM TẮT BỆNH ÁN & CHẨN ĐOÁN SƠ BỘ</legend>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <label style="font-weight: bold;">Tóm tắt bệnh án:</label>
-                    <button type="button" onclick="generateIntroTomTat()">⚡ Tạo câu dẫn tự động</button>
-                </div>
-                <textarea id="tom_tat" rows="4" placeholder="Dòng 1: Câu dẫn tóm tắt diễn biến. Các dòng tiếp theo liệt kê các hội chứng, triệu chứng..." oninput="autoSave()"></textarea>
-
-                <div style="margin: 10px 0 4px 0; display: flex; justify-content: space-between; align-items: center;">
-                    <label style="font-weight: bold;">Chẩn đoán sơ bộ & Chẩn đoán phân biệt:</label>
-                    <button type="button" class="btn-ai" onclick="callAICD()">🪄 Làm phép (AI gợi ý Phân biệt & Biện luận)</button>
-                </div>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label>Chẩn đoán sơ bộ:</label>
-                        <textarea id="chan_doan_so_bo" rows="3" placeholder="Chẩn đoán xác định bệnh chính, giai đoạn, biến chứng..." oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Chẩn đoán phân biệt:</label>
-                        <textarea id="chan_doan_phan_biet" rows="3" placeholder="Phân biệt với bệnh lý tương tự..." oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Biện luận chẩn đoán sơ bộ:</label>
-                    <textarea id="bien_luan" rows="3" placeholder="Lập luận logic vì sao nghĩ tới chẩn đoán sơ bộ và lý do cần phân biệt..." oninput="autoSave()"></textarea>
-                </div>
-            </fieldset>
-
-            <!-- VII. CẬN LÂM SÀNG -->
-            <div id="sec-can-lam-sang"></div>
-            <fieldset>
-                <legend>VII. ĐỀ XUẤT CẬN LÂM SÀNG & CẬN LÂM SÀNG ĐÃ CÓ</legend>
-                
-                <div class="sub-section-header">Đề xuất cận lâm sàng</div>
-                <div class="form-grid-3">
-                    <div class="form-group">
-                        <label>1. Phục vụ chẩn đoán xác định:</label>
-                        <textarea id="cls_dx_xac_dinh" rows="3" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>2. Phục vụ điều trị:</label>
-                        <textarea id="cls_dx_dieu_tri" rows="3" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>3. Cận lâm sàng khác:</label>
-                        <textarea id="cls_dx_khac" rows="3" oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-
-                <div class="sub-section-header">Cận lâm sàng đã có (Tích hợp OCR & Đính kèm ảnh)</div>
-                <div style="background: #ffffff; border: 2px inset #808080; padding: 8px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center;">
-                    <label>📷 Tải lên ảnh phiếu xét nghiệm (Hỗ trợ nhiều ảnh):</label>
-                    <input type="file" id="ocr_files" multiple accept="image/*" style="width: auto;">
-                    <button type="button" class="btn-ai" onclick="runBatchOCR()">⚡ AI Phân Tích & Điền Bảng</button>
-                    <span id="ocr-status" style="font-weight: bold; color: #0a246a;"></span>
-                </div>
-
-                <!-- Bảng 2 cột kết quả và biện giải -->
-                <table class="cls-table" id="table-cls">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH</th>
-                            <th style="width: 50%;">PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cls-tbody">
-                        <!-- Hàng cận lâm sàng sinh động bằng JavaScript -->
-                    </tbody>
-                </table>
-                <div style="margin-top: 6px;">
-                    <button type="button" onclick="addClsRow()">➕ Thêm hàng xét nghiệm</button>
-                    <button type="button" onclick="removeClsRow()">➖ Bớt hàng cuối</button>
-                </div>
-            </fieldset>
-
-            <!-- VIII. CHẨN ĐOÁN XÁC ĐỊNH -->
-            <div id="sec-chan-doan-xac-dinh"></div>
-            <fieldset>
-                <legend>VIII. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN</legend>
-                <div class="form-group">
-                    <label>Chẩn đoán xác định:</label>
-                    <textarea id="chan_doan_xac_dinh" rows="2" placeholder="Bệnh chính - Giai đoạn - Mức độ - Biến chứng - Bệnh kèm..." oninput="autoSave()"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Biện luận chẩn đoán xác định:</label>
-                    <textarea id="bien_luan_xac_dinh" rows="3" placeholder="Kết hợp lâm sàng và cận lâm sàng đã có để khẳng định chẩn đoán..." oninput="autoSave()"></textarea>
-                </div>
-            </fieldset>
-
-            <!-- IX. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN -->
+            <!-- X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN -->
             <div id="sec-dieu-tri"></div>
-            <fieldset>
-                <legend>IX. HƯỚNG DẪN ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN</legend>
-                <div style="margin-bottom: 6px; display: flex; gap: 8px;">
-                    <button type="button" class="btn-ai" onclick="callAITreatment()">🪄 Làm phép Điều trị</button>
-                    <button type="button" class="btn-ai" onclick="callAIPrognosis()">🪄 Làm phép Tiên lượng & Tư vấn</button>
+            <details class="win2k-expander" open>
+                <summary>X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN</summary>
+                <div class="expander-body">
+                    <div style="margin-bottom: 6px; display: flex; gap: 8px;">
+                        <button type="button" class="btn-ai" onclick="callAITreatment()">🪄 Làm phép Kế hoạch Điều trị</button>
+                        <button type="button" class="btn-ai" onclick="callAIPrognosis()">🪄 Làm phép Tiên lượng & Tư vấn</button>
+                    </div>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>1. Mục tiêu điều trị:</label>
+                            <textarea id="dt_muc_tieu" rows="4" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Điều trị cụ thể:</label>
+                            <textarea id="dt_cu_the" rows="4" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>3. Theo dõi sau điều trị:</label>
+                            <textarea id="dt_theo_doi" rows="4" oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-grid-2" style="margin-top: 6px;">
+                        <div class="form-group">
+                            <label>Tiên lượng (Gần & Xa):</label>
+                            <textarea id="tien_luong" rows="3" oninput="autoSave()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tư vấn & Hướng dẫn xuất viện:</label>
+                            <textarea id="tu_van" rows="3" oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-grid-3">
-                    <div class="form-group">
-                        <label>1. Mục tiêu điều trị:</label>
-                        <textarea id="dt_muc_tieu" rows="4" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>2. Điều trị cụ thể (Thuốc/Can thiệp):</label>
-                        <textarea id="dt_cu_the" rows="4" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>3. Theo dõi sau điều trị:</label>
-                        <textarea id="dt_theo_doi" rows="4" oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-                <div class="form-grid-2" style="margin-top: 6px;">
-                    <div class="form-group">
-                        <label>Tiên lượng (Gần & Xa):</label>
-                        <textarea id="tien_luong" rows="3" oninput="autoSave()"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Tư vấn & Hướng dẫn xuất viện:</label>
-                        <textarea id="tu_van" rows="3" oninput="autoSave()"></textarea>
-                    </div>
-                </div>
-            </fieldset>
+            </details>
 
-            <!-- THANH TRẠNG THÁI CUỐI CÙNG -->
             <div class="status-bar" style="margin-top: 10px;">
-                <p class="status-bar-field" id="status-storage">🟢 Đã lưu vào bộ nhớ cục bộ</p>
-                <p class="status-bar-field">Mẫu bệnh án: Nội khoa / Tiền phẫu</p>
-                <p class="status-bar-field">Kỷ nguyên: Windows 2000 Pro</p>
+                <p class="status-bar-field" id="status-bar-info">🟢 Đã lưu vào trình duyệt</p>
+                <p class="status-bar-field" id="status-bar-type">Mẫu: Nội khoa / Tiền phẫu</p>
+                <p class="status-bar-field">Hệ thống: Win2K Professional</p>
             </div>
         </div>
 
         <!-- ==================================================================== -->
-        <!-- TAB 2: XEM TRƯỚC VÀ XUẤT TẬP TIN -->
+        <!-- TAB 2: XUẤT TẬP TIN (PDF / POWERPOINT) -->
         <!-- ==================================================================== -->
         <div class="window tab-content" id="tab-xuat-file">
             <fieldset>
-                <legend>XUẤT HỒ SƠ BỆNH ÁN</legend>
-                <p>Nhấp vào các nút bên dưới để tải tập tin hoàn chỉnh về máy hoặc xem trước văn bản trực tiếp:</p>
-                <button type="button" onclick="exportDocument('pdf')" style="font-weight: bold;">📄 Tạo & Tải Tập Tin PDF</button>
-                <button type="button" onclick="exportDocument('pptx')" style="font-weight: bold;">📊 Tạo Bản Trình Chiếu PowerPoint (PPTX)</button>
+                <legend>KẾT XUẤT VĂN BẢN</legend>
+                <p>Xuất toàn bộ dữ liệu ra văn bản tiêu chuẩn hoặc bản trình chiếu giảng đường:</p>
+                <button type="button" onclick="exportDocument('pdf')" style="font-weight: bold;">📄 Tạo & Tải File PDF</button>
+                <button type="button" onclick="exportDocument('pptx')" style="font-weight: bold;">📊 Tạo & Tải File PowerPoint (.pptx)</button>
             </fieldset>
             <div style="margin-top: 10px;">
                 <iframe id="pdf-preview-frame" style="width: 100%; height: 650px; border: 2px inset #808080; background: #ffffff;"></iframe>
@@ -527,9 +641,9 @@
         <!-- ==================================================================== -->
         <div class="window tab-content" id="tab-phan-bien">
             <fieldset>
-                <legend>GIẢNG VIÊN LÂM SÀNG CHẤT VẤN & PHẢN BIỆN</legend>
+                <legend>HỘI CHẨN & PHẢN BIỆN GIẢNG VIÊN</legend>
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                    <label style="font-weight: bold;">Chọn phong cách phản biện:</label>
+                    <label style="font-weight: bold;">Phong cách chất vấn:</label>
                     <select id="phong_cach_pb" style="width: auto;">
                         <option value="Học thuật & Hướng dẫn">Học thuật & Hướng dẫn</option>
                         <option value="Nghiêm khắc & Thách thức">Nghiêm khắc & Thách thức</option>
@@ -538,7 +652,7 @@
                     <button type="button" class="btn-ai" onclick="callAICritique()">⚡ Giảng viên nhận xét & Đặt câu hỏi</button>
                 </div>
                 <div id="critique-result" style="background: #ffffff; border: 2px inset #808080; padding: 12px; min-height: 250px;">
-                    <em>Chưa có dữ liệu phản biện. Hãy bấm nút trên để bắt đầu giao ban ca bệnh...</em>
+                    <em>Chưa có dữ liệu phản biện. Bấm nút trên để bắt đầu giao ban...</em>
                 </div>
             </fieldset>
         </div>
@@ -548,7 +662,7 @@
 
 <script>
     // =========================================================================
-    // 1. CHUYỂN TAB & KHỞI TẠO DỮ LIỆU BAN ĐẦU
+    // 1. QUẢN LÝ CHUYỂN TAB & MẪU BỆNH ÁN (NỘI KHOA VS HẬU PHẪU)
     // =========================================================================
     function switchTab(evt, tabId) {
         document.querySelectorAll('menu[role="tablist"] li').forEach(el => el.classList.remove('active'));
@@ -557,7 +671,46 @@
         document.getElementById(tabId).classList.add('active');
     }
 
-    // Tự động lấy thời gian hiện tại lúc làm bệnh án
+    function toggleFormType() {
+        const isHauPhau = document.getElementById('ba_hauphau').checked;
+        
+        // Bệnh sử
+        document.getElementById('wrapper-bs-noikhoa').style.display = isHauPhau ? 'none' : 'block';
+        document.getElementById('wrapper-bs-hauphau').style.display = isHauPhau ? 'block' : 'none';
+        document.getElementById('title-ly-do-benh-su').innerText = isHauPhau ? 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ HẬU PHẪU' : 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ';
+        
+        // Thăm khám
+        document.getElementById('wrapper-kham-vao-vien').style.display = isHauPhau ? 'none' : 'block';
+        document.getElementById('wrapper-ngay-hau-phau').style.display = isHauPhau ? 'block' : 'none';
+        document.getElementById('wrapper-vet-mo-dan-luu').style.display = isHauPhau ? 'block' : 'none';
+
+        // Nhãn đề xuất CLS
+        document.getElementById('lbl-cls-1').innerText = isHauPhau ? '1. Đánh giá sau mổ / Biến chứng:' : '1. Phục vụ chẩn đoán xác định:';
+        document.getElementById('lbl-cls-2').innerText = isHauPhau ? '2. Theo dõi hồi phục & Chăm sóc:' : '2. Phục vụ điều trị:';
+
+        // Đảo thứ tự luồng: Hậu phẫu đưa Chẩn đoán sơ bộ & CLS lên trước Tóm tắt
+        const flow = document.getElementById('dynamic-clinical-flow');
+        const expCdsb = document.getElementById('expander-cdsb');
+        const expCls = document.getElementById('expander-cls');
+        const expTt = document.getElementById('expander-tt');
+        const expCdxd = document.getElementById('expander-cdxd');
+
+        if (isHauPhau) {
+            flow.appendChild(expCdsb);
+            flow.appendChild(expCls);
+            flow.appendChild(expTt);
+            flow.appendChild(expCdxd);
+            document.getElementById('status-bar-type').innerText = 'Mẫu: Hậu phẫu';
+        } else {
+            flow.appendChild(expTt);
+            flow.appendChild(expCdsb);
+            flow.appendChild(expCls);
+            flow.appendChild(expCdxd);
+            document.getElementById('status-bar-type').innerText = 'Mẫu: Nội khoa / Tiền phẫu';
+        }
+        autoSave();
+    }
+
     function setCurrentMakingDate() {
         const now = new Date();
         const str = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -568,15 +721,15 @@
     }
 
     // =========================================================================
-    // 2. KHÁM BÌNH THƯỜNG CƠ QUAN & ĐỔI VỊ TRÍ CƠ QUAN ƯU TIÊN
+    // 2. KHÁM BÌNH THƯỜNG & BMI & ƯU TIÊN CƠ QUAN
     // =========================================================================
     const NORMAL_FINDINGS = {
-        kham_tuan_hoan: "- Mỏm tim khoang liên sườn V đường giữa đòn trái, diện đập 1-2 cm.\n- Nhịp tim đều, T1, T2 nghe rõ, không tiếng tim bệnh lý, không tiếng thổi.\n- Mạch ngoại vi bắt rõ, đều hai bên.",
-        kham_ho_hap: "- Lồng ngực hai bên cân đối, di động đều theo nhịp thở.\n- Rung thanh đều hai bên phế trường. Gõ trong.\n- Rì rào phế nang êm dịu hai bên, không có rales.",
+        kham_tuan_hoan: "- Mỏm tim khoang liên sườn V đường giữa đòn trái, diện đập 1-2 cm.\n- Nhịp tim đều, T1 T2 nghe rõ, không tiếng tim bệnh lý, không tiếng thổi.\n- Mạch ngoại vi bắt rõ, đều hai bên.",
+        kham_ho_hap: "- Lồng ngực hai bên cân đối, di động đều theo nhịp thở.\n- Rung thanh đều hai bên phế trường. Gõ trong.\n- Rì rào phế nang êm dịu hai bên, không rales.",
         kham_tieu_hoa: "- Bụng thon đều, di động theo nhịp thở, không sẹo mổ cũ.\n- Bụng mềm, không có điểm đau khu trú, phản ứng thành bụng (-).\n- Gan lách không sờ thấy dưới bờ sườn.",
-        kham_than_kinh: "- Bệnh nhân tỉnh táo, tiếp xúc tốt, GCS 15 điểm.\n- Không có dấu hiệu thần kinh khu trú, 12 đôi dây sọ chưa ghi nhận bệnh lý.\n- Hội chứng màng não (-).",
-        kham_tiet_nieu: "- Hố thắt lưng hai bên cân đối, không sưng đỏ.\n- Chạm thận (-), Bập bềnh thận (-), Rung thận (-).\n- Điểm đau niệu quản trên và giữa không đau. Cầu bàng quang (-).",
-        kham_co_xuong_khop: "- Các khớp không sưng nóng đỏ đau, không biến dạng hay lệch trục.\n- Tầm vận động chủ động và thụ động các khớp trong giới hạn bình thường.",
+        kham_than_kinh: "- Bệnh nhân tỉnh táo, tiếp xúc tốt, GCS 15 điểm.\n- Không có dấu hiệu thần kinh khu trú, 12 đôi dây sọ chưa ghi nhận bệnh lý.\n- Dấu hiệu màng não (-).",
+        kham_tiet_nieu: "- Hố thắt lưng hai bên cân đối, không sưng đỏ.\n- Chạm thận (-), Bập bềnh thận (-), Rung thận (-).\n- Điểm đau niệu quản trên và giữa (-). Cầu bàng quang (-).",
+        kham_co_xuong_khop: "- Các khớp không sưng nóng đỏ đau, không biến dạng lệch trục.\n- Tầm vận động chủ động và thụ động trong giới hạn bình thường.",
         kham_co_quan_khac: "- Mắt, Tai - Mũi - Họng, Răng - Hàm - Mặt: Chưa ghi nhận bất thường."
     };
 
@@ -601,14 +754,11 @@
         const container = document.getElementById('organs-container');
         if (val !== 'none') {
             const favBox = document.getElementById('box_' + val);
-            if (favBox) {
-                container.prepend(favBox);
-            }
+            if (favBox) container.prepend(favBox);
         }
         autoSave();
     }
 
-    // Tính chỉ số BMI
     function calcBMI() {
         const w = parseFloat(document.getElementById('sh_can_nang').value) || 0;
         const h = parseFloat(document.getElementById('sh_chieu_cao').value) || 0;
@@ -628,24 +778,28 @@
 
     // Tạo câu dẫn tóm tắt tự động
     function generateIntroTomTat() {
+        const isHauPhau = document.getElementById('ba_hauphau').checked;
         const ht = document.getElementById('ho_ten').value.trim() || "...";
         const tuoi = document.getElementById('tuoi').value.trim() || "...";
         const gioi = (document.getElementById('gioi_tinh').value || "Nam").toLowerCase();
         const ld = document.getElementById('ly_do_vao_vien').value.trim() || "...";
         const ts = document.getElementById('ts_noi_khoa').value.trim() || "chưa ghi nhận bất thường";
         
-        const intro = `Bệnh nhân ${gioi} ${tuoi} tuổi, tiền sử ${ts}, vào viện vì ${ld}. Qua hỏi bệnh và thăm khám phát hiện các hội chứng và triệu chứng sau:\n- `;
-        const cur = document.getElementById('tom_tat').value.trim();
-        if (cur) {
-            document.getElementById('tom_tat').value = intro + "\n" + cur;
+        let intro = "";
+        if (isHauPhau) {
+            const ngayHp = document.getElementById('ngay_hau_phau').value.trim() || "ngày thứ ...";
+            intro = `Bệnh nhân ${gioi} ${tuoi} tuổi, tiền sử ${ts}, vào viện vì ${ld}. Hiện tại hậu phẫu ${ngayHp}. Qua hỏi bệnh và thăm khám ghi nhận:\n- Sinh hiệu ổn định\n- Vết mổ: ${document.getElementById('kham_vet_mo').value.trim() || 'sạch, khô'}\n- Dẫn lưu: ${document.getElementById('kham_dan_luu').value.trim() || 'không có'}`;
         } else {
-            document.getElementById('tom_tat').value = intro;
+            intro = `Bệnh nhân ${gioi} ${tuoi} tuổi, tiền sử ${ts}, vào viện vì ${ld}. Qua hỏi bệnh và thăm khám phát hiện các hội chứng và triệu chứng sau:\n- `;
         }
+
+        const cur = document.getElementById('tom_tat').value.trim();
+        document.getElementById('tom_tat').value = cur ? (intro + "\n" + cur) : intro;
         autoSave();
     }
 
     // =========================================================================
-    // 3. QUẢN LÝ BẢNG CẬN LÂM SÀNG 2 CỘT
+    // 3. QUẢN LÝ BẢNG CẬN LÂM SÀNG & OCR
     // =========================================================================
     let clsRowCount = 0;
 
@@ -663,7 +817,7 @@
                 </div>
             </td>
             <td>
-                <textarea id="cls_pg_${rIdx}" rows="5" placeholder="Biện giải lâm sàng kết quả..." oninput="autoSave()">${pg}</textarea>
+                <textarea id="cls_pg_${rIdx}" rows="5" placeholder="Biện giải lâm sàng..." oninput="autoSave()">${pg}</textarea>
             </td>
         `;
         tbody.appendChild(tr);
@@ -695,17 +849,43 @@
         }
     }
 
+    async function runBatchOCR() {
+        const fileInput = document.getElementById('ocr_files');
+        if (!fileInput.files.length) {
+            alert('Vui lòng chọn ít nhất 1 ảnh xét nghiệm!');
+            return;
+        }
+        const formData = new FormData();
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+        const st = document.getElementById('ocr-status');
+        st.innerText = 'Đang phân tích OCR...';
+        
+        try {
+            const res = await fetch('/api/ocr/batch', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.results) {
+                data.results.forEach(it => addClsRow(it.ket_qua, it.phien_giai));
+                st.innerText = `Đã phân tích xong ${data.results.length} ảnh!`;
+                autoSave();
+            }
+        } catch (err) {
+            st.innerText = 'Lỗi phân tích OCR.';
+        }
+    }
+
     // =========================================================================
-    // 4. GỌI CÁC API TRÍ TUỆ NHÂN TẠO GEMINI (LÀM PHÉP & PHẢN BIỆN)
+    // 4. GỌI API GEMINI (AI LÀM PHÉP & PHẢN BIỆN)
     // =========================================================================
     function getFormPayload() {
         const payload = {
-            loai_benh_an: "Nội khoa / Tiền phẫu",
+            loai_benh_an: document.getElementById('ba_hauphau').checked ? "Hậu phẫu" : "Nội khoa / Tiền phẫu",
             so_hang_cls: clsRowCount
         };
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
-            if (el.id && !el.id.startsWith('cls_img_')) {
+            if (el.id && !el.id.startsWith('cls_img_') && el.type !== 'radio') {
                 payload[el.id] = el.value;
             }
         });
@@ -728,7 +908,7 @@
 
     async function callAITreatment() {
         const payload = getFormPayload();
-        document.getElementById('status-storage').innerText = 'AI đang xây dựng phác đồ...';
+        document.getElementById('status-storage').innerText = 'AI đang lập phác đồ điều trị...';
         const res = await fetch('/api/ai/treatment', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -743,7 +923,7 @@
 
     async function callAIPrognosis() {
         const payload = getFormPayload();
-        document.getElementById('status-storage').innerText = 'AI đang phân tích tiên lượng...';
+        document.getElementById('status-storage').innerText = 'AI đang đánh giá tiên lượng...';
         const res = await fetch('/api/ai/prognosis', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -759,7 +939,7 @@
         const payload = getFormPayload();
         payload.phong_cach = document.getElementById('phong_cach_pb').value;
         const resCont = document.getElementById('critique-result');
-        resCont.innerHTML = "<em>Giảng viên lâm sàng đang phân tích hồ sơ và lên câu hỏi...</em>";
+        resCont.innerHTML = "<em>Giảng viên đang đọc bệnh án và chuẩn bị câu hỏi vấn đáp...</em>";
         
         const res = await fetch('/api/ai/critique', {
             method: 'POST',
@@ -778,43 +958,12 @@
         resCont.innerHTML = html;
     }
 
-    async function runBatchOCR() {
-        const fileInput = document.getElementById('ocr_files');
-        if (!fileInput.files.length) {
-            alert('Vui lòng chọn ít nhất 1 ảnh xét nghiệm!');
-            return;
-        }
-        const formData = new FormData();
-        for (let i = 0; i < fileInput.files.length; i++) {
-            formData.append('files', fileInput.files[i]);
-        }
-        const st = document.getElementById('ocr-status');
-        st.innerText = 'Đang phân tích OCR...';
-        
-        try {
-            const res = await fetch('/api/ocr/batch', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-            if (data.results) {
-                data.results.forEach(it => {
-                    addClsRow(it.ket_qua, it.phien_giai);
-                });
-                st.innerText = `Đã phân tích xong ${data.results.length} ảnh!`;
-                autoSave();
-            }
-        } catch (err) {
-            st.innerText = 'Lỗi phân tích OCR.';
-        }
-    }
-
     // =========================================================================
-    // 5. XUẤT TẬP TIN PDF / PPTX
+    // 5. XUẤT FILE PDF & PPTX
     // =========================================================================
     async function exportDocument(type) {
         const payload = getFormPayload();
-        document.getElementById('status-storage').innerText = `Đang kết xuất ${type.toUpperCase()}...`;
+        document.getElementById('status-storage').innerText = `Đang xuất ${type.toUpperCase()}...`;
         
         const res = await fetch(`/api/export/${type}`, {
             method: 'POST',
@@ -828,7 +977,7 @@
             document.getElementById('pdf-preview-frame').src = url;
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Benh_An_${payload.ho_ten || 'Noi_Khoa'}.pdf`;
+            a.download = `Benh_An_${payload.ho_ten || 'Ho_So'}.pdf`;
             a.click();
         } else {
             const a = document.createElement('a');
@@ -836,48 +985,100 @@
             a.download = `Trinh_Chieu_${payload.ho_ten || 'Benh_An'}.pptx`;
             a.click();
         }
-        document.getElementById('status-storage').innerText = '🟢 Hoàn tất xuất file!';
+        document.getElementById('status-storage').innerText = '🟢 Xuất file thành công!';
     }
 
     // =========================================================================
-    // 6. TỰ ĐỘNG LƯU & NẠP LẠI TỪ LOCALSTORAGE
+    // 6. TÍNH NĂNG XUẤT / NẠP FILE NHÁP (.JSON) & LOCALSTORAGE
     // =========================================================================
     const STORAGE_KEY = 'clinical_report_fastapi_draft';
 
     function autoSave() {
         const payload = getFormPayload();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-        document.getElementById('status-storage').innerText = '🟢 Tự động lưu lúc: ' + new Date().toLocaleTimeString();
+        const now = new Date();
+        document.getElementById('status-storage').innerText = `🟢 Đã lưu lúc: ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+
+    // Tải file .json về máy tính
+    function downloadDraftJSON() {
+        const payload = getFormPayload();
+        const jsonStr = JSON.stringify(payload, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const tenBn = (payload.ho_ten || 'Chua_dat_ten').replace(/\s+/g, '_');
+        a.href = url;
+        a.download = `Ban_nhap_${tenBn}_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Nạp file .json từ máy tính lên web
+    function uploadDraftJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                restoreDataToForm(data);
+                alert('✅ Đã nạp thành công bản nháp từ file .json!');
+                autoSave();
+            } catch (err) {
+                alert('❌ Tập tin JSON không đúng định dạng!');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearAllDraft() {
+        if (confirm('Bạn có chắc chắn muốn xóa sạch form để làm bệnh án mới?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function restoreDataToForm(data) {
+        if (data.loai_benh_an === "Hậu phẫu") {
+            document.getElementById('ba_hauphau').checked = true;
+        } else {
+            document.getElementById('ba_noikhoa').checked = true;
+        }
+        toggleFormType();
+
+        const allInputs = document.querySelectorAll('input, select, textarea');
+        allInputs.forEach(el => {
+            if (data[el.id] !== undefined && el.id !== 'ngay_lam_benh_an' && el.type !== 'radio') {
+                el.value = data[el.id];
+            }
+        });
+
+        // Xóa bảng CLS cũ và khôi phục số lượng hàng
+        document.getElementById('cls-tbody').innerHTML = "";
+        clsRowCount = 0;
+        const numRows = data.so_hang_cls || 3;
+        for (let i = 0; i < numRows; i++) {
+            addClsRow(data[`cls_kq_${i}`] || '', data[`cls_pg_${i}`] || '');
+        }
+        calcBMI();
+        reorderOrgans();
     }
 
     window.onload = function() {
         setCurrentMakingDate();
-        
-        // Khởi tạo 3 hàng xét nghiệm mặc định
-        for (let i = 0; i < 3; i++) {
-            addClsRow();
-        }
 
-        // Khôi phục dữ liệu bản nháp từ trình duyệt
+        // Khôi phục từ LocalStorage trình duyệt nếu có
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
             try {
                 const data = JSON.parse(raw);
-                const allInputs = document.querySelectorAll('input, select, textarea');
-                allInputs.forEach(el => {
-                    if (data[el.id] !== undefined && el.id !== 'ngay_lam_benh_an') {
-                        el.value = data[el.id];
-                    }
-                });
-                // Nếu có lưu số lượng hàng cận lâm sàng
-                if (data.so_hang_cls && data.so_hang_cls > 3) {
-                    for (let i = 3; i < data.so_hang_cls; i++) {
-                        addClsRow(data[`cls_kq_${i}`] || '', data[`cls_pg_${i}`] || '');
-                    }
-                }
-                calcBMI();
-                reorderOrgans();
-            } catch (e) {}
+                restoreDataToForm(data);
+            } catch (e) {
+                for (let i = 0; i < 3; i++) addClsRow();
+            }
+        } else {
+            for (let i = 0; i < 3; i++) addClsRow();
         }
     };
 </script>
