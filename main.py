@@ -25,6 +25,143 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 from pydantic import BaseModel
+import secrets
+from fastapi import Cookie, Response
+from fastapi.responses import RedirectResponse
+
+# =========================================================================
+# CẤU HÌNH BẢO MẬT & TÀI KHOẢN (AUTH & OTP)
+# =========================================================================
+# Bạn có thể đổi tài khoản và mật khẩu admin tại đây:
+ADMIN_USER = os.getenv("APP_ADMIN_USER", "bacsi@gmail.com")
+ADMIN_PASSWORD_HASH = hashlib.sha256(os.getenv("APP_ADMIN_PASS", "MatKhau123@").encode()).hexdigest()
+
+# Bộ nhớ tạm lưu phiên và mã OTP (Có thể dùng file JSON/SQLite để duy trì khi reboot)
+ACTIVE_SESSIONS = {}  # {session_token: {"username": ..., "expires": timestamp}}
+OTP_STORAGE = {}      # {username: {"otp": "123456", "expires": timestamp}}
+
+# Hàm băm mật khẩu
+def hash_pass(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Kiểm tra cookie đăng nhập
+def check_authenticated(session_token: str = None) -> bool:
+    if not session_token or session_token not in ACTIVE_SESSIONS:
+        return False
+    sess = ACTIVE_SESSIONS[session_token]
+    if datetime.now().timestamp() > sess["expires"]:
+        del ACTIVE_SESSIONS[session_token]
+        return False
+    return True
+
+# Gửi email OTP (Dùng SMTP Gmail nếu có cấu hình biến môi trường)
+def send_otp_email(to_email: str, otp_code: str):
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 587))
+    smtp_user = os.getenv("SMTP_USER", "")
+    smtp_pass = os.getenv("SMTP_PASS", "")
+
+    # In ra terminal/log máy chủ để test ngay nếu chưa gắn SMTP
+    print(f"\n==========================================")
+    print(f"🔑 MÃ OTP CHO [{to_email}]: {otp_code}")
+    print(f"==========================================\n")
+
+    if smtp_user and smtp_pass:
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = smtp_user
+            msg["To"] = to_email
+            msg["Subject"] = f"[BỆNH ÁN WIN2K] Mã xác thực OTP: {otp_code}"
+            body = f"Mã xác thực đăng nhập của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+            
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_user, to_email, msg.as_string())
+        except Exception as e:
+            print(f"Lỗi gửi email OTP: {e}")
+
+# =========================================================================
+# CÁC ENDPOINT AUTHENTICATION
+# =========================================================================
+
+# Trang đăng nhập Win2K
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, session_token: str = Cookie(None)):
+    if check_authenticated(session_token):
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse(request, "login.html")
+
+# Route chính (Bảo vệ: Chưa đăng nhập sẽ tự động chuyển sang /login)
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request, session_token: str = Cookie(default=None)):
+    if not check_authenticated(session_token):
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse(request, "index.html")
+
+# API Bước 1: Kiểm tra mật khẩu và cấp phát OTP
+@app.post("/api/auth/request-otp")
+async def api_request_otp(payload: Dict[str, Any]):
+    username = payload.get("username", "").strip()
+    password = payload.get("password", "")
+
+    # Kiểm tra xác thực ban đầu
+    if username != ADMIN_USER or hash_pass(password) != ADMIN_PASSWORD_HASH:
+        raise HTTPException(status_code=401, detail="Tài khoản hoặc mật khẩu không chính xác!")
+
+    # Tạo mã OTP 6 chữ số ngẫu nhiên
+    otp_code = f"{random.randint(100000, 999999)}"
+    OTP_STORAGE[username] = {
+        "otp": otp_code,
+        "expires": datetime.now().timestamp() + 300  # Hết hạn sau 5 phút (300s)
+    }
+
+    send_otp_email(username, otp_code)
+    return {"message": "Mã OTP đã được gửi về email/log hệ thống."}
+
+# API Bước 2: Xác thực OTP và lưu Cookie phiên dài hạn (30 ngày)
+@app.post("/api/auth/verify-otp")
+async def api_verify_otp(payload: Dict[str, Any], response: Response):
+    username = payload.get("username", "").strip()
+    otp_code = payload.get("otp", "").strip()
+
+    otp_info = OTP_STORAGE.get(username)
+    if not otp_info or otp_info["otp"] != otp_code:
+        raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ!")
+    
+    if datetime.now().timestamp() > otp_info["expires"]:
+        del OTP_STORAGE[username]
+        raise HTTPException(status_code=400, detail="Mã OTP đã hết hạn!")
+
+    # Xác thực thành công: Cấp session token dài hạn (30 ngày = 2.592.000 giây)
+    session_token = secrets.token_urlsafe(32)
+    max_age = 30 * 24 * 3600  # 30 ngày
+    
+    ACTIVE_SESSIONS[session_token] = {
+        "username": username,
+        "expires": datetime.now().timestamp() + max_age
+    }
+    del OTP_STORAGE[username]
+
+    # Đặt Cookie dạng HTTP-only
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        max_age=max_age,
+        httponly=True,
+        samesite="lax"
+    )
+    return {"status": "success", "message": "Đăng nhập thành công!"}
+
+# Đăng xuất: Xoá Cookie và vô hiệu hoá session
+@app.get("/logout")
+async def logout(response: Response, session_token: str = Cookie(None)):
+    if session_token and session_token in ACTIVE_SESSIONS:
+        del ACTIVE_SESSIONS[session_token]
+    resp = RedirectResponse(url="/login", status_code=302)
+    resp.delete_cookie("session_token")
+    return resp
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
@@ -89,9 +226,6 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
         return f"- Trước mổ: {payload.get('bs_truoc_mo', '')}\n- Trong mổ: {payload.get('bs_trong_mo', '')}\n- Sau mổ: {payload.get('bs_sau_mo', '')}"
     return payload.get("benh_su", "")
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
 
 # --- CÁC ENDPOINT AI ---
 @app.post("/api/ai/cdpb")
