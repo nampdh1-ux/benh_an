@@ -217,8 +217,7 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
             results.append({"ket_qua": "Không thể phân tích ảnh", "phien_giai": "-"})
     return {"results": results}
 
-# --- BỘ TẠO PDF TIẾNG VIỆT AN TOÀN TUYỆT ĐỐI ---
-# --- BỘ TẠO PDF TIẾNG VIỆT AN TOÀN & ĐÚNG LOẠI BỆNH ÁN ---
+# --- BỘ TẠO PDF TIẾNG VIỆT ĐẢO TRẬT TỰ CHUẨN XÁC NỘI KHOA VS HẬU PHẪU ---
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -244,7 +243,6 @@ class RobustUnicodePDF(FPDF):
     def header(self):
         if self.page_no() == 1:
             self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 15)
-            # Tiêu đề thay đổi linh hoạt theo loại bệnh án được chọn
             tieu_de = "BỆNH ÁN HẬU PHẪU" if self.loai_ba == "Hậu phẫu" else "BỆNH ÁN LÂM SÀNG"
             self.cell(0, 8, self.clean_text(tieu_de), align="C", new_x="LMARGIN", new_y="NEXT")
             self.set_font(self.font_family_name, "", 9)
@@ -257,10 +255,54 @@ class RobustUnicodePDF(FPDF):
         self.cell(0, 7, self.clean_text(title), fill=True, new_x="LMARGIN", new_y="NEXT")
         self.ln(1)
 
+    def add_subsec(self, title: str):
+        self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 10)
+        self.cell(0, 6, self.clean_text(title), new_x="LMARGIN", new_y="NEXT")
+
     def add_txt(self, text: str):
         self.set_font(self.font_family_name, "", 9.5)
         self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
         self.ln(2)
+
+    def render_table_cls(self, cls_rows):
+        col_w = (self.w - self.l_margin - self.r_margin) / 2.0
+        line_h = 5.0
+        self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
+        self.set_fill_color(230, 235, 245)
+        if self.get_y() > 260:
+            self.add_page()
+        self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
+        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+        
+        self.set_font(self.font_family_name, "", 9)
+        for kq, pg in cls_rows:
+            txt_kq = format_bullet_points(kq) if kq else "-"
+            txt_pg = format_bullet_points(pg) if pg else "-"
+            
+            # Tính chiều cao dòng
+            nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
+            nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
+            row_h = max(max(nb_l, nb_r) * line_h + 4, 8)
+            
+            if self.get_y() + row_h > 275:
+                self.add_page()
+                self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
+                self.set_fill_color(230, 235, 245)
+                self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG"), border=1, align="C", fill=True)
+                self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+                self.set_font(self.font_family_name, "", 9)
+
+            curr_x = self.get_x()
+            curr_y = self.get_y()
+            self.rect(curr_x, curr_y, col_w, row_h)
+            self.rect(curr_x + col_w, curr_y, col_w, row_h)
+
+            self.set_xy(curr_x + 2, curr_y + 2)
+            self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
+            self.set_xy(curr_x + col_w + 2, curr_y + 2)
+            self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
+            self.set_xy(curr_x, curr_y + row_h)
+        self.ln(3)
 
 @app.post("/api/export/pdf")
 async def api_export_pdf(payload: Dict[str, Any]):
@@ -269,51 +311,181 @@ async def api_export_pdf(payload: Dict[str, Any]):
             download_fonts_if_missing()
 
         loai_ba = str(payload.get("loai_benh_an", "Nội khoa / Tiền phẫu")).strip()
+        is_hau_phau = (loai_ba == "Hậu phẫu")
+        
         pdf = RobustUnicodePDF(loai_ba=loai_ba)
         pdf.add_page()
-        
+
+        # I. HÀNH CHÍNH
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
         hc = (
-            f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()} | Tuổi: {payload.get('tuoi')} | Giới: {payload.get('gioi_tinh')}\n"
-            f"- Dân tộc: {payload.get('dan_tok')} | Nghề nghiệp: {payload.get('nghe_nghiep')}\n"
-            f"- Khoa phòng: {payload.get('khoa_phong')}\n"
-            f"- Ngày vào viện: {payload.get('ngay_vao_vien')} | Người làm BA: {payload.get('sinh_vien')}"
+            f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()}   |   Tuổi: {payload.get('tuoi')}   |   Giới tính: {payload.get('gioi_tinh')}\n"
+            f"- Dân tộc: {payload.get('dan_tok')}   |   Nghề nghiệp: {payload.get('nghe_nghiep')}\n"
+            f"- Khoa phòng: {payload.get('khoa_phong')}   |   Địa chỉ: {payload.get('dia_chi', '')}\n"
+            f"- Ngày giờ vào viện: {payload.get('ngay_vao_vien')}   |   Ngày làm BA: {payload.get('ngay_lam_benh_an', '')}\n"
+            f"- Người làm bệnh án: {payload.get('sinh_vien')}"
         )
         pdf.add_txt(hc)
 
+        # II. LÝ DO VÀO VIỆN
         pdf.add_sec("II. LÝ DO VÀO VIỆN")
         pdf.add_txt(payload.get("ly_do_vao_vien", ""))
 
+        # III. BỆNH SỬ
         pdf.add_sec("III. BỆNH SỬ")
-        pdf.add_txt(get_benh_su_text(payload))
-
-        pdf.add_sec("IV. TIỀN SỬ")
-        ts = f"- Nội khoa: {payload.get('ts_noi_khoa', '')}\n- Ngoại khoa: {payload.get('ts_ngoai_khoa', '')}\n- Lối sống/Thói quen: {payload.get('ts_loi_song', '')}\n- Gia đình: {payload.get('ts_gia_dinh', '')}"
-        pdf.add_txt(ts)
-
-        pdf.add_sec("V. THĂM KHÁM LÂM SÀNG")
-        if loai_ba != "Hậu phẫu":
-            # Nội khoa / Tiền phẫu: In thăm khám lúc vào viện + toàn thân
-            if payload.get("kham_vao_vien"):
-                pdf.add_txt(f"- Khám lúc vào viện:\n{payload.get('kham_vao_vien')}")
-            pdf.add_txt(f"- Khám hiện tại (Toàn thân):\n{format_bullet_points(payload.get('kham_toan_than', ''))}")
+        if is_hau_phau:
+            pdf.add_subsec("1. Tình trạng trước mổ:")
+            pdf.add_txt(format_bullet_points(payload.get("bs_truoc_mo", "")))
+            pdf.add_subsec("2. Tình trạng trong mổ:")
+            pdf.add_txt(format_bullet_points(payload.get("bs_trong_mo", "")))
+            pdf.add_subsec("3. Quá trình sau mổ:")
+            pdf.add_txt(format_bullet_points(payload.get("bs_sau_mo", "")))
         else:
-            # Hậu phẫu: In ngày hậu phẫu, vết mổ, dẫn lưu
-            pdf.add_txt(f"- Khám hiện tại (Toàn thân):\n{format_bullet_points(payload.get('kham_toan_than', ''))}")
-            pdf.add_txt(f"- Ngày hậu phẫu: {payload.get('ngay_hau_phau', '')}\n- Vết mổ: {payload.get('kham_vet_mo', '')}\n- Ống dẫn lưu: {payload.get('kham_dan_luu', '')}")
+            pdf.add_txt(payload.get("benh_su", ""))
 
-        pdf.add_sec("VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT")
-        pdf.add_txt(f"- Sơ bộ: {payload.get('chan_doan_so_bo', '')}\n- Phân biệt: {payload.get('chan_doan_phan_biet', '')}\n- Biện luận: {payload.get('bien_luan', '')}")
+        # IV. TIỀN SỬ
+        pdf.add_sec("IV. TIỀN SỬ")
+        pdf.add_subsec("1. Tiền sử nội khoa:")
+        pdf.add_txt(format_bullet_points(payload.get("ts_noi_khoa", "")))
+        pdf.add_subsec("2. Tiền sử ngoại khoa & Dị ứng:")
+        pdf.add_txt(format_bullet_points(payload.get("ts_ngoai_khoa", "")))
+        pdf.add_subsec("3. Tiền sử bản thân (Lối sống & Thói quen):")
+        pdf.add_txt(format_bullet_points(payload.get("ts_loi_song", "")))
+        pdf.add_subsec("4. Tiền sử gia đình:")
+        pdf.add_txt(format_bullet_points(payload.get("ts_gia_dinh", "")))
 
-        pdf.add_sec("VII. TÓM TẮT BỆNH ÁN")
-        pdf.add_txt(payload.get("tom_tat", ""))
+        # V. THĂM KHÁM LÂM SÀNG
+        pdf.add_sec("V. THĂM KHÁM LÂM SÀNG")
+        if not is_hau_phau:
+            pdf.add_subsec("1. Thăm khám lúc vào viện:")
+            pdf.add_txt(format_bullet_points(payload.get("kham_vao_vien", "")))
+            pdf.add_subsec("2. Thăm khám hiện tại - Toàn thân:")
+        else:
+            pdf.add_subsec(f"1. Thăm khám hiện tại ({payload.get('ngay_hau_phau', 'Hậu phẫu')}):")
+            pdf.add_subsec("a. Toàn thân:")
+            
+        pdf.add_txt(format_bullet_points(payload.get("kham_toan_than", "")))
+        
+        # Sinh hiệu & BMI
+        mach = payload.get("sh_mach") or "--"
+        nhiet = payload.get("sh_nhiet_do") or "--"
+        ha = payload.get("sh_ha") or "--"
+        nt = payload.get("sh_nhip_tho") or "--"
+        cn = payload.get("sh_can_nang") or "--"
+        cc = payload.get("sh_chieu_cao") or "--"
+        bmi = payload.get("sh_bmi") or "--"
+        eval_bmi = payload.get("sh_bmi_eval") or "--"
+        sh_line = f"Sinh hiệu: Mạch: {mach} ck/phút | HA: {ha} mmHg | Nhiệt độ: {nhiet} °C | Nhịp thở: {nt} l/phút\nThể trạng: Chiều cao: {cc} cm | Cân nặng: {cn} kg | BMI: {bmi} kg/m² ({eval_bmi})"
+        pdf.add_txt(sh_line)
 
-        pdf.add_sec("VIII. CHẨN ĐOÁN XÁC ĐỊNH")
-        pdf.add_txt(payload.get("chan_doan_xac_dinh", ""))
+        # Nếu là Hậu phẫu: In thêm vết mổ & dẫn lưu
+        if is_hau_phau:
+            pdf.add_subsec("b. Vết mổ & Dẫn lưu:")
+            pdf.add_txt(f"- Vết mổ: {payload.get('kham_vet_mo', '')}\n- Dẫn lưu: {payload.get('kham_dan_luu', '')}")
+            pdf.add_subsec("c. Các cơ quan:")
+        else:
+            pdf.add_subsec("3. Thăm khám hiện tại - Các cơ quan:")
 
-        pdf.add_sec("IX. ĐIỀU TRỊ & TIÊN LƯỢNG")
-        dt = f"- Mục tiêu: {payload.get('dt_muc_tieu', '')}\n- Cụ thể: {payload.get('dt_cu_the', '')}\n- Theo dõi: {payload.get('dt_theo_doi', '')}\n- Tiên lượng: {payload.get('tien_luong', '')}"
-        pdf.add_txt(dt)
+        # In 7 cơ quan theo thứ tự ưu tiên
+        organs = [
+            ("Tuần hoàn", "kham_tuan_hoan"),
+            ("Hô hấp", "kham_ho_hap"),
+            ("Tiêu hóa", "kham_tieu_hoa"),
+            ("Thần kinh", "kham_than_kinh"),
+            ("Thận - Tiết niệu", "kham_tiet_nieu"),
+            ("Cơ xương khớp", "kham_co_xuong_khop"),
+            ("Các cơ quan khác", "kham_co_quan_khac")
+        ]
+        fav_key = payload.get("uu_tien_co_quan", "none")
+        if fav_key != "none":
+            fav = [o for o in organs if o[1] == fav_key]
+            others = [o for o in organs if o[1] != fav_key]
+            organs = fav + others
+
+        for name, key in organs:
+            pdf.add_subsec(f"- {name}:")
+            pdf.add_txt(format_bullet_points(payload.get(key, "")))
+
+        # ĐỊNH NGHĨA HÀM KHỐI CHO CÁC MỤC LOGIC
+        def sec_tom_tat(num_rom):
+            pdf.add_sec(f"{num_rom}. TÓM TẮT BỆNH ÁN")
+            pdf.add_txt(payload.get("tom_tat", ""))
+
+        def sec_chan_doan_so_bo(num_sb, num_pb, num_bl):
+            pdf.add_sec(f"{num_sb}. CHẨN ĐOÁN SƠ BỘ")
+            pdf.add_txt(payload.get("chan_doan_so_bo", ""))
+            pdf.add_sec(f"{num_pb}. CHẨN ĐOÁN PHÂN BIỆT")
+            pdf.add_txt(payload.get("chan_doan_phan_biet", ""))
+            if payload.get("bien_luan"):
+                pdf.add_sec(f"{num_bl}. BIỆN LUẬN CHẨN ĐOÁN SƠ BỘ")
+                pdf.add_txt(payload.get("bien_luan", ""))
+
+        def sec_can_lam_sang(num_dx, num_co):
+            pdf.add_sec(f"{num_dx}. ĐỀ XUẤT CẬN LÂM SÀNG")
+            label_1 = "1. Đánh giá sau mổ / Biến chứng:" if is_hau_phau else "1. Phục vụ chẩn đoán xác định:"
+            label_2 = "2. Theo dõi hồi phục & Chăm sóc:" if is_hau_phau else "2. Phục vụ điều trị:"
+            pdf.add_subsec(label_1)
+            pdf.add_txt(format_bullet_points(payload.get("cls_dx_xac_dinh", "")))
+            pdf.add_subsec(label_2)
+            pdf.add_txt(format_bullet_points(payload.get("cls_dx_dieu_tri", "")))
+            pdf.add_subsec("3. Cận lâm sàng khác:")
+            pdf.add_txt(format_bullet_points(payload.get("cls_dx_khac", "")))
+
+            pdf.add_sec(f"{num_co}. CẬN LÂM SÀNG ĐÃ CÓ")
+            cls_rows = []
+            so_hang = int(payload.get("so_hang_cls", 3))
+            for i in range(so_hang):
+                kq = payload.get(f"cls_kq_{i}", "").strip()
+                pg = payload.get(f"cls_pg_{i}", "").strip()
+                if kq or pg:
+                    cls_rows.append((kq, pg))
+            if cls_rows:
+                pdf.render_table_cls(cls_rows)
+            else:
+                pdf.add_txt("Chưa ghi nhận kết quả cận lâm sàng.")
+
+        def sec_chan_doan_xac_dinh(num_xd, num_blxd):
+            pdf.add_sec(f"{num_xd}. CHẨN ĐOÁN XÁC ĐỊNH")
+            pdf.add_txt(format_bullet_points(payload.get("chan_doan_xac_dinh", "")))
+            if payload.get("bien_luan_xac_dinh"):
+                pdf.add_sec(f"{num_blxd}. BIỆN LUẬN CHẨN ĐOÁN XÁC ĐỊNH")
+                pdf.add_txt(format_bullet_points(payload.get("bien_luan_xac_dinh", "")))
+
+        # PHÂN NHÁNH TRẬT TỰ SỐ LA MÃ CHUẨN XÁC TUYỆT ĐỐI
+        if not is_hau_phau:
+            # TRẬT TỰ NỘI KHOA: Tóm tắt -> CĐ Sơ bộ -> CLS -> CĐ Xác định
+            sec_tom_tat("VI")
+            sec_chan_doan_so_bo("VII", "VIII", "IX")
+            sec_can_lam_sang("X", "XI")
+            sec_chan_doan_xac_dinh("XII", "XIII")
+            pdf.add_sec("XIV. ĐIỀU TRỊ")
+            pdf.add_subsec("1. Mục tiêu điều trị:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_muc_tieu", "")))
+            pdf.add_subsec("2. Điều trị cụ thể:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_cu_the", "")))
+            pdf.add_subsec("3. Theo dõi sau điều trị:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_theo_doi", "")))
+            pdf.add_sec("XV. TIÊN LƯỢNG")
+            pdf.add_txt(format_bullet_points(payload.get("tien_luong", "")))
+            pdf.add_sec("XVI. TƯ VẤN")
+            pdf.add_txt(format_bullet_points(payload.get("tu_van", "")))
+        else:
+            # TRẬT TỰ HẬU PHẪU: CĐ Sơ bộ -> CLS -> Tóm tắt -> CĐ Xác định
+            sec_chan_doan_so_bo("VI", "VII", "VIII")
+            sec_can_lam_sang("IX", "X")
+            sec_tom_tat("XI")
+            sec_chan_doan_xac_dinh("XII", "XIII")
+            pdf.add_sec("XIV. ĐIỀU TRỊ HẬU PHẪU")
+            pdf.add_subsec("1. Mục tiêu điều trị:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_muc_tieu", "")))
+            pdf.add_subsec("2. Điều trị cụ thể:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_cu_the", "")))
+            pdf.add_subsec("3. Theo dõi sau điều trị:")
+            pdf.add_txt(format_bullet_points(payload.get("dt_theo_doi", "")))
+            pdf.add_sec("XV. TIÊN LƯỢNG")
+            pdf.add_txt(format_bullet_points(payload.get("tien_luong", "")))
+            pdf.add_sec("XVI. TƯ VẤN")
+            pdf.add_txt(format_bullet_points(payload.get("tu_van", "")))
 
         pdf_bytes = bytes(pdf.output())
         return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": "inline; filename=benhan.pdf"})
