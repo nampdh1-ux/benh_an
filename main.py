@@ -31,6 +31,33 @@ from fastapi.responses import RedirectResponse
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
+# Đọc cấu hình từ môi trường Render
+APP_PASSWORD = os.getenv("APP_PASSWORD", "MatKhau123@").strip()
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip()
+SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "").strip()
+
+OTP_STORAGE = {}  # {email: {"otp": "123456", "expires": timestamp}}
+
+def send_otp_email(to_email: str, otp_code: str):
+    print(f"\n==========================================")
+    print(f"🔑 MÃ OTP CHO [{to_email}]: {otp_code}")
+    print(f"==========================================\n")
+    
+    if SENDER_EMAIL and SENDER_APP_PASSWORD:
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = SENDER_EMAIL
+            msg["To"] = to_email
+            msg["Subject"] = f"[BỆNH ÁN WIN2K] Mã xác thực OTP: {otp_code}"
+            body = f"Mã xác thực đăng nhập của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+            
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
+                server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
+        except Exception as e:
+            print(f"Lỗi gửi email SMTP: {e}")
 # =========================================================================
 # CẤU HÌNH BẢO MẬT & TÀI KHOẢN (AUTH & OTP)
 # =========================================================================
@@ -108,15 +135,20 @@ async def api_request_otp(payload: Dict[str, Any]):
     username = payload.get("username", "").strip()
     password = payload.get("password", "")
 
-    # Kiểm tra xác thực ban đầu
-    if username != ADMIN_USER or hash_pass(password) != ADMIN_PASSWORD_HASH:
-        raise HTTPException(status_code=401, detail="Tài khoản hoặc mật khẩu không chính xác!")
+    # ĐIỀU CHỈNH: Chấp nhận mọi email có định dạng hợp lệ (hoặc bất kỳ chuỗi nào > 3 ký tự)
+    if not username or "@" not in username:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Email hợp lệ!")
+    
+    # Bạn có thể đặt mật khẩu chung cho tất cả mọi người, ví dụ bắt buộc là "MatKhau123@" 
+    # Hoặc bỏ qua kiểm tra mật khẩu, ai gõ gì cũng cho qua bước 1:
+    if len(password) < 4:
+        raise HTTPException(status_code=400, detail="Mật khẩu quá ngắn!")
 
-    # Tạo mã OTP 6 chữ số ngẫu nhiên
+    # Tạo mã OTP 6 chữ số ngẫu nhiên cho email đó
     otp_code = f"{random.randint(100000, 999999)}"
     OTP_STORAGE[username] = {
         "otp": otp_code,
-        "expires": datetime.now().timestamp() + 300  # Hết hạn sau 5 phút (300s)
+        "expires": datetime.now().timestamp() + 300  # Hết hạn sau 5 phút
     }
 
     send_otp_email(username, otp_code)
@@ -226,7 +258,53 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
         return f"- Trước mổ: {payload.get('bs_truoc_mo', '')}\n- Trong mổ: {payload.get('bs_trong_mo', '')}\n- Sau mổ: {payload.get('bs_sau_mo', '')}"
     return payload.get("benh_su", "")
 
+@app.post("/api/auth/request-otp")
+async def api_request_otp(payload: Dict[str, Any]):
+    email = payload.get("email", "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Gmail hợp lệ!")
 
+    otp_code = f"{random.randint(100000, 999999)}"
+    OTP_STORAGE[email] = {
+        "otp": otp_code,
+        "expires": datetime.now().timestamp() + 300
+    }
+
+    send_otp_email(email, otp_code)
+    return {"message": "Mã OTP đã được gửi."}
+
+@app.post("/api/auth/verify-otp")
+async def api_verify_otp(payload: Dict[str, Any], response: Response):
+    email = payload.get("email", "").strip().lower()
+    otp_code = payload.get("otp", "").strip()
+    password = payload.get("password", "")
+
+    otp_info = OTP_STORAGE.get(email)
+    if not otp_info or otp_info["otp"] != otp_code:
+        raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ!")
+    if datetime.now().timestamp() > otp_info["expires"]:
+        del OTP_STORAGE[email]
+        raise HTTPException(status_code=400, detail="Mã OTP đã hết hạn!")
+
+    if password != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="Mật khẩu hệ thống (APP_PASSWORD) không chính xác!")
+
+    session_token = secrets.token_urlsafe(32)
+    max_age = 30 * 24 * 3600
+    ACTIVE_SESSIONS[session_token] = {
+        "email": email,
+        "expires": datetime.now().timestamp() + max_age
+    }
+    del OTP_STORAGE[email]
+
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        max_age=max_age,
+        httponly=True,
+        samesite="lax"
+    )
+    return {"status": "success"}
 # --- CÁC ENDPOINT AI ---
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
