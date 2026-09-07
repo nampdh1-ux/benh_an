@@ -116,12 +116,13 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
         f"Chẩn đoán sơ bộ: {payload.get('chan_doan_so_bo')}"
     )
     prompt = f"""
-    Bạn là bác sĩ lâm sàng thực thụ. Dựa vào ca bệnh:
+    Bạn là một bác sĩ lâm sàng thực thụ và giàu kinh nghiệm. Hãy nhìn vào toàn thể ca bệnh dưới đây, phân tích logic giữa bệnh cảnh, triệu chứng cơ năng, thực thể và chẩn đoán sơ bộ để đưa ra:
+                    
     {context}
     
     Hãy đưa ra:
-    1. Danh sách Chẩn đoán phân biệt
-    2. Biện luận chẩn đoán sơ bộ
+        1. Danh sách CHẨN ĐOÁN PHÂN BIỆT: sắp xếp thứ tự từ khả năng cao nhất đến thấp hơn, từ bệnh lý cấp cứu nguy hiểm đến ít cấp cứu hơn.
+        2. BIỆN LUẬN CHẨN ĐOÁN SƠ BỘ: Lập luận chặt chẽ vì sao nghĩ đến chẩn đoán sơ bộ và vì sao cần phân biệt với các bệnh lý nêu trên.
     Trả về ĐÚNG 2 thẻ:
     [CHAN_DOAN_PHAN_BIET]
     ...
@@ -271,7 +272,7 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
 
             # Gọi Gemini với cấu hình ép kiểu trả về JSON thuần
             response = client.models.generate_content(
-                model="gemini-3.1-flash",
+                model="gemini-3.1-flash-",
                 contents=[image_part, ocr_prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
