@@ -57,7 +57,7 @@ def download_fonts_if_missing():
 
 download_fonts_if_missing()
 
-def get_ai_model(model_name: str = "gemini-2.5-flash"):
+def get_ai_model(model_name: str = "gemini-3.1-flash-lite"):
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return None
