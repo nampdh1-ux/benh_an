@@ -133,10 +133,7 @@
         }
         .quick-select-item:hover { background-color: #0a246a; color: #ffffff; }
 
-        /* THANH TIÊU ĐỀ DÍNH CHẶT KHI CUỘN (STICKY HEADER) */
-        .window.main-window {
-            position: relative;
-        }
+        .window.main-window { position: relative; }
         .main-window > .title-bar {
             position: sticky;
             top: 0;
@@ -150,8 +147,8 @@
         .title-bar-text-large {
             font-size: 14px !important;
             font-weight: bold !important;
-            color: #ffffff !important; /* ĐỔI MÀU CHỮ SANG TRẮNG NỔI BẬT */
-            text-shadow: 1px 1px 1px #000000; /* ĐỔ BÓNG NÉT CHUẨN WIN2K */
+            color: #ffffff !important;
+            text-shadow: 1px 1px 1px #000000;
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
@@ -161,28 +158,7 @@
             text-overflow: ellipsis;
         }
 
-        /* NÚT MỤC LỤC TÍCH HỢP TRÊN TITLE BAR */
-        .header-toc-wrapper {
-            position: relative;
-            margin-right: 8px;
-        }
-        .btn-header-toc {
-            font-size: 11px !important;
-            font-weight: bold !important;
-            padding: 2px 8px !important;
-            min-width: 0 !important;
-            height: 22px !important;
-            line-height: 16px !important;
-            cursor: pointer;
-            color: #000 !important;
-            background: #d4d0c8 !important;
-            border-top: 2px solid #ffffff !important;
-            border-left: 2px solid #ffffff !important;
-            border-right: 2px solid #404040 !important;
-            border-bottom: 2px solid #404040 !important;
-            box-shadow: 1px 1px 0px #000;
-        }
-        /* Khóa cứng kích thước và chống gãy chữ cho nút Mục Lục */
+        .header-toc-wrapper { position: relative; margin-right: 8px; }
         .btn-header-toc {
             font-size: 11px !important;
             font-weight: bold !important;
@@ -201,7 +177,6 @@
             box-shadow: 1px 1px 0px #000;
         }
 
-        /* Khung chọn mẫu bệnh án co giãn thông minh */
         .form-type-container {
             background: #ffffff;
             border: 2px inset #808080;
@@ -212,11 +187,7 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-        .form-type-buttons {
-            display: flex;
-            gap: 6px;
-            flex: 1;
-        }
+        .form-type-buttons { display: flex; gap: 6px; flex: 1; }
         .form-type-buttons .btn-toggle {
             flex: 1;
             text-align: center;
@@ -241,9 +212,7 @@
             overflow-y: auto;
             z-index: 1000000;
         }
-        .header-toc-menu.show {
-            display: block;
-        }
+        .header-toc-menu.show { display: block; }
         .toc-link-item {
             display: block;
             padding: 5px 8px;
@@ -253,10 +222,7 @@
             font-weight: bold;
             border-bottom: 1px dotted #b0b0b0;
         }
-        .toc-link-item:hover {
-            background-color: #0a246a;
-            color: #ffffff;
-        }
+        .toc-link-item:hover { background-color: #0a246a; color: #ffffff; }
 
         .draft-toolbar {
             background: #d4d0c8;
@@ -303,70 +269,33 @@
         }
 
         @media (max-width: 768px) {
-            body { 
-                padding: 0 !important;
-                background-color: #ece9d8 !important;
-            }
-            .main-window {
-                border: none !important;
-                box-shadow: none !important;
-                max-width: 100% !important;
-            }
-            .window-body {
-                padding: 6px !important;
-            }
-            .form-grid-3, .form-grid-2 { 
-                grid-template-columns: 1fr !important; 
-                gap: 6px !important; 
-            }
+            body { padding: 0 !important; background-color: #ece9d8 !important; }
+            .main-window { border: none !important; box-shadow: none !important; max-width: 100% !important; }
+            .window-body { padding: 6px !important; }
+            .form-grid-3, .form-grid-2 { grid-template-columns: 1fr !important; gap: 6px !important; }
             .title-bar-text-large {
                 font-size: 11px !important;
-                max-width: 50vw !important; /* Dành khoảng trống cho nút Mục Lục và 3 nút cửa sổ */
+                max-width: 50vw !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
             }
-            .btn-header-toc {
-                font-size: 10.5px !important;
-                padding: 1px 5px !important;
-                height: 20px !important;
-                line-height: 16px !important;
-            }
-            .header-toc-menu {
-                width: 200px !important;
-                right: 0 !important;
-            }
-            .form-type-container {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 5px !important;
-            }
-            .form-type-buttons {
-                width: 100% !important;
-            }
-            .cls-table {
-                min-width: 480px !important;
-            }
-            .draft-toolbar { 
-                flex-direction: column; 
-                align-items: flex-start; 
-                gap: 6px;
-            }
-            .draft-toolbar > div { 
-                width: 100%; 
-                justify-content: space-between; 
-            }
-            #pdf-preview-frame { 
-                height: 400px !important; 
-            }
+            .btn-header-toc { font-size: 10.5px !important; padding: 1px 5px !important; height: 20px !important; line-height: 16px !important; }
+            .header-toc-menu { width: 200px !important; right: 0 !important; }
+            .form-type-container { flex-direction: column !important; align-items: stretch !important; gap: 5px !important; }
+            .form-type-buttons { width: 100% !important; }
+            .cls-table { min-width: 480px !important; }
+            .draft-toolbar { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .draft-toolbar > div { width: 100%; justify-content: space-between; }
+            #pdf-preview-frame { height: 400px !important; }
         }
-        /* Tự động ẩn thanh cuộn dọc để textarea co giãn mượt mà */
+
         textarea {
             overflow-y: hidden !important;
             resize: none !important;
             transition: height 0.08s ease-out;
         }
-        /* NÚT CHỌN FILE CHUẨN WIN2K */
+
         .btn-win2k-file {
             display: inline-flex;
             align-items: center;
@@ -385,9 +314,7 @@
             cursor: pointer;
             user-select: none;
         }
-        .btn-win2k-file:hover {
-            background: #e4e0d8;
-        }
+        .btn-win2k-file:hover { background: #e4e0d8; }
         .btn-win2k-file:active {
             border-top: 2px solid #404040 !important;
             border-left: 2px solid #404040 !important;
@@ -407,14 +334,12 @@
 <body>
 
 <div class="window main-window">
-    <!-- THANH TIÊU ĐỀ WIN2K (STICKY + CHỮ TO + MỤC LỤC TÍCH HỢP) -->
     <div class="title-bar">
         <div class="title-bar-text-large">
-            <span></span> HỆ THỐNG BỆNH ÁN LÂM SÀNG
+            <span>🔑</span> HỆ THỐNG BỆNH ÁN LÂM SÀNG
         </div>
 
         <div style="display: flex; align-items: center;">
-            <!-- MỤC LỤC ĐIỀU HƯỚNG NHANH -->
             <div class="header-toc-wrapper">
                 <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)">📑 Mục Lục ▾</button>
                 <div class="header-toc-menu" id="headerTocMenu">
@@ -425,15 +350,14 @@
                     <a class="toc-link-item" href="#sec-ly-do-benh-su" onclick="closeHeaderToc()">II & III. Lý do & Bệnh sử</a>
                     <a class="toc-link-item" href="#sec-tien-su" onclick="closeHeaderToc()">IV. Tiền sử</a>
                     <a class="toc-link-item" href="#sec-kham-lam-sang" onclick="closeHeaderToc()">V. Thăm khám lâm sàng</a>
-                    <a class="toc-link-item" href="#sec-chan-doan-so-bo" onclick="closeHeaderToc()">VI. Chẩn đoán sơ bộ & PB</a>
-                    <a class="toc-link-item" href="#sec-can-lam-sang" onclick="closeHeaderToc()">VII. Cận lâm sàng & OCR</a>
-                    <a class="toc-link-item" href="#sec-tom-tat" onclick="closeHeaderToc()">VIII. Tóm tắt bệnh án</a>
-                    <a class="toc-link-item" href="#sec-chan-doan-xac-dinh" onclick="closeHeaderToc()">IX. Chẩn đoán xác định</a>
-                    <a class="toc-link-item" href="#sec-dieu-tri" onclick="closeHeaderToc()">X. Điều trị & Tiên lượng</a>
+                    <a class="toc-link-item" href="#sec-tom-tat" onclick="closeHeaderToc()">Tóm tắt bệnh án</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-so-bo" onclick="closeHeaderToc()">Chẩn đoán sơ bộ & PB</a>
+                    <a class="toc-link-item" href="#sec-can-lam-sang" onclick="closeHeaderToc()">Cận lâm sàng & OCR</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-xac-dinh" onclick="closeHeaderToc()">Chẩn đoán xác định</a>
+                    <a class="toc-link-item" href="#sec-dieu-tri" onclick="closeHeaderToc()">Điều trị & Tiên lượng</a>
                 </div>
             </div>
 
-            <!-- NÚT THAO TÁC CỬA SỔ WIN2K -->
             <div class="title-bar-controls">
                 <button aria-label="Minimize"></button>
                 <button aria-label="Maximize"></button>
@@ -654,15 +578,15 @@
                                     <input type="text" id="sh_ha" placeholder="120/80" oninput="autoSave()">
                                 </div>
                                 <div class="form-grid-2">
-    <div class="form-group">
-        <label>Nhịp thở (l/p):</label>
-        <input type="text" id="sh_nhip_tho" placeholder="18" oninput="autoSave()">
-    </div>
-    <div class="form-group">
-        <label>SpO2 (%):</label>
-        <input type="text" id="sh_spo2" placeholder="98" oninput="autoSave()">
-    </div>
-</div>
+                                    <div class="form-group">
+                                        <label>Nhịp thở (l/p):</label>
+                                        <input type="text" id="sh_nhip_tho" placeholder="18" oninput="autoSave()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>SpO2 (%):</label>
+                                        <input type="text" id="sh_spo2" placeholder="98" oninput="autoSave()">
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-grid-2">
                                 <div class="form-group">
@@ -746,11 +670,35 @@
                 </div>
             </details>
 
-            <!-- VÙNG CHẨN ĐOÁN & TÓM TẮT -->
+            <!-- VÙNG CHẨN ĐOÁN, CẬN LÂM SÀNG & TÓM TẮT (TỰ ĐỘNG ĐẢO THỨ TỰ THEO MẪU) -->
             <div id="dynamic-clinical-flow">
+                
+                <!-- KHỐI TÓM TẮT BỆNH ÁN -->
+                <div id="sec-tom-tat"></div>
+                <details class="win2k-expander" open id="expander-tt">
+                    <summary id="title-tt">VI. TÓM TẮT BỆNH ÁN</summary>
+                    <div class="expander-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label for="tom_tat" style="font-weight: bold; font-size: 12px; color: #000000;">
+                                <span id="label_so_tt">VI</span>. Tóm tắt bệnh án:
+                            </label>
+                            <button type="button" 
+                                    onclick="generateIntroTomTat()" 
+                                    title="Tự động trích xuất thông tin phẫu thuật/nội khoa và tạo câu dẫn chuẩn"
+                                    style="background: #d4d0c8; border-top: 2px solid #ffffff; border-left: 2px solid #ffffff; border-right: 2px solid #404040; border-bottom: 2px solid #404040; padding: 2px 10px; font-weight: bold; font-size: 11px; cursor: pointer; font-family: 'Tahoma', sans-serif;">
+                                ⚡ Tạo câu dẫn
+                            </button>
+                        </div>
+                        <textarea id="tom_tat" name="tom_tat" rows="6" 
+                            placeholder="Dòng đầu tiên là câu dẫn tóm tắt. Các dòng tiếp theo ghi các hội chứng và triệu chứng có giá trị..."
+                            oninput="autoSave()"></textarea>
+                    </div>
+                </details>
+
+                <!-- KHỐI CHẨN ĐOÁN SƠ BỘ -->
                 <div id="sec-chan-doan-so-bo"></div>
                 <details class="win2k-expander" open id="expander-cdsb">
-                    <summary id="title-cdsb">VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT</summary>
+                    <summary id="title-cdsb">VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT</summary>
                     <div class="expander-body">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
                             <label style="font-weight: bold;">Chẩn đoán sơ bộ & phân biệt:</label>
@@ -773,9 +721,10 @@
                     </div>
                 </details>
 
+                <!-- KHỐI CẬN LÂM SÀNG -->
                 <div id="sec-can-lam-sang"></div>
                 <details class="win2k-expander" open id="expander-cls">
-                    <summary>VII. CẬN LÂM SÀNG</summary>
+                    <summary id="title-cls">VIII. CẬN LÂM SÀNG</summary>
                     <div class="expander-body">
                         <div class="sub-section-header">1. Đề xuất cận lâm sàng</div>
                         <div class="form-grid-3">
@@ -796,9 +745,9 @@
                         <div class="sub-section-header">2. Cận lâm sàng đã có (Tích hợp OCR)</div>
                         <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-weight: bold;">📷 Tải ảnh xét nghiệm:</label>
-<label class="btn-win2k-file" for="ocr_files">📁 Chọn tệp...</label>
-<input type="file" id="ocr_files" multiple accept="image/*" style="display: none;" onchange="updateOcrFileLabel(this)">
-<span id="ocr_file_count" class="file-status-label">Chưa chọn tệp nào</span>
+                            <label class="btn-win2k-file" for="ocr_files">📁 Chọn tệp...</label>
+                            <input type="file" id="ocr_files" multiple accept="image/*" style="display: none;" onchange="updateOcrFileLabel(this)">
+                            <span id="ocr_file_count" class="file-status-label">Chưa chọn tệp nào</span>
                             <button type="button" class="btn-ai" id="btn-ai-ocr" onclick="runBatchOCR()">⚡ AI Phân Tích & Điền Bảng</button>
                             <span id="ocr-status" style="font-weight: bold; color: #0a246a;"></span>
                         </div>
@@ -821,32 +770,10 @@
                     </div>
                 </details>
 
-                <!-- KHU VỰC TÓM TẮT BỆNH ÁN WIN2K -->
-<div style="margin-bottom: 12px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-        <label for="tom_tat" style="font-weight: bold; font-size: 12px; color: #000000;">
-            <span id="label_so_tt">VI</span>. Tóm tắt bệnh án:
-        </label>
-        
-        <!-- Nút bấm phong cách Windows 2000 gọi hàm tạo câu dẫn -->
-        <button type="button" 
-                onclick="generateIntroTomTat()" 
-                title="Tự động trích xuất thông tin phẫu thuật/nội khoa và tạo câu dẫn chuẩn"
-                style="background: #d4d0c8; border-top: 2px solid #ffffff; border-left: 2px solid #ffffff; border-right: 2px solid #404040; border-bottom: 2px solid #404040; padding: 2px 10px; font-weight: bold; font-size: 11px; cursor: pointer; font-family: 'Tahoma', sans-serif;">
-            ⚡ Tạo câu dẫn
-        </button>
-    </div>
-
-    <!-- Ô nhập văn bản tóm tắt -->
-    <textarea id="tom_tat" name="tom_tat" rows="6" 
-        placeholder="Dòng đầu tiên là câu dẫn tóm tắt. Các dòng tiếp theo ghi các hội chứng và triệu chứng có giá trị..."
-        style="width: 100%; box-sizing: border-box; font-family: 'Tahoma', sans-serif; font-size: 12px; padding: 6px; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff; background: #ffffff;"></textarea>
-</div>
-                </details>
-
+                <!-- KHỐI CHẨN ĐOÁN XÁC ĐỊNH -->
                 <div id="sec-chan-doan-xac-dinh"></div>
                 <details class="win2k-expander" open id="expander-cdxd">
-                    <summary>IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN</summary>
+                    <summary id="title-cdxd">IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN</summary>
                     <div class="expander-body">
                         <div class="form-group">
                             <label>Chẩn đoán xác định:</label>
@@ -863,7 +790,7 @@
             <!-- X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN -->
             <div id="sec-dieu-tri"></div>
             <details class="win2k-expander" open>
-                <summary>X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN</summary>
+                <summary id="title-dieu-tri">X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN</summary>
                 <div class="expander-body">
                     <div style="margin-bottom: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
                         <button type="button" class="btn-ai" id="btn-ai-dt" onclick="callAITreatment()">🪄 Làm phép Điều trị</button>
@@ -943,7 +870,6 @@
 </div>
 
 <script>
-    // ĐIỀU KHIỂN ĐÓNG/MỞ MENU MỤC LỤC TRÊN TITLE BAR
     function toggleHeaderToc(e) {
         e.stopPropagation();
         const menu = document.getElementById('headerTocMenu');
@@ -955,32 +881,30 @@
         if (menu) menu.classList.remove('show');
     }
 
-    // Tự động đóng menu mục lục nếu bấm ra ngoài
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.header-toc-wrapper')) {
             closeHeaderToc();
         }
     });
-    // HÀM TỰ ĐỘNG CO GIÃN CHIỀU CAO CHO TEXTAREA (AUTO-EXPAND)
+
     function autoExpandTextarea(el) {
         if (!el || el.tagName.toLowerCase() !== 'textarea') return;
-        el.style.height = 'auto'; // Reset để tính lại khi xóa bớt chữ
-        el.style.height = (el.scrollHeight + 4) + 'px'; // Mở rộng theo nội dung thực tế
+        el.style.height = 'auto';
+        el.style.height = (el.scrollHeight + 4) + 'px';
     }
 
-    // Lắng nghe sự kiện gõ phím trên toàn trang cho tất cả các ô textarea (kể cả các ô cận lâm sàng tạo mới)
     document.addEventListener('input', function (e) {
         if (e.target && e.target.tagName.toLowerCase() === 'textarea') {
             autoExpandTextarea(e.target);
         }
     });
 
-    // Kích hoạt tính toán lại chiều cao cho toàn bộ các ô khi vừa nạp dữ liệu/mở trang
     function triggerAllTextareasExpand() {
         setTimeout(() => {
             document.querySelectorAll('textarea').forEach(el => autoExpandTextarea(el));
         }, 50);
     }
+
     function toggleDropdown(menuId) {
         const menu = document.getElementById(menuId);
         const isOpen = menu.style.display === 'block';
@@ -1004,6 +928,7 @@
             el.value = lines.join('\n');
         }
         autoSave();
+        triggerAllTextareasExpand();
         document.querySelectorAll('.quick-select-menu').forEach(m => m.style.display = 'none');
     }
 
@@ -1014,6 +939,7 @@
         document.getElementById(tabId).classList.add('active');
     }
 
+    // ĐIỀU CHỈNH THỨ TỰ CÁC KHỐI CHUẨN XÁC THEO LOẠI BỆNH ÁN
     function setFormType(type) {
         document.getElementById('current_loai_ba').value = type;
         const isHauPhau = (type === "Hậu phẫu");
@@ -1044,22 +970,38 @@
         document.getElementById('lbl-cls-2').innerText = isHauPhau ? '2. Theo dõi hồi phục & Chăm sóc:' : '2. Phục vụ điều trị:';
 
         const flow = document.getElementById('dynamic-clinical-flow');
+        const expTt = document.getElementById('expander-tt');
         const expCdsb = document.getElementById('expander-cdsb');
         const expCls = document.getElementById('expander-cls');
-        const expTt = document.getElementById('expander-tt');
         const expCdxd = document.getElementById('expander-cdxd');
 
         if (isHauPhau) {
+            // HẬU PHẪU: CĐ Sơ bộ (VI) -> Cận lâm sàng (VII) -> Tóm tắt (VIII) -> CĐ Xác định (IX)
             flow.appendChild(expCdsb);
             flow.appendChild(expCls);
             flow.appendChild(expTt);
             flow.appendChild(expCdxd);
+
+            document.getElementById('title-cdsb').innerText = 'VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT';
+            document.getElementById('title-cls').innerText = 'VII. CẬN LÂM SÀNG';
+            document.getElementById('title-tt').innerText = 'VIII. TÓM TẮT BỆNH ÁN';
+            document.getElementById('label_so_tt').innerText = 'VIII';
+            document.getElementById('title-cdxd').innerText = 'IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN';
+            document.getElementById('title-dieu-tri').innerText = 'X. ĐIỀU TRỊ HẬU PHẪU, TIÊN LƯỢNG & TƯ VẤN';
             document.getElementById('status-bar-type').innerText = 'Mẫu: Hậu phẫu';
         } else {
+            // NỘI KHOA: Tóm tắt (VI) -> CĐ Sơ bộ (VII) -> Cận lâm sàng (VIII) -> CĐ Xác định (IX)
             flow.appendChild(expTt);
             flow.appendChild(expCdsb);
             flow.appendChild(expCls);
             flow.appendChild(expCdxd);
+
+            document.getElementById('title-tt').innerText = 'VI. TÓM TẮT BỆNH ÁN';
+            document.getElementById('label_so_tt').innerText = 'VI';
+            document.getElementById('title-cdsb').innerText = 'VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT';
+            document.getElementById('title-cls').innerText = 'VIII. CẬN LÂM SÀNG';
+            document.getElementById('title-cdxd').innerText = 'IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN';
+            document.getElementById('title-dieu-tri').innerText = 'X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN';
             document.getElementById('status-bar-type').innerText = 'Mẫu: Nội khoa / Tiền phẫu';
         }
         autoSave();
@@ -1090,6 +1032,7 @@
             if (el && !el.value.trim()) el.value = val;
         }
         autoSave();
+        triggerAllTextareasExpand();
     }
 
     function clearOrgans() {
@@ -1098,6 +1041,7 @@
             if (el) el.value = "";
         }
         autoSave();
+        triggerAllTextareasExpand();
     }
 
     function reorderOrgans() {
@@ -1127,129 +1071,171 @@
         autoSave();
     }
 
-    // HÀM TÍNH TOÁN VÀ TẠO CÂU DẪN TỰ ĐỘNG CHUẨN LÂM SÀNG
-    function generateIntroTomTat() {
-        const isHauPhau = (document.getElementById('current_loai_ba').value === "Hậu phẫu");
-        const val = (id) => (document.getElementById(id) ? document.getElementById(id).value.trim() : "");
-        
-        const ht = val('ho_ten') || "...";
-        const tuoi = val('tuoi') ? `${val('tuoi')} tuổi` : "... tuổi";
-        const gioi = (val('gioi_tinh') || "Nam").toLowerCase();
-        const ld = val('ly_do_vao_vien') || "...";
-        
-        // Tiền sử: Ưu tiên nội khoa, nếu có tiền sử thì thêm chữ "tiền sử ..."
-        const tsRaw = val('ts_noi_khoa');
-        const ts = tsRaw ? `tiền sử ${tsRaw},` : "tiền sử chưa ghi nhận bất thường,";
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : "";
+    }
 
-        let intro = "";
+    // TẠO CÂU DẪN HẬU PHẪU
+    function generateIntroTomTatHauPhau() {
+        const gioiTinh = getVal("gioi_tinh") || "Nam";
+        const tuoi = getVal("tuoi");
+        const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
 
-        if (!isHauPhau) {
-            // =========================================================
-            // 1. DÀNH CHO NỘI KHOA / TIỀN PHẪU
-            // =========================================================
-            // Bóc tách số ngày từ text bệnh sử: "cách vào viện ... ngày" hoặc "trước vào viện ... ngày"
-            const bsText = val('benh_su');
-            let daysBeforeHospital = 0;
-            const matchBefore = bsText.match(/cách\s+(?:ngày\s+)?vào\s+viện\s+(\d+)\s*ngày/i) ||
-                                bsText.match(/cách\s+nv\s+(\d+)\s*ngày/i) ||
-                                bsText.match(/trước\s+(?:khi\s+)?vào\s+viện\s+(\d+)\s*ngày/i) ||
-                                bsText.match(/khởi\s+phát\s+(?:cách\s+đây\s+)?(\d+)\s*ngày/i);
-            
-            if (matchBefore && matchBefore[1]) {
-                daysBeforeHospital = parseInt(matchBefore[1], 10);
+        let tsList = [];
+        ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
+            const val = getVal(key);
+            if (val) {
+                const lines = val.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+                if (lines.length > 0) tsList.push(lines.join(", "));
             }
+        });
+        const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
+        const lyDo = getVal("ly_do_vao_vien") || "...";
+        const bsTruocMo = getVal("bs_truoc_mo");
+        const bsTrongMo = getVal("bs_trong_mo");
+        const cdSoBo = getVal("chan_doan_so_bo");
 
-            // Tính số ngày nằm viện = (Ngày làm bệnh án - Ngày vào viện)
-            let daysInHospital = 0;
-            const parseDate = (dStr) => {
-                if (!dStr) return null;
-                // Nhận dạng cả dạng "DD/MM/YYYY HH:mm" hoặc "DD/MM/YYYY" hoặc "YYYY-MM-DD"
-                const parts = dStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-                if (parts) {
-                    return new Date(parts[3], parts[2] - 1, parts[1]);
-                }
-                const d = new Date(dStr);
-                return isNaN(d.getTime()) ? null : d;
-            };
-
-            const dtVaoVien = parseDate(val('ngay_vao_vien'));
-            const dtLamBa = parseDate(val('ngay_lam_benh_an')) || new Date();
-
-            if (dtVaoVien && dtLamBa) {
-                const diffTime = Math.abs(dtLamBa.getTime() - dtVaoVien.getTime());
-                daysInHospital = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            }
-
-            // Tổng số ngày diễn biến bệnh
-            let totalDays = daysBeforeHospital + daysInHospital;
-            let strDienBien = "";
-            if (totalDays > 0) {
-                strDienBien = `${totalDays} ngày`;
-            } else if (daysBeforeHospital > 0) {
-                strDienBien = `${daysBeforeHospital} ngày`;
-            } else {
-                strDienBien = "ngày thứ ...";
-            }
-
-            intro = `Bệnh nhân ${gioi} ${tuoi}, ${ts} vào viện vì ${ld}. Hiện tại bệnh diễn biến ${strDienBien}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng triệu chứng sau:\n- `;
-
-        } else {
-            // =========================================================
-            // 2. DÀNH CHO HẬU PHẪU
-            // =========================================================
-            // Trích xuất các trường từ ô Tình trạng trước mổ & trong mổ
-            const truocMo = val('bs_truoc_mo');
-            const trongMo = val('bs_trong_mo');
-            
-            // 1. Chẩn đoán trước mổ
-            let cdTruocMo = "...";
-            const mCdTruoc = truocMo.match(/chẩn\s*đoán\s*trước\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
-            if (mCdTruoc) cdTruocMo = mCdTruoc[1].trim();
-            else if (truocMo) cdTruocMo = truocMo.split('\n')[0].trim();
-
-            // 2. Phương pháp phẫu thuật
-            let ppMo = "...";
-            const mPpMo = trongMo.match(/phương\s*pháp\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
-            if (mPpMo) ppMo = mPpMo[1].trim();
-
-            // 3. Phương pháp gây mê
-            let ppMe = "...";
-            const mPpMe = trongMo.match(/phương\s*pháp\s*gây\s*mê\s*[:\-]?\s*([^\n\.]+)/i);
-            if (mPpMe) ppMe = mPpMe[1].trim();
-
-            // 4. Chẩn đoán sau mổ
-            let cdSauMo = "...";
-            const mCdSau = trongMo.match(/chẩn\s*đoán\s*sau\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
-            if (mCdSau) cdSauMo = mCdSau[1].trim();
-
-            // 5. Ngày hậu phẫu
-            let ngayHp = val('ngay_hau_phau');
-            if (!ngayHp) ngayHp = "thứ ...";
-            // Làm sạch chữ nếu người dùng lỡ gõ thừa chữ "ngày"
-            ngayHp = ngayHp.replace(/hậu\s*phẫu\s*ngày\s*/i, '').replace(/ngày\s*/i, '').trim();
-
-            intro = `Bệnh nhân ${gioi} ${tuoi}, ${ts} vào viện vì ${ld}, chẩn đoán trước mổ là ${cdTruocMo}, được xử trí ${ppMo}, qua phương pháp gây mê ${ppMe}, chẩn đoán sau mổ là ${cdSauMo}. Hiện tại hậu phẫu ngày ${ngayHp}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:\n- `;
+        let cdTruocMo = "...";
+        const regexCdtm = /(?:chẩn đoán trước mổ|cđ trước mổ)(?:\s*là)?[:\s\-]+([^.\n;]+)/i;
+        const mCdtm = bsTruocMo.match(regexCdtm);
+        if (mCdtm && mCdtm[1].trim()) {
+            cdTruocMo = mCdtm[1].trim();
+        } else if (bsTruocMo) {
+            const lines = bsTruocMo.split("\n").filter(l => l.trim().length > 0);
+            if (lines.length > 0) cdTruocMo = lines[lines.length - 1].trim().replace(/^[-*•\s]+/, "");
         }
 
-        // Chèn vào textarea Tóm tắt bệnh án
-        const cur = document.getElementById('tom_tat').value.trim();
-        document.getElementById('tom_tat').value = cur ? (intro + "\n" + cur) : intro;
+        let ppMo = "...";
+        let loaiMo = "cấp cứu/phiên";
+        let cdSauMo = "...";
+        let dienBienPhauThuat = "Quá trình mổ không có biến chứng.";
+
+        if (bsTrongMo) {
+            const mHt = bsTrongMo.match(/(?:hình thức mổ|mổ phiên\/mổ cấp cứu|mổ phiên hay mổ cấp cứu)[:\s\-]+([^\n]+)/i);
+            if (mHt) {
+                const txtHt = mHt[1].toLowerCase().trim();
+                if (txtHt.includes("cấp cứu") && !txtHt.includes("phiên")) {
+                    loaiMo = "cấp cứu";
+                } else if (txtHt.includes("phiên") || txtHt.includes("chương trình")) {
+                    loaiMo = "chương trình";
+                }
+            }
+
+            const mPp = bsTrongMo.match(/(?:phương pháp mổ|phương pháp phẫu thuật|pt)[:\s\-]+([^\n]+)/i);
+            if (mPp && mPp[1].trim()) ppMo = mPp[1].trim();
+
+            const mQtm = bsTrongMo.match(/(?:quá trình mổ|diễn biến mổ)[:\s\-]+([^\n]+)/i);
+            if (mQtm && mQtm[1].trim()) {
+                let valQtm = mQtm[1].trim().replace(/\.+$/, "");
+                const lowerQtm = valQtm.toLowerCase();
+                if (lowerQtm.startsWith("không") || lowerQtm.startsWith("có") || lowerQtm.startsWith("thuận")) {
+                    valQtm = valQtm.charAt(0).toLowerCase() + valQtm.slice(1);
+                }
+                dienBienPhauThuat = `Quá trình mổ ${valQtm}.`;
+            }
+
+            const mSm = bsTrongMo.match(/(?:chẩn đoán sau mổ|cđ sau mổ)[:\s\-]+([^\n]+)/i);
+            if (mSm && mSm[1].trim()) cdSauMo = mSm[1].trim();
+        }
+
+        if (cdSauMo === "..." && cdSoBo) {
+            let cdClean = cdSoBo.replace(/^hậu phẫu ngày[^-\:]*[-\:]\s*/i, "");
+            cdSauMo = cdClean.split("-")[0].trim() || cdSoBo;
+        }
+
+        const ngayHpVal = getVal("ngay_hau_phau");
+        let ngayHpStr = "ngày thứ ...";
+        const mHp = ngayHpVal.match(/(?:ngày\s*(?:thứ)?\s*)(\d+)/i);
+        if (mHp) ngayHpStr = `ngày thứ ${mHp[1]}`;
+        else if (ngayHpVal) ngayHpStr = ngayHpVal;
+
+        const cauDanChinh = `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}, chẩn đoán trước mổ là ${cdTruocMo}, được mổ bằng phương pháp ${ppMo}, mổ ${loaiMo}, chẩn đoán sau mổ là ${cdSauMo}. ${dienBienPhauThuat} Hiện tại hậu phẫu ${ngayHpStr}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
+
+        let shItems = [];
+        if (getVal("sh_mach")) shItems.push(`Mạch ${getVal("sh_mach")} lần/phút`);
+        if (getVal("sh_ha")) shItems.push(`HA ${getVal("sh_ha")} mmHg`);
+        if (getVal("sh_nhiet_do")) shItems.push(`Nhiệt độ ${getVal("sh_nhiet_do")} °C`);
+        if (getVal("sh_nhip_tho")) shItems.push(`Nhịp thở ${getVal("sh_nhip_tho")} lần/phút`);
+        const shStr = shItems.length > 0 ? shItems.join(", ") : "Mạch, HA, Nhiệt độ trong giới hạn bình thường";
+        const lineSh = `- Tỉnh, tiếp xúc tốt, Sinh hiệu: ${shStr}`;
+
+        const rawVm = getVal("kham_vet_mo");
+        let vmClean = "khô, không sưng đỏ, chân chỉ sạch";
+        if (rawVm) {
+            const linesVm = rawVm.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+            if (linesVm.length > 0) vmClean = linesVm.join("; ");
+        }
+        const lineVm = `- Vết mổ: ${vmClean}`;
+
+        const rawDl = getVal("kham_dan_luu");
+        let dlClean = "chân dẫn lưu sạch, không rỉ dịch bất thường";
+        if (rawDl) {
+            const linesDl = rawDl.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+            if (linesDl.length > 0) dlClean = linesDl.join("; ");
+        }
+        const lineDl = `- Dẫn lưu: ${dlClean}`;
+
+        return `${cauDanChinh}\n${lineSh}\n${lineVm}\n${lineDl}`;
+    }
+
+    // TẠO CÂU DẪN NỘI KHOA
+    function generateIntroTomTatNoiKhoa() {
+        const gioiTinh = getVal("gioi_tinh") || "Nam";
+        const tuoi = getVal("tuoi");
+        const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
+
+        let tsList = [];
+        ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
+            const val = getVal(key);
+            if (val) {
+                const lines = val.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+                if (lines.length > 0) tsList.push(lines.join(", "));
+            }
+        });
+        const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
+        const lyDo = getVal("ly_do_vao_vien") || "...";
+
+        return `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
+    }
+
+    // NÚT TẠO CÂU DẪN
+    function generateIntroTomTat() {
+        const loaiBa = document.getElementById("current_loai_ba").value;
+        const isHauPhau = (loaiBa === "Hậu phẫu");
+        
+        const cauDanMoi = isHauPhau ? generateIntroTomTatHauPhau() : generateIntroTomTatNoiKhoa();
+        const txtArea = document.getElementById("tom_tat");
+        const currentTt = txtArea.value.trim();
+
+        if (currentTt) {
+            const lines = currentTt.split("\n");
+            if (lines.length > 1 && (lines[1].trim().startsWith("-") || lines[1].trim().startsWith("*"))) {
+                txtArea.value = cauDanMoi + "\n" + lines.slice(1).join("\n");
+            } else {
+                txtArea.value = cauDanMoi + "\n" + currentTt;
+            }
+        } else {
+            txtArea.value = cauDanMoi;
+        }
         autoSave();
-        if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
+        triggerAllTextareasExpand();
+        txtArea.focus();
     }
+
     function updateOcrFileLabel(input) {
-    const lbl = document.getElementById('ocr_file_count');
-    if (input.files && input.files.length > 0) {
-        lbl.innerText = `Đã chọn ${input.files.length} ảnh`;
-        lbl.style.color = '#0a246a';
-        lbl.style.fontWeight = 'bold';
-    } else {
-        lbl.innerText = 'Chưa chọn tệp nào';
-        lbl.style.color = '#555555';
-        lbl.style.fontWeight = 'normal';
+        const lbl = document.getElementById('ocr_file_count');
+        if (input.files && input.files.length > 0) {
+            lbl.innerText = `Đã chọn ${input.files.length} ảnh`;
+            lbl.style.color = '#0a246a';
+            lbl.style.fontWeight = 'bold';
+        } else {
+            lbl.innerText = 'Chưa chọn tệp nào';
+            lbl.style.color = '#555555';
+            lbl.style.fontWeight = 'normal';
+        }
     }
-}
-    // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG VỚI NHIỀU ẢNH TRÊN MỖI HÀNG ---
+
     var clsRowCount = 0;
     var clsRowImages = {};
 
@@ -1389,18 +1375,15 @@
         return payload;
     }
     
-    // HÀM XÂY DỰNG NGỮ CẢNH TỰ ĐỘNG TÙY THEO LOẠI BỆNH ÁN VÀ VỊ TRÍ GỌI AI
     function buildProgressiveContext(stage) {
         const isHauPhau = (document.getElementById('current_loai_ba').value === "Hậu phẫu");
         const val = (id) => (document.getElementById(id) ? document.getElementById(id).value.trim() : "");
         
         let ctx = `=== HỒ SƠ LÂM SÀNG (${isHauPhau ? "BỆNH ÁN HẬU PHẪU" : "BỆNH ÁN NỘI KHOA / TIỀN PHẪU"}) ===\n`;
         
-        // 1. HÀNH CHÍNH & LÝ DO VÀO VIỆN
         ctx += `I. HÀNH CHÍNH:\n- Bệnh nhân: ${val('ho_ten')} | Tuổi: ${val('tuoi')} | Giới: ${val('gioi_tinh')} | Dân tộc: ${val('dan_tok')} | Nghề: ${val('nghe_nghiep')}\n`;
         ctx += `II. LÝ DO VÀO VIỆN: ${val('ly_do_vao_vien')}\n\n`;
 
-        // 2. BỆNH SỬ
         ctx += `III. BỆNH SỬ:\n`;
         if (isHauPhau) {
             ctx += `- Tình trạng trước mổ: ${val('bs_truoc_mo')}\n`;
@@ -1411,10 +1394,8 @@
         }
         ctx += `\n`;
 
-        // 3. TIỀN SỬ
         ctx += `IV. TIỀN SỬ:\n- Nội khoa: ${val('ts_noi_khoa')}\n- Ngoại khoa & Dị ứng: ${val('ts_ngoai_khoa')}\n- Thói quen/Lối sống: ${val('ts_loi_song')}\n- Gia đình: ${val('ts_gia_dinh')}\n\n`;
 
-        // 4. THĂM KHÁM LÂM SÀNG
         ctx += `V. THĂM KHÁM LÂM SÀNG:\n`;
         if (isHauPhau) {
             ctx += `- Thời điểm khám: ${val('ngay_hau_phau')}\n`;
@@ -1431,13 +1412,11 @@
 
         if (stage === 'cdpb') return ctx;
 
-        // 5. CHẨN ĐOÁN SƠ BỘ & ĐỀ XUẤT CẬN LÂM SÀNG
         ctx += `VI. CHẨN ĐOÁN SƠ BỘ: ${val('chan_doan_so_bo')}\n`;
         ctx += `VII. ĐỀ XUẤT CẬN LÂM SÀNG:\n- CĐ xác định: ${val('cls_dx_xac_dinh')}\n- Điều trị: ${val('cls_dx_dieu_tri')}\n- Khác: ${val('cls_dx_khac')}\n\n`;
 
         if (stage === 'ocr') return ctx;
 
-        // 6. CẬN LÂM SÀNG ĐÃ CÓ
         ctx += `VIII. KẾT QUẢ CẬN LÂM SÀNG ĐÃ CÓ:\n`;
         for (let i = 0; i < clsRowCount; i++) {
             const kq = val(`cls_kq_${i}`);
@@ -1452,7 +1431,6 @@
 
         if (stage === 'treatment') return ctx;
 
-        // 7. ĐIỀU TRỊ
         ctx += `XII. ĐIỀU TRỊ ĐÃ XÂY DỰNG:\n- Mục tiêu: ${val('dt_muc_tieu')}\n- Phác đồ cụ thể: ${val('dt_cu_the')}\n- Theo dõi: ${val('dt_theo_doi')}\n`;
 
         return ctx;
@@ -1476,7 +1454,7 @@
             if (d.chan_doan_phan_biet) document.getElementById('chan_doan_phan_biet').value = d.chan_doan_phan_biet;
             if (d.bien_luan) document.getElementById('bien_luan').value = d.bien_luan;
             autoSave();
-            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
+            triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
@@ -1504,7 +1482,7 @@
             if (d.dt_cu_the) document.getElementById('dt_cu_the').value = d.dt_cu_the;
             if (d.dt_theo_doi) document.getElementById('dt_theo_doi').value = d.dt_theo_doi;
             autoSave();
-            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
+            triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
@@ -1531,7 +1509,7 @@
             if (d.tien_luong) document.getElementById('tien_luong').value = d.tien_luong;
             if (d.tu_van) document.getElementById('tu_van').value = d.tu_van;
             autoSave();
-            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
+            triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
@@ -1836,186 +1814,10 @@
                 addClsRow();
             }
         }
-        // --- HÀM TỰ ĐỘNG TẠO CÂU DẪN TÓM TẮT BỆNH ÁN (TÁI HIỆN Y NGUYÊN STREAMLIT) ---
-function getVal(id) {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-}
-
-function generateIntroTomTatHauPhau() {
-    const gioiTinh = getVal("gioi_tinh") || "Nam";
-    const tuoi = getVal("tuoi");
-    const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
-
-    // 1. Trích xuất tiền sử (Nội khoa & Ngoại khoa)
-    let tsList = [];
-    ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
-        const val = getVal(key);
-        if (val) {
-            const lines = val.split("\n")
-                .map(l => l.trim().replace(/^[-*•\s]+/, ""))
-                .filter(l => l.length > 0);
-            if (lines.length > 0) {
-                tsList.push(lines.join(", "));
-            }
-        }
-    });
-    const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
-
-    // 2. Lý do vào viện
-    const lyDo = getVal("ly_do_vao_vien") || "...";
-    const bsTruocMo = getVal("bs_truoc_mo");
-    const bsTrongMo = getVal("bs_trong_mo");
-    const cdSoBo = getVal("chan_doan_so_bo");
-
-    // 3. Trích xuất Chẩn đoán trước mổ
-    let cdTruocMo = "...";
-    const regexCdtm = /(?:chẩn đoán trước mổ|cđ trước mổ)(?:\s*là)?[:\s\-]+([^.\n;]+)/i;
-    const mCdtm = bsTruocMo.match(regexCdtm);
-    if (mCdtm && mCdtm[1].trim()) {
-        cdTruocMo = mCdtm[1].trim();
-    } else if (bsTruocMo) {
-        const lines = bsTruocMo.split("\n").filter(l => l.trim().length > 0);
-        if (lines.length > 0) {
-            cdTruocMo = lines[lines.length - 1].trim().replace(/^[-*•\s]+/, "");
-        }
-    }
-
-    // 4. Trích xuất các trường trong mổ
-    let ppMo = "...";
-    let loaiMo = "cấp cứu/phiên";
-    let cdSauMo = "...";
-    let dienBienPhauThuat = "Quá trình mổ không có biến chứng.";
-
-    if (bsTrongMo) {
-        // Hình thức mổ
-        const mHt = bsTrongMo.match(/(?:hình thức mổ|mổ phiên\/mổ cấp cứu|mổ phiên hay mổ cấp cứu)[:\s\-]+([^\n]+)/i);
-        if (mHt) {
-            const txtHt = mHt[1].toLowerCase().trim();
-            if (txtHt.includes("cấp cứu") && !txtHt.includes("phiên")) {
-                loaiMo = "cấp cứu";
-            } else if (txtHt.includes("phiên") || txtHt.includes("chương trình")) {
-                loaiMo = "chương trình";
-            }
-        }
-
-        // Phương pháp mổ
-        const mPp = bsTrongMo.match(/(?:phương pháp mổ|phương pháp phẫu thuật|pt)[:\s\-]+([^\n]+)/i);
-        if (mPp && mPp[1].trim()) {
-            ppMo = mPp[1].trim();
-        }
-
-        // Quá trình mổ
-        const mQtm = bsTrongMo.match(/(?:quá trình mổ|diễn biến mổ)[:\s\-]+([^\n]+)/i);
-        if (mQtm && mQtm[1].trim()) {
-            let valQtm = mQtm[1].trim().replace(/\.+$/, "");
-            const lowerQtm = valQtm.toLowerCase();
-            if (lowerQtm.startsWith("không") || lowerQtm.startsWith("có") || lowerQtm.startsWith("thuận")) {
-                valQtm = valQtm.charAt(0).toLowerCase() + valQtm.slice(1);
-            }
-            dienBienPhauThuat = `Quá trình mổ ${valQtm}.`;
-        }
-
-        // Chẩn đoán sau mổ
-        const mSm = bsTrongMo.match(/(?:chẩn đoán sau mổ|cđ sau mổ)[:\s\-]+([^\n]+)/i);
-        if (mSm && mSm[1].trim()) {
-            cdSauMo = mSm[1].trim();
-        }
-    }
-
-    // Dự phòng chẩn đoán sau mổ từ chẩn đoán sơ bộ nếu chưa tìm thấy
-    if (cdSauMo === "..." && cdSoBo) {
-        let cdClean = cdSoBo.replace(/^hậu phẫu ngày[^-\:]*[-\:]\s*/i, "");
-        cdSauMo = cdClean.split("-")[0].trim() || cdSoBo;
-    }
-
-    // 5. Trích xuất Ngày hậu phẫu
-    const ngayHpVal = getVal("ngay_hau_phau");
-    let ngayHpStr = "ngày thứ ...";
-    const mHp = ngayHpVal.match(/(?:ngày\s*(?:thứ)?\s*)(\d+)/i);
-    if (mHp) {
-        ngayHpStr = `ngày thứ ${mHp[1]}`;
-    } else if (ngayHpVal) {
-        ngayHpStr = ngayHpVal;
-    }
-
-    // Ghép câu dẫn chính
-    const cauDanChinh = `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}, chẩn đoán trước mổ là ${cdTruocMo}, được mổ bằng phương pháp ${ppMo}, mổ ${loaiMo}, chẩn đoán sau mổ là ${cdSauMo}. ${dienBienPhauThuat} Hiện tại hậu phẫu ${ngayHpStr}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
-
-    // 6. Trích xuất Sinh hiệu tạo dòng 1
-    let shItems = [];
-    if (getVal("sh_mach")) shItems.push(`Mạch ${getVal("sh_mach")} lần/phút`);
-    if (getVal("sh_ha")) shItems.push(`HA ${getVal("sh_ha")} mmHg`);
-    if (getVal("sh_nhiet_do")) shItems.push(`Nhiệt độ ${getVal("sh_nhiet_do")} °C`);
-    if (getVal("sh_nhip_tho")) shItems.push(`Nhịp thở ${getVal("sh_nhip_tho")} lần/phút`);
-    const shStr = shItems.length > 0 ? shItems.join(", ") : "Mạch, HA, Nhiệt độ trong giới hạn bình thường";
-    const lineSh = `- Tỉnh, tiếp xúc tốt, Sinh hiệu: ${shStr}`;
-
-    // 7. Trích xuất Khám vết mổ tạo dòng 2
-    const rawVm = getVal("kham_vet_mo");
-    let vmClean = "khô, không sưng đỏ, chân chỉ sạch";
-    if (rawVm) {
-        const linesVm = rawVm.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
-        if (linesVm.length > 0) vmClean = linesVm.join("; ");
-    }
-    const lineVm = `- Vết mổ: ${vmClean}`;
-
-    // 8. Trích xuất Khám dẫn lưu tạo dòng 3
-    const rawDl = getVal("kham_dan_luu");
-    let dlClean = "chân dẫn lưu sạch, không rỉ dịch bất thường";
-    if (rawDl) {
-        const linesDl = rawDl.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
-        if (linesDl.length > 0) dlClean = linesDl.join("; ");
-    }
-    const lineDl = `- Dẫn lưu: ${dlClean}`;
-
-    return `${cauDanChinh}\n${lineSh}\n${lineVm}\n${lineDl}`;
-}
-
-// Câu dẫn cho bệnh án Nội khoa / Tiền phẫu
-function generateIntroTomTatNoiKhoa() {
-    const gioiTinh = getVal("gioi_tinh") || "Nam";
-    const tuoi = getVal("tuoi");
-    const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
-
-    let tsList = [];
-    ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
-        const val = getVal(key);
-        if (val) {
-            const lines = val.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
-            if (lines.length > 0) tsList.push(lines.join(", "));
-        }
-    });
-    const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
-    const lyDo = getVal("ly_do_vao_vien") || "...";
-
-    return `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
-}
-
-// Hàm kích hoạt khi bấm nút "⚡ Tạo câu dẫn"
-function generateIntroTomTat() {
-    const loaiBa = getVal("loai_benh_an");
-    const isHauPhau = (loaiBa === "Hậu phẫu");
-    
-    const cauDanMoi = isHauPhau ? generateIntroTomTatHauPhau() : generateIntroTomTatNoiKhoa();
-    const txtArea = document.getElementById("tom_tat");
-    const currentTt = txtArea.value.trim();
-
-    if (currentTt) {
-        const lines = currentTt.split("\n");
-        // Nếu người dùng đã gõ các gạch đầu dòng hội chứng phía dưới, giữ nguyên chúng
-        if (lines.length > 1 && (lines[1].trim().startsWith("-") || lines[1].trim().startsWith("*"))) {
-            txtArea.value = cauDanMoi + "\n" + lines.slice(1).join("\n");
-        } else {
-            txtArea.value = cauDanMoi + "\n" + currentTt;
-        }
-    } else {
-        txtArea.value = cauDanMoi;
-    }
-    txtArea.focus();
-}
-        triggerAllTextareasExpand();
         
+        // Khởi tạo thứ tự đúng cho giao diện mặc định ban đầu
+        setFormType(document.getElementById('current_loai_ba').value || "Nội khoa / Tiền phẫu");
+        triggerAllTextareasExpand();
     };
 </script>
 </body>
