@@ -1039,36 +1039,101 @@
         payload['loai_benh_an'] = loaiBa;
         return payload;
     }
+    
+    // HÀM XÂY DỰNG NGỮ CẢNH TỰ ĐỘNG TÙY THEO LOẠI BỆNH ÁN VÀ VỊ TRÍ GỌI AI
+    function buildProgressiveContext(stage) {
+        const isHauPhau = (document.getElementById('current_loai_ba').value === "Hậu phẫu");
+        const val = (id) => (document.getElementById(id) ? document.getElementById(id).value.trim() : "");
+        
+        let ctx = `=== HỒ SƠ LÂM SÀNG (${isHauPhau ? "BỆNH ÁN HẬU PHẪU" : "BỆNH ÁN NỘI KHOA / TIỀN PHẪU"}) ===\n`;
+        
+        // 1. HÀNH CHÍNH & LÝ DO VÀO VIỆN
+        ctx += `I. HÀNH CHÍNH:\n- Bệnh nhân: ${val('ho_ten')} | Tuổi: ${val('tuoi')} | Giới: ${val('gioi_tinh')} | Dân tộc: ${val('dan_tok')} | Nghề: ${val('nghe_nghiep')}\n`;
+        ctx += `II. LÝ DO VÀO VIỆN: ${val('ly_do_vao_vien')}\n\n`;
+
+        // 2. BỆNH SỬ
+        ctx += `III. BỆNH SỬ:\n`;
+        if (isHauPhau) {
+            ctx += `- Tình trạng trước mổ: ${val('bs_truoc_mo')}\n`;
+            ctx += `- Diễn biến trong mổ:\n${val('bs_trong_mo')}\n`;
+            ctx += `- Diễn biến sau mổ: ${val('bs_sau_mo')}\n`;
+        } else {
+            ctx += `${val('benh_su')}\n`;
+        }
+        ctx += `\n`;
+
+        // 3. TIỀN SỬ
+        ctx += `IV. TIỀN SỬ:\n- Nội khoa: ${val('ts_noi_khoa')}\n- Ngoại khoa & Dị ứng: ${val('ts_ngoai_khoa')}\n- Thói quen/Lối sống: ${val('ts_loi_song')}\n- Gia đình: ${val('ts_gia_dinh')}\n\n`;
+
+        // 4. THĂM KHÁM LÂM SÀNG
+        ctx += `V. THĂM KHÁM LÂM SÀNG:\n`;
+        if (isHauPhau) {
+            ctx += `- Thời điểm khám: ${val('ngay_hau_phau')}\n`;
+            ctx += `- Khám vết mổ: ${val('kham_vet_mo')}\n`;
+            ctx += `- Khám ống dẫn lưu: ${val('kham_dan_luu')}\n`;
+        } else {
+            ctx += `- Thăm khám lúc vào viện: ${val('kham_vao_vien')}\n`;
+        }
+        ctx += `- Khám toàn thân: ${val('kham_toan_than')}\n`;
+        ctx += `- Sinh hiệu: Mạch ${val('sh_mach')} ck/p | HA ${val('sh_ha')} mmHg | Nhiệt độ ${val('sh_nhiet_do')}°C | Nhịp thở ${val('sh_nhip_tho')} l/p | SpO2: ${val('sh_spo2')}%\n`;
+        ctx += `- Thể trạng: Chiều cao ${val('sh_chieu_cao')} cm | Cân nặng ${val('sh_can_nang')} kg\n`;
+        ctx += `- Khám các cơ quan:\n`;
+        ctx += `  + Tuần hoàn: ${val('kham_tuan_hoan')}\n  + Hô hấp: ${val('kham_ho_hap')}\n  + Tiêu hóa: ${val('kham_tieu_hoa')}\n  + Thần kinh: ${val('kham_than_kinh')}\n  + Tiết niệu: ${val('kham_tiet_nieu')}\n  + Cơ xương khớp: ${val('kham_co_xuong_khop')}\n  + Khác: ${val('kham_co_quan_khac')}\n\n`;
+
+        if (stage === 'cdpb') return ctx;
+
+        // 5. CHẨN ĐOÁN SƠ BỘ & ĐỀ XUẤT CẬN LÂM SÀNG
+        ctx += `VI. CHẨN ĐOÁN SƠ BỘ: ${val('chan_doan_so_bo')}\n`;
+        ctx += `VII. ĐỀ XUẤT CẬN LÂM SÀNG:\n- CĐ xác định: ${val('cls_dx_xac_dinh')}\n- Điều trị: ${val('cls_dx_dieu_tri')}\n- Khác: ${val('cls_dx_khac')}\n\n`;
+
+        if (stage === 'ocr') return ctx;
+
+        // 6. CẬN LÂM SÀNG ĐÃ CÓ
+        ctx += `VIII. KẾT QUẢ CẬN LÂM SÀNG ĐÃ CÓ:\n`;
+        for (let i = 0; i < clsRowCount; i++) {
+            const kq = val(`cls_kq_${i}`);
+            const pg = val(`cls_pg_${i}`);
+            if (kq || pg) {
+                ctx += `[Hàng ${i + 1}]: Kết quả: ${kq} || Biện giải: ${pg}\n`;
+            }
+        }
+        ctx += `\nIX. TÓM TẮT BỆNH ÁN: ${val('tom_tat')}\n`;
+        ctx += `X. CHẨN ĐOÁN XÁC ĐỊNH: ${val('chan_doan_xac_dinh')}\n`;
+        ctx += `XI. BIỆN LUẬN CHẨN ĐOÁN XÁC ĐỊNH: ${val('bien_luan_xac_dinh')}\n\n`;
+
+        if (stage === 'treatment') return ctx;
+
+        // 7. ĐIỀU TRỊ
+        ctx += `XII. ĐIỀU TRỊ ĐÃ XÂY DỰNG:\n- Mục tiêu: ${val('dt_muc_tieu')}\n- Phác đồ cụ thể: ${val('dt_cu_the')}\n- Theo dõi: ${val('dt_theo_doi')}\n`;
+
+        return ctx;
+    }
 
     async function callAICD() {
         const btn = document.getElementById('btn-ai-cd');
         const originText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "⏳ Đang suy luận...";
-        document.getElementById('status-storage').innerText = 'AI đang suy luận chẩn đoán...';
-
         try {
             const payload = getFormPayload();
+            payload.full_context = buildProgressiveContext('cdpb');
             const res = await fetch('/api/ai/cdpb', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || 'Lỗi xử lý AI');
-            }
+            if (!res.ok) throw new Error((await res.json()).detail || 'Lỗi AI');
             const d = await res.json();
             if (d.chan_doan_phan_biet) document.getElementById('chan_doan_phan_biet').value = d.chan_doan_phan_biet;
             if (d.bien_luan) document.getElementById('bien_luan').value = d.bien_luan;
             autoSave();
+            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
             btn.disabled = false;
             btn.innerText = originText;
         }
-        triggerAllTextareasExpand();
     }
 
     async function callAITreatment() {
@@ -1076,30 +1141,27 @@
         const originText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "⏳ Đang lập phác đồ...";
-        
         try {
             const payload = getFormPayload();
+            payload.full_context = buildProgressiveContext('treatment');
             const res = await fetch('/api/ai/treatment', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || 'Lỗi xử lý AI');
-            }
+            if (!res.ok) throw new Error((await res.json()).detail || 'Lỗi AI');
             const d = await res.json();
             if (d.dt_muc_tieu) document.getElementById('dt_muc_tieu').value = d.dt_muc_tieu;
             if (d.dt_cu_the) document.getElementById('dt_cu_the').value = d.dt_cu_the;
             if (d.dt_theo_doi) document.getElementById('dt_theo_doi').value = d.dt_theo_doi;
             autoSave();
+            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
             btn.disabled = false;
             btn.innerText = originText;
         }
-        triggerAllTextareasExpand();
     }
 
     async function callAIPrognosis() {
@@ -1107,29 +1169,26 @@
         const originText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "⏳ Đang phân tích...";
-        
         try {
             const payload = getFormPayload();
+            payload.full_context = buildProgressiveContext('prognosis');
             const res = await fetch('/api/ai/prognosis', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || 'Lỗi xử lý AI');
-            }
+            if (!res.ok) throw new Error((await res.json()).detail || 'Lỗi AI');
             const d = await res.json();
             if (d.tien_luong) document.getElementById('tien_luong').value = d.tien_luong;
             if (d.tu_van) document.getElementById('tu_van').value = d.tu_van;
             autoSave();
+            if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
         } catch (e) {
             alert('Lỗi AI: ' + e.message);
         } finally {
             btn.disabled = false;
             btn.innerText = originText;
         }
-        triggerAllTextareasExpand();
     }
 
     async function callAICritique() {
