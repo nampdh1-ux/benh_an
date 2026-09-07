@@ -821,16 +821,27 @@
                     </div>
                 </details>
 
-                <div id="sec-tom-tat"></div>
-                <details class="win2k-expander" open id="expander-tt">
-                    <summary>VIII. TÓM TẮT BỆNH ÁN</summary>
-                    <div class="expander-body">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
-                            <label style="font-weight: bold;">Tóm tắt bệnh án:</label>
-                            <button type="button" onclick="generateIntroTomTat()">⚡ Tạo câu dẫn tự động</button>
-                        </div>
-                        <textarea id="tom_tat" rows="4" oninput="autoSave()"></textarea>
-                    </div>
+                <!-- KHU VỰC TÓM TẮT BỆNH ÁN WIN2K -->
+<div style="margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <label for="tom_tat" style="font-weight: bold; font-size: 12px; color: #000000;">
+            <span id="label_so_tt">VI</span>. Tóm tắt bệnh án:
+        </label>
+        
+        <!-- Nút bấm phong cách Windows 2000 gọi hàm tạo câu dẫn -->
+        <button type="button" 
+                onclick="generateIntroTomTat()" 
+                title="Tự động trích xuất thông tin phẫu thuật/nội khoa và tạo câu dẫn chuẩn"
+                style="background: #d4d0c8; border-top: 2px solid #ffffff; border-left: 2px solid #ffffff; border-right: 2px solid #404040; border-bottom: 2px solid #404040; padding: 2px 10px; font-weight: bold; font-size: 11px; cursor: pointer; font-family: 'Tahoma', sans-serif;">
+            ⚡ Tạo câu dẫn
+        </button>
+    </div>
+
+    <!-- Ô nhập văn bản tóm tắt -->
+    <textarea id="tom_tat" name="tom_tat" rows="6" 
+        placeholder="Dòng đầu tiên là câu dẫn tóm tắt. Các dòng tiếp theo ghi các hội chứng và triệu chứng có giá trị..."
+        style="width: 100%; box-sizing: border-box; font-family: 'Tahoma', sans-serif; font-size: 12px; padding: 6px; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff; background: #ffffff;"></textarea>
+</div>
                 </details>
 
                 <div id="sec-chan-doan-xac-dinh"></div>
