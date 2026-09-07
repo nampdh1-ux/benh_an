@@ -723,6 +723,26 @@
 </div>
 
 <script>
+    // HÀM TỰ ĐỘNG CO GIÃN CHIỀU CAO CHO TEXTAREA (AUTO-EXPAND)
+    function autoExpandTextarea(el) {
+        if (!el || el.tagName.toLowerCase() !== 'textarea') return;
+        el.style.height = 'auto'; // Reset để tính lại khi xóa bớt chữ
+        el.style.height = (el.scrollHeight + 4) + 'px'; // Mở rộng theo nội dung thực tế
+    }
+
+    // Lắng nghe sự kiện gõ phím trên toàn trang cho tất cả các ô textarea (kể cả các ô cận lâm sàng tạo mới)
+    document.addEventListener('input', function (e) {
+        if (e.target && e.target.tagName.toLowerCase() === 'textarea') {
+            autoExpandTextarea(e.target);
+        }
+    });
+
+    // Kích hoạt tính toán lại chiều cao cho toàn bộ các ô khi vừa nạp dữ liệu/mở trang
+    function triggerAllTextareasExpand() {
+        setTimeout(() => {
+            document.querySelectorAll('textarea').forEach(el => autoExpandTextarea(el));
+        }, 50);
+    }
     function toggleDropdown(menuId) {
         const menu = document.getElementById(menuId);
         const isOpen = menu.style.display === 'block';
@@ -1398,6 +1418,7 @@
                 addClsRow();
             }
         }
+        triggerAllTextareasExpand();
     };
 </script>
 </body>
