@@ -42,22 +42,46 @@ ADMIN_BYPASS_TOKEN = os.getenv("ADMIN_BYPASS_TOKEN", "").strip()
 ACTIVE_SESSIONS: Dict[str, Dict[str, Any]] = {}
 OTP_STORAGE: Dict[str, Dict[str, Any]] = {}
 
-def send_ssl_email(to_email: str, subject: str, content: str):
-    if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
-        print(f"⚠️ Chưa có cấu hình mail cho {to_email}")
+import json
+import urllib.error
+import urllib.request
+
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+
+def send_resend_email(to_email: str, subject: str, content: str):
+    """Gửi email qua HTTPS API (Port 443) bằng urllib chuẩn, hoàn toàn miễn phí"""
+    print(f"\n[GỬI EMAIL TỚI {to_email}] Tiêu đề: {subject}")
+    if not RESEND_API_KEY:
+        print("⚠️ Chưa có biến RESEND_API_KEY trong Environment của Render!")
         return
+
+    payload = {
+        "from": "Bệnh Án Lâm Sàng <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": subject,
+        "text": content
+    }
+    
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=data,
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        method="POST"
+    )
+
     try:
-        msg = MIMEMultipart()
-        msg["From"] = f"Hệ Thống Bệnh Án <{SENDER_EMAIL}>"
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(content, "plain", "utf-8"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=12) as server:
-            server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
-            server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
-        print(f"✅ Gửi mail thành công tới: {to_email}")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp_body = resp.read().decode("utf-8")
+            print(f"✅ Gửi email thành công tới {to_email}: {resp_body}")
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode("utf-8")
+        print(f"❌ Lỗi HTTP từ Resend ({e.code}): {err_msg}")
     except Exception as exc:
-        print(f"❌ Lỗi gửi tới {to_email}: {exc}")
+        print(f"❌ Lỗi kết nối HTTPS: {exc}")
 
 def check_authenticated(session_token: str = None) -> bool:
     if not session_token or session_token not in ACTIVE_SESSIONS:
@@ -250,12 +274,12 @@ async def api_request_otp(payload: Dict[str, Any], background_tasks: BackgroundT
 
     # Gửi cho người dùng
     user_body = f"Mã OTP xác thực của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
-    background_tasks.add_task(send_ssl_email, email, "[XÁC THỰC] Mã OTP Bệnh Án", user_body)
+    background_tasks.add_task(send_resend_email, email, "[XÁC THỰC] Mã OTP Bệnh Án", user_body)
 
     # Gửi thông báo cho admin
     if ADMIN_EMAIL:
         admin_body = f"Tài khoản {email} vừa yêu cầu OTP: {otp_code}"
-        background_tasks.add_task(send_ssl_email, ADMIN_EMAIL, f"[CẢNH BÁO ĐĂNG NHẬP] {email}", admin_body)
+        background_tasks.add_task(send_resend_email, ADMIN_EMAIL, f"[CẢNH BÁO ĐĂNG NHẬP] {email}", admin_body)
 
     return {"status": "ok", "message": "Đã gửi mã OTP."}
 
