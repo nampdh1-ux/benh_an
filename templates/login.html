@@ -25,11 +25,11 @@
             border-bottom: 2px solid #404040;
             box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
             width: 100%;
-            max-width: 410px;
+            max-width: 380px;
         }
         .title-bar {
             background: linear-gradient(90deg, #0a246a 0%, #a6caf0 100%);
-            padding: 4px 6px;
+            padding: 5px 8px;
             color: #ffffff;
             font-weight: bold;
             display: flex;
@@ -45,7 +45,8 @@
         .form-group label {
             display: block;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            color: #000000;
         }
         .form-group input {
             width: 100%;
@@ -64,23 +65,25 @@
             border-left: 2px solid #ffffff;
             border-right: 2px solid #404040;
             border-bottom: 2px solid #404040;
-            padding: 5px 14px;
+            padding: 5px 16px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 1px 1px 0px #000;
+            font-size: 12px;
         }
         .btn-win:active {
             border-top: 2px solid #404040;
             border-left: 2px solid #404040;
             border-right: 2px solid #ffffff;
             border-bottom: 2px solid #ffffff;
+            padding: 6px 15px 4px 17px;
         }
         .msg-error {
             display: none;
             background: #ffe6e6;
             color: #d8000c;
             border: 1px solid #d8000c;
-            padding: 6px;
+            padding: 6px 8px;
             margin-bottom: 12px;
             font-weight: bold;
             font-size: 11.5px;
@@ -91,124 +94,60 @@
 
 <div class="window">
     <div class="title-bar">
-        <span>🔑 Hệ Thống Xác Thực [Logon]</span>
+        <span>🔑 Xác thực Bệnh án lâm sàng</span>
     </div>
     <div class="window-body">
         <div id="err-box" class="msg-error"></div>
 
-        <div id="box-step-1">
-            <p style="margin-top: 0; color: #0a246a; font-weight: bold;">Nhập địa chỉ Gmail để nhận mã OTP:</p>
-            <div class="form-group">
-                <label for="inp-email">Gmail cá nhân:</label>
-                <input type="email" id="inp-email" placeholder="tenbancuaban@gmail.com">
-            </div>
-            <div style="text-align: right; margin-top: 16px;">
-                <button type="button" class="btn-win" id="btn-request" onclick="doRequestOtp()">Tiếp tục ❯</button>
-            </div>
-        </div>
-
-        <div id="box-step-2" style="display: none;">
-            <p style="margin-top: 0; color: #0a246a; font-weight: bold;">✔ Đã gửi mã OTP. Vui lòng kiểm tra email và nhập mật khẩu:</p>
-            <div class="form-group">
-                <label for="inp-otp">Mã OTP (6 chữ số):</label>
-                <input type="text" id="inp-otp" maxlength="6" placeholder="------" style="letter-spacing: 4px; font-weight: bold; font-size: 15px;">
-            </div>
+        <form id="login-form" onsubmit="event.preventDefault(); doLogin();">
             <div class="form-group">
                 <label for="inp-pass">Mật khẩu hệ thống (APP_PASSWORD):</label>
-                <input type="password" id="inp-pass" placeholder="••••••••">
+                <input type="password" id="inp-pass" placeholder="••••••••" autofocus autocomplete="current-password">
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 16px;">
-                <button type="button" class="btn-win" onclick="backStep1()">❮ Quay lại</button>
-                <button type="button" class="btn-win" id="btn-verify" onclick="doVerify()">Đăng nhập</button>
+            <div style="text-align: right; margin-top: 18px;">
+                <button type="submit" class="btn-win" id="btn-submit">Đăng nhập ❯</button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script>
-    let savedEmail = "";
+    async function doLogin() {
+        const errBox = document.getElementById('err-box');
+        errBox.style.display = 'none';
 
-    function showError(msg) {
-        const el = document.getElementById('err-box');
-        el.innerText = msg;
-        el.style.display = 'block';
-    }
+        const passInput = document.getElementById('inp-pass');
+        const pass = passInput.value.trim();
 
-    function clearError() {
-        document.getElementById('err-box').style.display = 'none';
-    }
-
-    async function doRequestOtp() {
-        clearError();
-        savedEmail = document.getElementById('inp-email').value.trim();
-        if (!savedEmail || !savedEmail.includes('@')) {
-            showError('Vui lòng nhập địa chỉ Gmail hợp lệ!');
-            return;
-        }
-
-        const btn = document.getElementById('btn-request');
-        btn.disabled = true;
-        btn.innerText = 'Đang gửi...';
-
-        try {
-            const res = await fetch('/api/auth/request-otp', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({email: savedEmail})
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || 'Không thể tạo OTP');
-
-            document.getElementById('box-step-1').style.display = 'none';
-            document.getElementById('box-step-2').style.display = 'block';
-            document.getElementById('inp-otp').focus();
-        } catch (err) {
-            showError(err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'Tiếp tục ❯';
-        }
-    }
-
-    function backStep1() {
-        clearError();
-        document.getElementById('box-step-2').style.display = 'none';
-        document.getElementById('box-step-1').style.display = 'block';
-    }
-
-    async function doVerify() {
-        clearError();
-        const otp = document.getElementById('inp-otp').value.trim();
-        const pass = document.getElementById('inp-pass').value.trim();
-
-        if (!otp) {
-            showError('Vui lòng điền mã OTP!');
-            return;
-        }
         if (!pass) {
-            showError('Vui lòng điền mật khẩu hệ thống!');
+            errBox.innerText = 'Vui lòng nhập mật khẩu hệ thống!';
+            errBox.style.display = 'block';
+            passInput.focus();
             return;
         }
 
-        const btn = document.getElementById('btn-verify');
+        const btn = document.getElementById('btn-submit');
         btn.disabled = true;
-        btn.innerText = 'Đang xác thực...';
+        btn.innerText = 'Đang kiểm tra...';
 
         try {
-            const res = await fetch('/api/auth/verify-otp', {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({email: savedEmail, otp: otp, password: pass})
+                body: JSON.stringify({password: pass})
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || 'Xác thực thất bại');
+            if (!res.ok) throw new Error(data.detail || 'Mật khẩu không chính xác!');
 
+            // Đăng nhập thành công -> chuyển về trang chủ
             window.location.href = '/';
         } catch (err) {
-            showError(err.message);
+            errBox.innerText = err.message;
+            errBox.style.display = 'block';
+            passInput.select();
         } finally {
             btn.disabled = false;
-            btn.innerText = 'Đăng nhập';
+            btn.innerText = 'Đăng nhập ❯';
         }
     }
 </script>
