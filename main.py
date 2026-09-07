@@ -100,27 +100,25 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
-    benh_su_str = get_benh_su_text(payload)
-    context = (
-        f"Loại bệnh án: {payload.get('loai_benh_an')}\n"
-        f"Bệnh nhân: {payload.get('tuoi')} tuổi, Giới tính: {payload.get('gioi_tinh')}\n"
-        f"Lý do vào viện: {payload.get('ly_do_vao_vien')}\n"
-        f"Bệnh sử: {benh_su_str}\n"
-        f"Khám toàn thân: {payload.get('kham_toan_than')}\n"
-        f"Chẩn đoán sơ bộ: {payload.get('chan_doan_so_bo')}"
-    )
-    prompt = f"""Bạn là một bác sĩ lâm sàng thực thụ và giàu kinh nghiệm. Hãy nhìn vào toàn thể ca bệnh dưới đây, phân tích logic giữa bệnh cảnh, triệu chứng cơ năng, thực thể và chẩn đoán sơ bộ để đưa ra:
-                    1. Danh sách CHẨN ĐOÁN PHÂN BIỆT (Differential Diagnosis): sắp xếp thứ tự từ khả năng cao nhất đến thấp hơn, từ bệnh lý cấp cứu nguy hiểm đến ít cấp cứu hơn.
-                    2. BIỆN LUẬN CHẨN ĐOÁN SƠ BỘ: Lập luận chặt chẽ vì sao nghĩ đến chẩn đoán sơ bộ và vì sao cần phân biệt với các bệnh lý nêu trên.
+    context = payload.get("full_context", "")
+    prompt = f"""
+Bạn là một bác sĩ chuyên khoa thực thụ. Dưới đây là toàn bộ dữ liệu lâm sàng thu thập được từ đầu đến thời điểm thăm khám hiện tại:
+==================================================
+{context}
+==================================================
 
-                    Dữ kiện ca bệnh:\n{context}\nYÊU CẦU ĐẦU RA (Xuất ra đúng 2 khối nhãn sau, không viết thêm lời dẫn chào hỏi):\n1. Danh sách Chẩn đoán phân biệt:  1. Tên bệnh A
-                    2. Tên bệnh B
-                    3. Tên bệnh C\n2. Biện luận chẩn đoán sơ bộ (Nội dung đoạn văn biện luận logic, súc tích)\nTrả về đúng 2 thẻ: [CHAN_DOAN_PHAN_BIET] ... [BIEN_LUAN_SO_BO] ..."""
+Dựa trên nguyên lý biện luận lâm sàng (Clinical Reasoning):
+1. Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên hoặc mức độ nguy cấp.
+2. Viết đoạn Biện luận chẩn đoán sơ bộ: Phân tích logic tại sao hướng tới chẩn đoán sơ bộ (dấu hiệu chỉ điểm, yếu tố nguy cơ) và tại sao chưa thể loại trừ các chẩn đoán phân biệt.
+
+YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
+[CHAN_DOAN_PHAN_BIET]
+...
+[BIEN_LUAN_SO_BO]
+...
+"""
     try:
-        response = client.models.generate_content(
-            model=MODEL_DEFAULT,
-            contents=prompt,
-        )
+        response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         resp = response.text or ""
         cdpb, bl = "", ""
         if "[CHAN_DOAN_PHAN_BIET]" in resp and "[BIEN_LUAN_SO_BO]" in resp:
@@ -138,13 +136,29 @@ async def api_ai_treatment(payload: Dict[str, Any]):
     client = get_ai_client()
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
-    context = f"Loại: {payload.get('loai_benh_an')}\nChẩn đoán: {payload.get('chan_doan_xac_dinh')}\nTiền sử: {payload.get('ts_noi_khoa')}"
-    prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
+    
+    context = payload.get("full_context", "")
+    prompt = f"""
+Bạn là bác sĩ điều trị. Dưới đây là toàn bộ hồ sơ bệnh nhân tính đến khi đã có Chẩn đoán xác định và Cận lâm sàng:
+==================================================
+{context}
+==================================================
+
+Hãy xây dựng kế hoạch điều trị toàn diện theo y học thực chứng:
+1. Mục tiêu điều trị (Ngắn hạn & Dài hạn).
+2. Điều trị cụ thể: Bao gồm chế độ chăm sóc/dinh dưỡng, dùng thuốc (tên hoạt chất, liều lượng, đường dùng nếu cần thiết) hoặc can thiệp ngoại khoa/chăm sóc hậu phẫu chuyên biệt.
+3. Kế hoạch theo dõi: Các dấu hiệu sinh tồn, dẫn lưu, biến chứng cần tầm soát.
+
+YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 3 thẻ:
+[MUC_TIEU]
+...
+[DIEU_TRI_CU_THE]
+...
+[THEO_DOI]
+...
+"""
     try:
-        response = client.models.generate_content(
-            model=MODEL_DEFAULT,
-            contents=prompt,
-        )
+        response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         txt = response.text or ""
         mt, ct, td = "", "", ""
         if "[MUC_TIEU]" in txt and "[DIEU_TRI_CU_THE]" in txt and "[THEO_DOI]" in txt:
@@ -162,13 +176,26 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
     client = get_ai_client()
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
-    context = f"Chẩn đoán: {payload.get('chan_doan_xac_dinh')}\nĐiều trị: {payload.get('dt_cu_the')}"
-    prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
+    
+    context = payload.get("full_context", "")
+    prompt = f"""
+Bạn là bác sĩ lâm sàng. Dưới đây là toàn bộ diễn biến ca bệnh và phương án điều trị đã thiết lập:
+==================================================
+{context}
+==================================================
+
+Hãy phân tích:
+1. Tiên lượng: Gồm tiên lượng gần (biến chứng cấp, khả năng hồi phục trong đợt điều trị) và tiên lượng xa (tái phát, di chứng, chức năng cơ quan).
+2. Tư vấn & Giáo dục sức khỏe: Hướng dẫn chăm sóc, chế độ vận động/ăn uống, dấu hiệu báo động đỏ cần tái khám ngay.
+
+YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
+[TIEN_LUONG]
+...
+[TU_VAN]
+...
+"""
     try:
-        response = client.models.generate_content(
-            model=MODEL_DEFAULT,
-            contents=prompt,
-        )
+        response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         res_text = response.text or ""
         tl, tv = "", ""
         if "[TIEN_LUONG]" in res_text and "[TU_VAN]" in res_text:
@@ -435,11 +462,12 @@ async def api_export_pdf(payload: Dict[str, Any]):
         nhiet = payload.get("sh_nhiet_do") or "--"
         ha = payload.get("sh_ha") or "--"
         nt = payload.get("sh_nhip_tho") or "--"
+        spo2 = payload.get("sh_spo2") or "--"
         cn = payload.get("sh_can_nang") or "--"
         cc = payload.get("sh_chieu_cao") or "--"
         bmi = payload.get("sh_bmi") or "--"
         eval_bmi = payload.get("sh_bmi_eval") or "--"
-        sh_line = f"Sinh hiệu: Mạch: {mach} ck/phút | HA: {ha} mmHg | Nhiệt độ: {nhiet} °C | Nhịp thở: {nt} l/phút\nThể trạng: Chiều cao: {cc} cm | Cân nặng: {cn} kg | BMI: {bmi} kg/m² ({eval_bmi})"
+        sh_line = f"Sinh hiệu: Mạch: {mach} ck/phút | HA: {ha} mmHg | Nhiệt độ: {nhiet} °C | Nhịp thở: {nt} l/phút | SpO2: {spo2}%\nThể trạng: Chiều cao: {cc} cm | Cân nặng: {cn} kg | BMI: {bmi} kg/m² ({eval_bmi})"
         pdf.add_txt(sh_line)
 
         if is_hau_phau:
