@@ -909,23 +909,22 @@
     // HÀM TẠO HÀNG CẬN LÂM SÀNG CÓ NÚT CHỌN ẢNH CHUẨN WIN2K
     let clsRowImages = {}; // Lưu trữ ảnh Base64 trong bộ nhớ tạm của trang
 
-    function addClsRow(kq = '', pg = '', imgData = '') {
+    // Bộ nhớ lưu chuỗi ảnh Base64 cho từng hàng người dùng tự up
+    let clsRowImages = {};
+
+    function addClsRow(kq = '', pg = '') {
         const tbody = document.getElementById('cls-tbody');
         const rIdx = clsRowCount++;
-        if (imgData) {
-            clsRowImages[rIdx] = imgData;
-        }
 
         const tr = document.createElement('tr');
         tr.id = `cls-row-${rIdx}`;
         tr.innerHTML = `
             <td>
                 <textarea id="cls_kq_${rIdx}" rows="3" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()">${kq}</textarea>
-                <div style="margin-top: 5px; border-top: 1px dashed #808080; padding-top: 4px;">
-                    <input type="file" id="cls_file_${rIdx}" accept="image/*" onchange="handleRowImage(event, ${rIdx})" style="font-size: 11px;">
-                    <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
-                        ${imgData ? `<img src="${imgData}" style="max-height: 80px; border: 1px solid #808080;">` : ''}
-                    </div>
+                <div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed #808080;">
+                    <label style="font-weight: bold; font-size: 11px;">📷 Đính kèm ảnh kết quả/hình ảnh học:</label><br>
+                    <input type="file" accept="image/*" onchange="handleManualRowImage(event, ${rIdx})" style="margin-top: 2px; font-size: 11px;">
+                    <div id="cls_preview_${rIdx}" style="margin-top: 4px;"></div>
                 </div>
             </td>
             <td>
@@ -933,6 +932,28 @@
             </td>
         `;
         tbody.appendChild(tr);
+    }
+
+    // Đọc ảnh khi người dùng bấm chọn file thủ công ở từng hàng
+    function handleManualRowImage(event, idx) {
+        const file = event.target.files[0];
+        if (!file) {
+            delete clsRowImages[idx];
+            document.getElementById(`cls_preview_${idx}`).innerHTML = '';
+            autoSave();
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            clsRowImages[idx] = e.target.result; // Lưu chuỗi Base64
+            document.getElementById(`cls_preview_${idx}`).innerHTML = `
+                <img src="${e.target.result}" style="max-height: 70px; border: 1px solid #808080; margin-top: 2px;">
+                <span style="color: green; font-size: 10px; font-weight: bold;"> (Đã nhận ảnh)</span>
+            `;
+            autoSave();
+        };
+        reader.readAsDataURL(file);
     }
 
     function handleRowImage(e, idx) {
