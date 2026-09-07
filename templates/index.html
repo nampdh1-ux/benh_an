@@ -1051,6 +1051,58 @@
         }
     }
 
+    // 1. Chuyển đổi an toàn dữ liệu từ AI nếu trả về dạng Object / Array thành văn bản nhiều dòng
+    function stringifyOcrData(val) {
+        if (!val) return "";
+        if (typeof val === 'string') return val.trim();
+        if (Array.isArray(val)) {
+            return val.map(it => {
+                if (typeof it === 'object' && it !== null) {
+                    return Object.entries(it).map(([k, v]) => `${k}: ${v}`).join(' | ');
+                }
+                return String(it);
+            }).join('\n');
+        }
+        if (typeof val === 'object' && val !== null) {
+            return Object.entries(val)
+                .map(([k, v]) => {
+                    if (typeof v === 'object' && v !== null) {
+                        return `${k}: ${JSON.stringify(v)}`;
+                    }
+                    return `${k}: ${v}`;
+                })
+                .join('\n');
+        }
+        return String(val);
+    }
+
+    // 2. Điền kết quả OCR: Ưu tiên tìm hàng trống sẵn có trước, hết hàng trống mới tạo hàng mới
+    function fillOrAddClsRow(kq, pg) {
+        const textKq = stringifyOcrData(kq);
+        const textPg = stringifyOcrData(pg);
+
+        // Tìm hàng đầu tiên đang để trống cả ô Kết quả và ô Biện giải
+        let emptyRowIdx = -1;
+        for (let i = 0; i < clsRowCount; i++) {
+            const elKq = document.getElementById(`cls_kq_${i}`);
+            const elPg = document.getElementById(`cls_pg_${i}`);
+            if (elKq && elPg && !elKq.value.trim() && !elPg.value.trim()) {
+                emptyRowIdx = i;
+                break;
+            }
+        }
+
+        if (emptyRowIdx !== -1) {
+            // Điền trực tiếp vào hàng trống có sẵn
+            document.getElementById(`cls_kq_${emptyRowIdx}`).value = textKq;
+            document.getElementById(`cls_pg_${emptyRowIdx}`).value = textPg;
+        } else {
+            // Nếu không còn hàng trống nào thì mới tạo thêm hàng mới ở cuối
+            addClsRow(textKq, textPg);
+        }
+    }
+
+    // 3. Hàm gọi API OCR hàng loạt với xử lý loading và bắt lỗi chi tiết
     async function runBatchOCR() {
         const fileInput = document.getElementById('ocr_files');
         if (!fileInput.files.length) {
@@ -1060,26 +1112,34 @@
         const btn = document.getElementById('btn-ai-ocr');
         const originText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = "⏳ Đang OCR...";
+        btn.innerText = "⏳ Đang phân tích OCR...";
         
         const formData = new FormData();
         for (let i = 0; i < fileInput.files.length; i++) {
             formData.append('files', fileInput.files[i]);
         }
         const st = document.getElementById('ocr-status');
-        st.innerText = 'Đang phân tích OCR...';
+        st.innerText = 'Đang gửi ảnh lên Gemini phân tích...';
         
         try {
             const res = await fetch('/api/ocr/batch', { method: 'POST', body: formData });
-            if (!res.ok) throw new Error('Lỗi máy chủ OCR');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: 'Lỗi máy chủ OCR' }));
+                throw new Error(errData.detail || 'Không thể xử lý ảnh');
+            }
             const data = await res.json();
-            if (data.results) {
-                data.results.forEach(it => addClsRow(it.ket_qua, it.phien_giai));
-                st.innerText = `Đã phân tích xong ${data.results.length} ảnh!`;
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(it => {
+                    fillOrAddClsRow(it.ket_qua, it.phien_giai);
+                });
+                st.innerText = `✅ Đã phân tích & điền xong ${data.results.length} ảnh!`;
                 autoSave();
+            } else {
+                st.innerText = 'Không nhận diện được nội dung từ ảnh.';
             }
         } catch (err) {
-            st.innerText = 'Lỗi phân tích OCR.';
+            alert('Lỗi OCR: ' + err.message);
+            st.innerText = '❌ Phân tích OCR thất bại.';
         } finally {
             btn.disabled = false;
             btn.innerText = originText;
