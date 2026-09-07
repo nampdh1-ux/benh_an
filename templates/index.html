@@ -194,6 +194,33 @@
             .quick-select-menu { width: 260px; right: -10px; }
             #pdf-preview-frame { height: 420px !important; }
         }
+        /* NÚT BẤM DẠNG TOGGLE (LÚN XUỐNG KHI ĐƯỢC CHỌN) */
+        .btn-toggle {
+            font-weight: bold;
+            padding: 4px 14px;
+            cursor: pointer;
+            outline: none;
+            background: #ece9d8;
+        }
+        /* Trạng thái được chọn: viền chìm 3D sâu và đổi màu chữ */
+        .btn-toggle.active {
+            border-top: 2px solid #404040 !important;
+            border-left: 2px solid #404040 !important;
+            border-right: 2px solid #ffffff !important;
+            border-bottom: 2px solid #ffffff !important;
+            background: #dcd8c8 !important;
+            box-shadow: inset 1px 1px 0px #000000 !important;
+            color: #0a246a !important;
+        }
+
+        /* NÚT CHỌN FILE ĐÍNH KÈM WIN2K */
+        .btn-file-custom {
+            font-size: 11px !important;
+            font-weight: bold !important;
+            padding: 3px 8px !important;
+            cursor: pointer;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -238,16 +265,16 @@
             </div>
         </div>
 
-        <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <strong style="color: #0a246a;">📌 LỰA CHỌN MẪU BỆNH ÁN:</strong>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <input type="radio" name="radio_loai_ba" id="ba_noikhoa" value="Nội khoa / Tiền phẫu" checked onchange="toggleFormType()">
-                <strong>Nội khoa / Tiền phẫu</strong>
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <input type="radio" name="radio_loai_ba" id="ba_hauphau" value="Hậu phẫu" onchange="toggleFormType()">
-                <strong>Hậu phẫu</strong>
-            </label>
+            <!-- Lưu giá trị loại bệnh án hiện tại vào input hidden -->
+            <input type="hidden" id="current_loai_ba" value="Nội khoa / Tiền phẫu">
+            <button type="button" id="btn_type_noikhoa" class="btn-toggle active" onclick="setFormType('Nội khoa / Tiền phẫu')">
+                 Nội khoa / Tiền phẫu
+            </button>
+            <button type="button" id="btn_type_hauphau" class="btn-toggle" onclick="setFormType('Hậu phẫu')">
+                 Hậu phẫu
+            </button>
         </div>
 
         <menu role="tablist">
