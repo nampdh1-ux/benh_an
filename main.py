@@ -16,13 +16,13 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fpdf import FPDF
+from google import genai
 from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 from pydantic import BaseModel
-import google.generativeai as genai
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
@@ -35,12 +35,14 @@ APP_PASSWORD = os.getenv("APP_PASSWORD", "123456")
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "clinical_secret_2026")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 
-# --- TẢI FONT UNICODE TIẾNG VIỆT TỪ NGUỒN CHÍNH THỨC ---
+# Bộ nhớ tạm mã OTP
+otp_storage: Dict[str, str] = {}
+
+# --- TẢI FONT UNICODE TIẾNG VIỆT TỪ GOOGLE FONTS ---
 FONT_REGULAR = "Roboto-Regular.ttf"
 FONT_BOLD = "Roboto-Bold.ttf"
 
 def download_fonts_if_missing():
-    # Sử dụng link raw chính thức từ GitHub Google Fonts
     urls = {
         FONT_REGULAR: "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Regular.ttf",
         FONT_BOLD: "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf"
@@ -51,25 +53,23 @@ def download_fonts_if_missing():
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req, timeout=15) as resp, open(filename, 'wb') as f:
                     f.write(resp.read())
-                print(f"✅ Đã tải thành công font: {filename}")
             except Exception as e:
-                print(f"⚠️ Chưa thể tải {filename}: {e}")
+                print(f"Chưa thể tải {filename}: {e}")
 
 download_fonts_if_missing()
 
-def get_ai_model(model_name: str = "gemini-3.1-flash-lite"):
+# --- KHỞI TẠO CLIENT GENAI MỚI ---
+def get_ai_client():
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return None
     try:
-        genai.configure(api_key=api_key)
-        return genai.GenerativeModel(model_name)
+        return genai.Client(api_key=api_key)
     except Exception as e:
-        print(f"Lỗi khởi tạo AI: {e}")
+        print(f"Lỗi khởi tạo AI Client: {e}")
         return None
 
 def strip_accents(text: Any) -> str:
-    """Khử dấu an toàn dự phòng khi bắt buộc dùng font Latinh"""
     if not text:
         return ""
     text = unicodedata.normalize('NFD', str(text))
@@ -99,12 +99,12 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
-# --- AI ENDPOINTS ---
+# --- AI ENDPOINTS DÙNG SDK GOOGLE-GENAI CHUẨN ---
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
-    model = get_ai_model()
-    if not model:
-        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY trong Environment của Render!")
+    client = get_ai_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trên Render!")
     
     benh_su_str = get_benh_su_text(payload)
     context = (
@@ -120,7 +120,7 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
     {context}
     
     Hãy đưa ra:
-    1. Danh sách Chẩn đoán phân biệt (Differential Diagnosis)
+    1. Danh sách Chẩn đoán phân biệt
     2. Biện luận chẩn đoán sơ bộ
     Trả về ĐÚNG 2 thẻ:
     [CHAN_DOAN_PHAN_BIET]
@@ -129,7 +129,11 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
     ...
     """
     try:
-        resp = model.generate_content(prompt).text
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        resp = response.text or ""
         cdpb, bl = "", ""
         if "[CHAN_DOAN_PHAN_BIET]" in resp and "[BIEN_LUAN_SO_BO]" in resp:
             parts = resp.split("[BIEN_LUAN_SO_BO]")
@@ -139,17 +143,21 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
             cdpb = resp.strip()
         return {"chan_doan_phan_biet": cdpb, "bien_luan": bl}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi Gemini: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi AI: {str(e)}")
 
 @app.post("/api/ai/treatment")
 async def api_ai_treatment(payload: Dict[str, Any]):
-    model = get_ai_model()
-    if not model:
-        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
+    client = get_ai_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     context = f"Loại: {payload.get('loai_benh_an')}\nChẩn đoán: {payload.get('chan_doan_xac_dinh')}\nTiền sử: {payload.get('ts_noi_khoa')}"
-    prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh, trả lời ngắn gọn, thẳng vấn đề, ở dạng xuống dòng, chữ đầu viết hoa đơn giản. ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
+    prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
     try:
-        txt = model.generate_content(prompt).text
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        txt = response.text or ""
         mt, ct, td = "", "", ""
         if "[MUC_TIEU]" in txt and "[DIEU_TRI_CU_THE]" in txt and "[THEO_DOI]" in txt:
             p1 = txt.split("[DIEU_TRI_CU_THE]")
@@ -163,13 +171,17 @@ async def api_ai_treatment(payload: Dict[str, Any]):
 
 @app.post("/api/ai/prognosis")
 async def api_ai_prognosis(payload: Dict[str, Any]):
-    model = get_ai_model()
-    if not model:
-        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
+    client = get_ai_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     context = f"Chẩn đoán: {payload.get('chan_doan_xac_dinh')}\nĐiều trị: {payload.get('dt_cu_the')}"
-    prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh, vào thẳng vấn đề, đơn giản, dạng xuống dòng. ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
+    prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
     try:
-        res_text = model.generate_content(prompt).text
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        res_text = response.text or ""
         tl, tv = "", ""
         if "[TIEN_LUONG]" in res_text and "[TU_VAN]" in res_text:
             parts = res_text.split("[TU_VAN]")
@@ -181,15 +193,19 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
 
 @app.post("/api/ai/critique")
 async def api_ai_critique(payload: Dict[str, Any]):
-    model = get_ai_model()
-    if not model:
-        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
+    client = get_ai_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     phong_cach = payload.get("phong_cach", "Học thuật & Hướng dẫn")
     context = f"Bệnh sử: {get_benh_su_text(payload)}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
     prompt = f"""Bạn là Giảng viên lâm sàng. Nhận xét ca bệnh ({context}) theo phong cách {phong_cach}.
     Trả về ĐÚNG định dạng JSON thuần: {{"nhan_xet_tong_the": "...", "danh_sach_cau_hoi": [{{"chu_de": "...", "cau_hoi": "...", "goi_y_tra_loi": "..."}}]}}"""
     try:
-        res_pb = model.generate_content(prompt).text.strip()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        res_pb = (response.text or "").strip()
         if res_pb.startswith("```json"): res_pb = res_pb[7:]
         if res_pb.startswith("```"): res_pb = res_pb[3:]
         if res_pb.endswith("```"): res_pb = res_pb[:-3]
@@ -199,16 +215,20 @@ async def api_ai_critique(payload: Dict[str, Any]):
 
 @app.post("/api/ocr/batch")
 async def api_ocr_batch(files: List[UploadFile] = File(...)):
-    model = get_ai_model()
-    if not model:
-        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
+    client = get_ai_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     results = []
     ocr_prompt = "Đọc phiếu xét nghiệm và trả về JSON có 2 key: 'ket_qua' (chỉ số xét nghiệm) và 'phien_giai' (biện luận chỉ số bất thường)."
     for file in files:
         try:
             contents = await file.read()
             img = Image.open(io.BytesIO(contents))
-            resp = model.generate_content([ocr_prompt, img]).text.strip()
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[ocr_prompt, img],
+            )
+            resp = (response.text or "").strip()
             if resp.startswith("```json"): resp = resp[7:]
             if resp.startswith("```"): resp = resp[3:]
             if resp.endswith("```"): resp = resp[:-3]
@@ -217,7 +237,7 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
             results.append({"ket_qua": "Không thể phân tích ảnh", "phien_giai": "-"})
     return {"results": results}
 
-# --- BỘ TẠO PDF TIẾNG VIỆT ĐẢO TRẬT TỰ CHUẨN XÁC NỘI KHOA VS HẬU PHẪU ---
+# --- BỘ TẠO PDF TIẾNG VIỆT UNICODE ---
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -255,13 +275,10 @@ class RobustUnicodePDF(FPDF):
         self.cell(0, 7, self.clean_text(title), fill=True, new_x="LMARGIN", new_y="NEXT")
         self.ln(1)
 
-    # 1. Cập nhật hàm in tiêu đề phụ: ép kiểu chữ đậm ("B")
     def add_subsec(self, title: str):
-        # Thiết lập font chữ in đậm và tăng nhẹ kích thước lên 10pt
         self.set_font(self.font_family_name, "B", 10)
         self.cell(0, 6, self.clean_text(title), new_x="LMARGIN", new_y="NEXT")
 
-    # 2. Đảm bảo hàm in nội dung luôn trả về font chữ thường (Regular - "")
     def add_txt(self, text: str):
         self.set_font(self.font_family_name, "", 9.5)
         self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
@@ -282,7 +299,6 @@ class RobustUnicodePDF(FPDF):
             txt_kq = format_bullet_points(kq) if kq else "-"
             txt_pg = format_bullet_points(pg) if pg else "-"
             
-            # Tính chiều cao dòng
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
             row_h = max(max(nb_l, nb_r) * line_h + 4, 8)
@@ -381,7 +397,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
         sh_line = f"Sinh hiệu: Mạch: {mach} ck/phút | HA: {ha} mmHg | Nhiệt độ: {nhiet} °C | Nhịp thở: {nt} l/phút\nThể trạng: Chiều cao: {cc} cm | Cân nặng: {cn} kg | BMI: {bmi} kg/m² ({eval_bmi})"
         pdf.add_txt(sh_line)
 
-        # Nếu là Hậu phẫu: In thêm vết mổ & dẫn lưu
         if is_hau_phau:
             pdf.add_subsec("b. Vết mổ & Dẫn lưu:")
             pdf.add_txt(f"- Vết mổ: {payload.get('kham_vet_mo', '')}\n- Dẫn lưu: {payload.get('kham_dan_luu', '')}")
@@ -389,7 +404,7 @@ async def api_export_pdf(payload: Dict[str, Any]):
         else:
             pdf.add_subsec("3. Thăm khám hiện tại - Các cơ quan:")
 
-        # In 7 cơ quan theo thứ tự ưu tiên
+        # 7 cơ quan
         organs = [
             ("Tuần hoàn", "kham_tuan_hoan"),
             ("Hô hấp", "kham_ho_hap"),
@@ -409,7 +424,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
             pdf.add_subsec(f"- {name}:")
             pdf.add_txt(format_bullet_points(payload.get(key, "")))
 
-        # ĐỊNH NGHĨA HÀM KHỐI CHO CÁC MỤC LOGIC
         def sec_tom_tat(num_rom):
             pdf.add_sec(f"{num_rom}. TÓM TẮT BỆNH ÁN")
             pdf.add_txt(format_bullet_points(payload.get("tom_tat", "")))
@@ -454,9 +468,8 @@ async def api_export_pdf(payload: Dict[str, Any]):
                 pdf.add_sec(f"{num_blxd}. BIỆN LUẬN CHẨN ĐOÁN XÁC ĐỊNH")
                 pdf.add_txt(format_bullet_points(payload.get("bien_luan_xac_dinh", "")))
 
-        # PHÂN NHÁNH TRẬT TỰ SỐ LA MÃ CHUẨN XÁC TUYỆT ĐỐI
+        # PHÂN NHÁNH THỨ TỰ SỐ LA MÃ
         if not is_hau_phau:
-            # TRẬT TỰ NỘI KHOA: Tóm tắt -> CĐ Sơ bộ -> CLS -> CĐ Xác định
             sec_tom_tat("VI")
             sec_chan_doan_so_bo("VII", "VIII", "IX")
             sec_can_lam_sang("X", "XI")
@@ -473,7 +486,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
             pdf.add_sec("XVI. TƯ VẤN")
             pdf.add_txt(format_bullet_points(payload.get("tu_van", "")))
         else:
-            # TRẬT TỰ HẬU PHẪU: CĐ Sơ bộ -> CLS -> Tóm tắt -> CĐ Xác định
             sec_chan_doan_so_bo("VI", "VII", "VIII")
             sec_can_lam_sang("IX", "X")
             sec_tom_tat("XI")
