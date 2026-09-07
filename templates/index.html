@@ -90,7 +90,6 @@
         }
         .btn-ai { font-weight: bold; padding: 4px 8px; cursor: pointer; }
 
-        /* NÚT BẤM DẠNG TOGGLE */
         .btn-toggle {
             font-weight: bold;
             padding: 5px 14px;
@@ -108,7 +107,6 @@
             color: #0a246a !important;
         }
 
-        /* DROPDOWN CHỌN NHANH */
         .quick-select-wrapper { position: relative; display: inline-block; }
         .quick-select-menu {
             display: none;
@@ -135,7 +133,6 @@
         }
         .quick-select-item:hover { background-color: #0a246a; color: #ffffff; }
 
-        /* MỤC LỤC DROPDOWN */
         .toc-dropdown-wrapper { position: fixed; top: 12px; right: 15px; z-index: 999999; }
         .toc-dropdown-content {
             display: none;
@@ -172,7 +169,6 @@
             gap: 6px;
         }
 
-        /* KHUNG CUỘN BẢNG TRÊN ĐIỆN THOẠI */
         .cls-table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -202,7 +198,6 @@
             vertical-align: top; 
         }
 
-        /* TỐI ƯU GIAO DIỆN DI ĐỘNG */
         @media (max-width: 768px) {
             body { padding: 4px; }
             .form-grid-3, .form-grid-2 { grid-template-columns: 1fr !important; gap: 6px; }
@@ -722,7 +717,6 @@
 </div>
 
 <script>
-    // QUẢN LÝ CHỌN NHANH TRIỆU CHỨNG
     function toggleDropdown(menuId) {
         const menu = document.getElementById(menuId);
         const isOpen = menu.style.display === 'block';
@@ -749,7 +743,6 @@
         document.querySelectorAll('.quick-select-menu').forEach(m => m.style.display = 'none');
     }
 
-    // QUẢN LÝ TAB & MẪU
     function switchTab(evt, tabId) {
         document.querySelectorAll('menu[role="tablist"] li').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -757,7 +750,6 @@
         document.getElementById(tabId).classList.add('active');
     }
 
-    // HÀM CHỌN LOẠI BỆNH ÁN BẰNG NÚT BẤM (TOGGLE BUTTON)
     function setFormType(type) {
         document.getElementById('current_loai_ba').value = type;
         const isHauPhau = (type === "Hậu phẫu");
@@ -892,10 +884,9 @@
         autoSave();
     }
 
-    // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG & ĐÍNH KÈM ẢNH ---
-    // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG & NHIỀU ẢNH TRÊN MỖI HÀNG ---
+    // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG VỚI NHIỀU ẢNH TRÊN MỖI HÀNG ---
     var clsRowCount = 0;
-    var clsRowImages = {}; // Cấu trúc lưu trữ: { 0: [b64_1, b64_2], 1: [...] }
+    var clsRowImages = {};
 
     function addClsRow(kq = '', pg = '', imgList = []) {
         const tbody = document.getElementById('cls-tbody');
@@ -980,12 +971,13 @@
         }
     }
 
-    // Gắn danh sách mảng ảnh của từng hàng vào payload
-        for (let i = 0; i < clsRowCount; i++) {
-            if (clsRowImages[i] && clsRowImages[i].length > 0) {
-                payload[`cls_img_list_${i}`] = clsRowImages[i];
-            }
-        }
+    function getFormPayload() {
+        const loaiBa = document.getElementById('current_loai_ba').value || "Nội khoa / Tiền phẫu";
+
+        const payload = {
+            loai_benh_an: loaiBa,
+            so_hang_cls: clsRowCount
+        };
 
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
@@ -995,8 +987,8 @@
         });
 
         for (let i = 0; i < clsRowCount; i++) {
-            if (clsRowImages[i]) {
-                payload[`cls_img_b64_${i}`] = clsRowImages[i];
+            if (clsRowImages[i] && clsRowImages[i].length > 0) {
+                payload[`cls_img_list_${i}`] = clsRowImages[i];
             }
         }
 
@@ -1016,9 +1008,6 @@
         return payload;
     }
 
-    // =========================================================================
-    // XỬ LÝ NÚT BẤM AI KÈM HIỆU ỨNG LOADING CON QUAY
-    // =========================================================================
     async function callAICD() {
         const btn = document.getElementById('btn-ai-cd');
         const originText = btn.innerText;
@@ -1142,7 +1131,6 @@
         }
     }
 
-    // --- CHỨC NĂNG OCR GIỮ NGUYÊN (AI CHỈ ĐỌC VÀ ĐIỀN TEXT THUẦN) ---
     function stringifyOcrData(val) {
         if (!val) return "";
         if (typeof val === 'string') return val.trim();
@@ -1236,9 +1224,6 @@
         }
     }
 
-    // =========================================================================
-    // XEM TRƯỚC VÀ XUẤT TẬP TIN (ĐÍNH KÈM ẢNH THỦ CÔNG)
-    // =========================================================================
     let currentPdfBlobUrl = null;
 
     async function previewPDF() {
@@ -1304,9 +1289,6 @@
         }
     }
 
-    // =========================================================================
-    // QUẢN LÝ NHÁP (.JSON) & LOCALSTORAGE
-    // =========================================================================
     const STORAGE_KEY = 'clinical_report_fastapi_draft';
 
     function autoSave() {
@@ -1379,8 +1361,8 @@
         for (let i = 0; i < numRows; i++) {
             const kq = data[`cls_kq_${i}`] || '';
             const pg = data[`cls_pg_${i}`] || '';
-            const imgData = data[`cls_img_b64_${i}`] || '';
-            addClsRow(kq, pg, imgData);
+            const imgList = data[`cls_img_list_${i}`] || (data[`cls_img_b64_${i}`] ? [data[`cls_img_b64_${i}`]] : []);
+            addClsRow(kq, pg, imgList);
         }
 
         calcBMI();
