@@ -1402,13 +1402,10 @@
 
         document.getElementById('cls-tbody').innerHTML = "";
         clsRowCount = 0;
+        clsRowImages = {};
         const numRows = data.so_hang_cls || 3;
         for (let i = 0; i < numRows; i++) {
-            addClsRow(
-                data[`cls_kq_${i}`] || '', 
-                data[`cls_pg_${i}`] || '', 
-                data[`cls_img_data_${i}`] || ''
-            );
+            addClsRow(data[`cls_kq_${i}`] || '', data[`cls_pg_${i}`] || '', data[`cls_imgs_${i}`] || []);
         }
         calcBMI();
         reorderOrgans();
