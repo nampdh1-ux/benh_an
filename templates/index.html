@@ -133,26 +133,93 @@
         }
         .quick-select-item:hover { background-color: #0a246a; color: #ffffff; }
 
-        .toc-dropdown-wrapper { position: fixed; top: 12px; right: 15px; z-index: 999999; }
-        .toc-dropdown-content {
+        /* THANH TIÊU ĐỀ DÍNH CHẶT KHI CUỘN (STICKY HEADER) */
+        .window.main-window {
+            position: relative;
+        }
+        .main-window > .title-bar {
+            position: sticky;
+            top: 0;
+            z-index: 999999;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+        }
+        .title-bar-text-large {
+            font-size: 14px !important;
+            font-weight: bold !important;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* NÚT MỤC LỤC TÍCH HỢP TRÊN TITLE BAR */
+        .header-toc-wrapper {
+            position: relative;
+            margin-right: 8px;
+        }
+        .btn-header-toc {
+            font-size: 11px !important;
+            font-weight: bold !important;
+            padding: 2px 8px !important;
+            min-width: 0 !important;
+            height: 22px !important;
+            line-height: 16px !important;
+            cursor: pointer;
+            color: #000 !important;
+            background: #d4d0c8 !important;
+            border-top: 2px solid #ffffff !important;
+            border-left: 2px solid #ffffff !important;
+            border-right: 2px solid #404040 !important;
+            border-bottom: 2px solid #404040 !important;
+            box-shadow: 1px 1px 0px #000;
+        }
+        .btn-header-toc:active {
+            border-top: 2px solid #404040 !important;
+            border-left: 2px solid #404040 !important;
+            border-right: 2px solid #ffffff !important;
+            border-bottom: 2px solid #ffffff !important;
+            box-shadow: inset 1px 1px 0px #000;
+        }
+        .header-toc-menu {
             display: none;
             position: absolute;
             right: 0;
-            top: 28px;
-            width: 220px;
+            top: 25px;
+            width: 230px;
             background: #ece9d8;
             border-top: 2px solid #ffffff;
             border-left: 2px solid #ffffff;
             border-right: 2px solid #404040;
             border-bottom: 2px solid #404040;
-            box-shadow: 3px 3px 0px #000000;
-            padding: 4px;
+            box-shadow: 3px 4px 6px rgba(0,0,0,0.45);
+            padding: 3px;
             max-height: 75vh;
             overflow-y: auto;
+            z-index: 1000000;
         }
-        .toc-dropdown-wrapper:hover .toc-dropdown-content { display: block; }
-        .toc-link { display: block; padding: 6px 8px; color: #000; text-decoration: none; font-size: 11.5px; font-weight: bold; }
-        .toc-link:hover { background-color: #0a246a; color: #fff; }
+        .header-toc-menu.show {
+            display: block;
+        }
+        .toc-link-item {
+            display: block;
+            padding: 5px 8px;
+            color: #000;
+            text-decoration: none;
+            font-size: 11.5px;
+            font-weight: bold;
+            border-bottom: 1px dotted #b0b0b0;
+        }
+        .toc-link-item:hover {
+            background-color: #0a246a;
+            color: #ffffff;
+        }
 
         .draft-toolbar {
             background: #d4d0c8;
@@ -253,29 +320,39 @@
 </head>
 <body>
 
-<div class="toc-dropdown-wrapper">
-    <button type="button" style="font-weight: bold; padding: 4px 10px; box-shadow: 1px 1px 0 #000;">📑 Mục Lục ▾</button>
-    <div class="toc-dropdown-content">
-        <div style="background: #0a246a; color: #fff; padding: 3px 6px; font-weight: bold; font-size: 10px;">ĐIỀU HƯỚNG NHANH</div>
-        <a class="toc-link" href="#sec-hanh-chinh">I. Hành chính</a>
-        <a class="toc-link" href="#sec-ly-do-benh-su">II & III. Lý do & Bệnh sử</a>
-        <a class="toc-link" href="#sec-tien-su">IV. Tiền sử</a>
-        <a class="toc-link" href="#sec-kham-lam-sang">V. Thăm khám lâm sàng</a>
-        <a class="toc-link" href="#sec-chan-doan-so-bo">VI. Chẩn đoán sơ bộ & PB</a>
-        <a class="toc-link" href="#sec-can-lam-sang">VII. Cận lâm sàng & OCR</a>
-        <a class="toc-link" href="#sec-tom-tat">VIII. Tóm tắt bệnh án</a>
-        <a class="toc-link" href="#sec-chan-doan-xac-dinh">IX. Chẩn đoán xác định</a>
-        <a class="toc-link" href="#sec-dieu-tri">X. Điều trị & Tiên lượng</a>
-    </div>
-</div>
-
 <div class="window main-window">
+    <!-- THANH TIÊU ĐỀ WIN2K (STICKY + CHỮ TO + MỤC LỤC TÍCH HỢP) -->
     <div class="title-bar">
-        <div class="title-bar-text">Hệ Thống Bệnh Án Lâm Sàng & Hậu Phẫu - [Windows 2000 Pro]</div>
-        <div class="title-bar-controls">
-            <button aria-label="Minimize"></button>
-            <button aria-label="Maximize"></button>
-            <button aria-label="Close"></button>
+        <div class="title-bar-text-large">
+            <span>🗂️</span> HỆ THỐNG BỆNH ÁN LÂM SÀNG & HẬU PHẪU - [WINDOWS 2000 PRO]
+        </div>
+
+        <div style="display: flex; align-items: center;">
+            <!-- MỤC LỤC ĐIỀU HƯỚNG NHANH -->
+            <div class="header-toc-wrapper">
+                <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)">📑 Mục Lục ▾</button>
+                <div class="header-toc-menu" id="headerTocMenu">
+                    <div style="background: #0a246a; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 10.5px; margin-bottom: 3px;">
+                        ĐIỀU HƯỚNG NHANH
+                    </div>
+                    <a class="toc-link-item" href="#sec-hanh-chinh" onclick="closeHeaderToc()">I. Hành chính</a>
+                    <a class="toc-link-item" href="#sec-ly-do-benh-su" onclick="closeHeaderToc()">II & III. Lý do & Bệnh sử</a>
+                    <a class="toc-link-item" href="#sec-tien-su" onclick="closeHeaderToc()">IV. Tiền sử</a>
+                    <a class="toc-link-item" href="#sec-kham-lam-sang" onclick="closeHeaderToc()">V. Thăm khám lâm sàng</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-so-bo" onclick="closeHeaderToc()">VI. Chẩn đoán sơ bộ & PB</a>
+                    <a class="toc-link-item" href="#sec-can-lam-sang" onclick="closeHeaderToc()">VII. Cận lâm sàng & OCR</a>
+                    <a class="toc-link-item" href="#sec-tom-tat" onclick="closeHeaderToc()">VIII. Tóm tắt bệnh án</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-xac-dinh" onclick="closeHeaderToc()">IX. Chẩn đoán xác định</a>
+                    <a class="toc-link-item" href="#sec-dieu-tri" onclick="closeHeaderToc()">X. Điều trị & Tiên lượng</a>
+                </div>
+            </div>
+
+            <!-- NÚT THAO TÁC CỬA SỔ WIN2K -->
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
         </div>
     </div>
 
@@ -767,6 +844,24 @@
 </div>
 
 <script>
+    // ĐIỀU KHIỂN ĐÓNG/MỞ MENU MỤC LỤC TRÊN TITLE BAR
+    function toggleHeaderToc(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('headerTocMenu');
+        if (menu) menu.classList.toggle('show');
+    }
+
+    function closeHeaderToc() {
+        const menu = document.getElementById('headerTocMenu');
+        if (menu) menu.classList.remove('show');
+    }
+
+    // Tự động đóng menu mục lục nếu bấm ra ngoài
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.header-toc-wrapper')) {
+            closeHeaderToc();
+        }
+    });
     // HÀM TỰ ĐỘNG CO GIÃN CHIỀU CAO CHO TEXTAREA (AUTO-EXPAND)
     function autoExpandTextarea(el) {
         if (!el || el.tagName.toLowerCase() !== 'textarea') return;
