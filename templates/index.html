@@ -1264,10 +1264,17 @@
         const st = document.getElementById('preview-status');
         btn.disabled = true;
         btn.innerText = "⏳ Đang kết xuất PDF...";
-        st.innerText = "Hệ thống đang dựng tài liệu xem trước...";
+        st.innerText = "Hệ thống đang nạp tài liệu và hình ảnh...";
 
         try {
             const payload = getFormPayload();
+            // Đính kèm dữ liệu ảnh Base64 của từng hàng vào payload gửi lên backend
+            for (let i = 0; i < clsRowCount; i++) {
+                if (typeof clsRowImages !== 'undefined' && clsRowImages[i]) {
+                    payload[`cls_img_b64_${i}`] = clsRowImages[i];
+                }
+            }
+
             const res = await fetch('/api/export/pdf', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1283,7 +1290,7 @@
             }
             currentPdfBlobUrl = URL.createObjectURL(blob);
             document.getElementById('pdf-preview-frame').src = currentPdfBlobUrl;
-            st.innerText = "✅ Đã tải xong bản xem trước PDF bên dưới!";
+            st.innerText = "✅ Đã tải xong bản xem trước PDF kèm hình ảnh!";
         } catch (e) {
             alert('Lỗi tạo bản xem trước: ' + e.message);
             st.innerText = "❌ Lỗi tạo bản xem trước.";
@@ -1301,6 +1308,15 @@
 
         try {
             const payload = getFormPayload();
+            // Đính kèm ảnh Base64 nếu người dùng bấm tải trực tiếp PDF
+            if (type === 'pdf') {
+                for (let i = 0; i < clsRowCount; i++) {
+                    if (typeof clsRowImages !== 'undefined' && clsRowImages[i]) {
+                        payload[`cls_img_b64_${i}`] = clsRowImages[i];
+                    }
+                }
+            }
+
             const res = await fetch(`/api/export/${type}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
