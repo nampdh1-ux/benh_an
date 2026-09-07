@@ -29,6 +29,8 @@ import secrets
 from fastapi import Cookie, Response
 from fastapi.responses import RedirectResponse
 
+app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
+templates = Jinja2Templates(directory="templates")
 # =========================================================================
 # CẤU HÌNH BẢO MẬT & TÀI KHOẢN (AUTH & OTP)
 # =========================================================================
@@ -163,8 +165,6 @@ async def logout(response: Response, session_token: str = Cookie(None)):
     resp.delete_cookie("session_token")
     return resp
 
-app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
-templates = Jinja2Templates(directory="templates")
 
 # Cấu hình môi trường & AI
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
