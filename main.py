@@ -3,18 +3,15 @@ import hashlib
 import io
 import json
 import os
-import random
 import re
-import smtplib
+import secrets
 import unicodedata
 import urllib.request
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, Response
+from fastapi import Cookie, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fpdf import FPDF
 from google import genai
@@ -25,291 +22,53 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 from pydantic import BaseModel
-import secrets
-from fastapi import Cookie, Response
-from fastapi.responses import RedirectResponse
 
+# =========================================================================
+# 1. KHỞI TẠO APP VÀ TEMPLATES
+# =========================================================================
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
-from fastapi import BackgroundTasks
 
-APP_PASSWORD = os.getenv("APP_PASSWORD", "").strip()
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip()
-SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "").replace(" ", "").strip()
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip()
-ADMIN_BYPASS_TOKEN = os.getenv("ADMIN_BYPASS_TOKEN", "").strip()
-
-ACTIVE_SESSIONS: Dict[str, Dict[str, Any]] = {}
-OTP_STORAGE: Dict[str, Dict[str, Any]] = {}
-
-import json
-import urllib.error
-import urllib.request
-
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
-
-def send_resend_email(to_email: str, subject: str, content: str):
-    """Gửi email qua HTTPS API (Port 443) bằng urllib chuẩn, hoàn toàn miễn phí"""
-    print(f"\n[GỬI EMAIL TỚI {to_email}] Tiêu đề: {subject}")
-    if not RESEND_API_KEY:
-        print("⚠️ Chưa có biến RESEND_API_KEY trong Environment của Render!")
-        return
-
-    payload = {
-        "from": "Bệnh Án Lâm Sàng <onboarding@resend.dev>",
-        "to": [to_email],
-        "subject": subject,
-        "text": content
-    }
-    
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=data,
-        headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            resp_body = resp.read().decode("utf-8")
-            print(f"✅ Gửi email thành công tới {to_email}: {resp_body}")
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8")
-        print(f"❌ Lỗi HTTP từ Resend ({e.code}): {err_msg}")
-    except Exception as exc:
-        print(f"❌ Lỗi kết nối HTTPS: {exc}")
-
-def check_authenticated(session_token: str = None) -> bool:
-    if not session_token or session_token not in ACTIVE_SESSIONS:
-        return False
-    sess = ACTIVE_SESSIONS[session_token]
-    if datetime.now().timestamp() > sess["expires"]:
-        del ACTIVE_SESSIONS[session_token]
-        return False
-    return True
-# CẤU HÌNH XÁC THỰC & GỬI EMAIL TỪ ENVIRONMENT
+# =========================================================================
+# 2. CẤU HÌNH XÁC THỰC DUY NHẤT BẰNG APP_PASSWORD
+# =========================================================================
 APP_PASSWORD = os.getenv("APP_PASSWORD", "MatKhau123@").strip()
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "").strip()
-SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "").strip()
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip()
+ACTIVE_SESSIONS: Dict[str, float] = {}  # {session_token: expire_timestamp}
 
-OTP_STORAGE = {}  # {email: {"otp": "123456", "expires": timestamp}}
-
-def send_email_notification(to_email: str, subject: str, body: str):
-    print(f"\n[GỬI EMAIL TỚI {to_email}] - Tiêu đề: {subject}")
-    if SENDER_EMAIL and SENDER_APP_PASSWORD:
-        try:
-            msg = MIMEMultipart()
-            msg["From"] = SENDER_EMAIL
-            msg["To"] = to_email
-            msg["Subject"] = subject
-            msg.attach(MIMEText(body, "plain", "utf-8"))
-            
-            with smtplib.SMTP("smtp.gmail.com", 587) as server:
-                server.starttls()
-                server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
-                server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
-            print(f"-> Gửi email thành công tới {to_email}")
-        except Exception as e:
-            print(f"-> Lỗi gửi email SMTP tới {to_email}: {e}")
-    else:
-        print("-> Cảnh báo: Chưa cấu hình SENDER_EMAIL hoặc SENDER_APP_PASSWORD!")
-# =========================================================================
-# CẤU HÌNH BẢO MẬT & TÀI KHOẢN (AUTH & OTP)
-# =========================================================================
-# Bạn có thể đổi tài khoản và mật khẩu admin tại đây:
-ADMIN_USER = os.getenv("APP_ADMIN_USER", "bacsi@gmail.com")
-ADMIN_PASSWORD_HASH = hashlib.sha256(os.getenv("APP_ADMIN_PASS", "MatKhau123@").encode()).hexdigest()
-
-# Bộ nhớ tạm lưu phiên và mã OTP (Có thể dùng file JSON/SQLite để duy trì khi reboot)
-ACTIVE_SESSIONS = {}  # {session_token: {"username": ..., "expires": timestamp}}
-OTP_STORAGE = {}      # {username: {"otp": "123456", "expires": timestamp}}
-
-# Hàm băm mật khẩu
-def hash_pass(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
-# Kiểm tra cookie đăng nhập
 def check_authenticated(session_token: str = None) -> bool:
     if not session_token or session_token not in ACTIVE_SESSIONS:
         return False
-    sess = ACTIVE_SESSIONS[session_token]
-    if datetime.now().timestamp() > sess["expires"]:
+    if datetime.now().timestamp() > ACTIVE_SESSIONS[session_token]:
         del ACTIVE_SESSIONS[session_token]
         return False
     return True
 
-# Gửi email OTP (Dùng SMTP Gmail nếu có cấu hình biến môi trường)
-def send_otp_email(to_email: str, otp_code: str):
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", 587))
-    smtp_user = os.getenv("SMTP_USER", "")
-    smtp_pass = os.getenv("SMTP_PASS", "")
-
-    # In ra terminal/log máy chủ để test ngay nếu chưa gắn SMTP
-    print(f"\n==========================================")
-    print(f"🔑 MÃ OTP CHO [{to_email}]: {otp_code}")
-    print(f"==========================================\n")
-
-    if smtp_user and smtp_pass:
-        try:
-            msg = MIMEMultipart()
-            msg["From"] = smtp_user
-            msg["To"] = to_email
-            msg["Subject"] = f"[BỆNH ÁN WIN2K] Mã xác thực OTP: {otp_code}"
-            body = f"Mã xác thực đăng nhập của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
-            msg.attach(MIMEText(body, "plain", "utf-8"))
-            
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, to_email, msg.as_string())
-        except Exception as e:
-            print(f"Lỗi gửi email OTP: {e}")
-
-# =========================================================================
-# CÁC ENDPOINT AUTHENTICATION
-# =========================================================================
-import traceback
-
-@app.get("/api/auth/debug-email")
-async def debug_email_diagnostics(test_email: str = None):
-    """
-    Endpoint chẩn đoán lỗi SMTP chuyên sâu.
-    Truy cập qua: /api/auth/debug-email?test_email=email_cua_ban@gmail.com
-    """
-    logs = []
-    
-    # 1. Kiểm tra cấu hình biến môi trường
-    logs.append("=== 1. KIỂM TRA BIẾN MÔI TRƯỜNG ===")
-    logs.append(f"SENDER_EMAIL: {'Đã có (' + SENDER_EMAIL + ')' if SENDER_EMAIL else '❌ TRỐNG'}")
-    logs.append(f"SENDER_APP_PASSWORD: {'Đã có (' + str(len(SENDER_APP_PASSWORD)) + ' ký tự)' if SENDER_APP_PASSWORD else '❌ TRỐNG'}")
-    logs.append(f"APP_PASSWORD: {'Đã có (' + str(len(APP_PASSWORD)) + ' ký tự)' if APP_PASSWORD else '❌ TRỐNG'}")
-    logs.append(f"ADMIN_EMAIL: {'Đã có (' + ADMIN_EMAIL + ')' if ADMIN_EMAIL else '❌ TRỐNG'}")
-
-    target_email = test_email or ADMIN_EMAIL or SENDER_EMAIL
-    if not target_email:
-        return {"diagnostics": logs, "error": "Chưa có email đích để test! Thêm ?test_email=... vào sau URL"}
-
-    if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
-        return {"diagnostics": logs, "error": "Thiếu SENDER_EMAIL hoặc SENDER_APP_PASSWORD trong Render Environment!"}
-
-    # 2. Thử nghiệm kết nối SSL Cổng 465
-    logs.append(f"\n=== 2. THỬ KẾT NỐI SMTP_SSL (Cổng 465) TỚI {target_email} ===")
-    try:
-        logs.append("-> Đang bắt tay SSL với smtp.gmail.com:465...")
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
-        logs.append("-> Kết nối socket thành công.")
-        
-        logs.append(f"-> Đang xác thực tài khoản {SENDER_EMAIL}...")
-        server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
-        logs.append("-> Xác thực login thành công!")
-
-        msg = MIMEMultipart()
-        msg["From"] = SENDER_EMAIL
-        msg["To"] = target_email
-        msg["Subject"] = "[TEST CHẨN ĐOÁN] Kiểm tra gửi mail từ hệ thống"
-        msg.attach(MIMEText("Nếu bạn nhận được mail này, hệ thống gửi email đã hoạt động 100%!", "plain", "utf-8"))
-        
-        server.sendmail(SENDER_EMAIL, [target_email], msg.as_string())
-        server.quit()
-        logs.append(f"-> ĐÃ GỬI THÀNH CÔNG VÀO HỘP THƯ: {target_email}")
-        return {"status": "SUCCESS", "details": logs}
-    except smtplib.SMTPAuthenticationError as auth_err:
-        logs.append(f"❌ LỖI XÁC THỰC GOOGLE (Sai User/Pass): {auth_err}")
-        logs.append("-> Hướng xử lý: Mật khẩu SENDER_APP_PASSWORD phải là App Password 16 ký tự tạo từ tài khoản Google (bật 2-Step Verification), không phải mật khẩu đăng nhập Gmail thường.")
-    except Exception as exc:
-        logs.append(f"❌ LỖI KẾT NỐI HOẶC HỆ THỐNG: {exc}")
-        logs.append(traceback.format_exc())
-
-    # 3. Thử nghiệm phương án phụ Cổng 587 (TLS) nếu 465 thất bại
-    logs.append(f"\n=== 3. THỬ PHƯƠNG ÁN PHỤ CỔNG 587 (STARTTLS) ===")
-    try:
-        logs.append("-> Đang kết nối smtp.gmail.com:587...")
-        server587 = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-        server587.starttls()
-        server587.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
-        logs.append("-> Cổng 587 login thành công!")
-        server587.quit()
-    except Exception as exc587:
-        logs.append(f"❌ Cổng 587 cũng thất bại: {exc587}")
-
-    return {"status": "FAILED", "details": logs}
-# Trang đăng nhập Win2K
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, session_token: str = Cookie(None)):
+async def login_page(request: Request, session_token: str = Cookie(default=None)):
     if check_authenticated(session_token):
         return RedirectResponse(url="/", status_code=302)
     return templates.TemplateResponse(request, "login.html")
 
-# Route chính (Bảo vệ: Chưa đăng nhập sẽ tự động chuyển sang /login)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, session_token: str = Cookie(default=None)):
     if not check_authenticated(session_token):
         return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse(request, "index.html")
 
-# API Bước 1: Kiểm tra mật khẩu và cấp phát OTP
-@app.post("/api/auth/request-otp")
-async def api_request_otp(payload: Dict[str, Any], background_tasks: BackgroundTasks):
-    email = payload.get("email") or payload.get("username") or ""
-    email = str(email).strip().lower()
-
-    if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Địa chỉ Gmail không đúng định dạng!")
-
-    otp_code = f"{random.randint(100000, 999999)}"
-    OTP_STORAGE[email] = {
-        "otp": otp_code,
-        "expires": datetime.now().timestamp() + 300
-    }
-
-    print(f"\n==========================================")
-    print(f"🔑 [MÃ OTP TẠO MỚI] Dành cho {email}: {otp_code}")
-    print(f"==========================================\n")
-
-    # Gửi cho người dùng
-    user_body = f"Mã OTP xác thực của bạn là: {otp_code}\nMã có hiệu lực trong 5 phút."
-    background_tasks.add_task(send_resend_email, email, "[XÁC THỰC] Mã OTP Bệnh Án", user_body)
-
-    # Gửi thông báo cho admin
-    if ADMIN_EMAIL:
-        admin_body = f"Tài khoản {email} vừa yêu cầu OTP: {otp_code}"
-        background_tasks.add_task(send_resend_email, ADMIN_EMAIL, f"[CẢNH BÁO ĐĂNG NHẬP] {email}", admin_body)
-
-    return {"status": "ok", "message": "Đã gửi mã OTP."}
-
-@app.post("/api/auth/verify-otp")
-async def api_verify_otp(payload: Dict[str, Any], response: Response):
-    email = (payload.get("email") or payload.get("username") or "").strip().lower()
-    otp_code = str(payload.get("otp", "")).strip()
+@app.post("/api/auth/login")
+async def api_login(payload: Dict[str, Any], response: Response):
     password = str(payload.get("password", "")).strip()
 
-    bypass_valid = bool(ADMIN_BYPASS_TOKEN and (otp_code == ADMIN_BYPASS_TOKEN or password == ADMIN_BYPASS_TOKEN))
+    if not password:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập mật khẩu!")
 
-    if not bypass_valid:
-        otp_entry = OTP_STORAGE.get(email)
-        if not otp_entry or otp_entry["otp"] != otp_code:
-            raise HTTPException(status_code=400, detail="Mã OTP không chính xác!")
-        if datetime.now().timestamp() > otp_entry["expires"]:
-            del OTP_STORAGE[email]
-            raise HTTPException(status_code=400, detail="Mã OTP đã quá hạn!")
+    if password != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="Mật khẩu hệ thống không chính xác!")
 
-        if password != APP_PASSWORD:
-            raise HTTPException(status_code=401, detail="Mật khẩu hệ thống không đúng!")
-
+    # Cấp token phiên làm việc 30 ngày
     token = secrets.token_urlsafe(32)
     duration = 30 * 24 * 3600
-    ACTIVE_SESSIONS[token] = {
-        "email": email,
-        "expires": datetime.now().timestamp() + duration
-    }
-    if email in OTP_STORAGE:
-        del OTP_STORAGE[email]
+    ACTIVE_SESSIONS[token] = datetime.now().timestamp() + duration
 
     response.set_cookie(
         key="session_token",
@@ -318,21 +77,21 @@ async def api_verify_otp(payload: Dict[str, Any], response: Response):
         httponly=True,
         samesite="lax"
     )
-    return {"status": "ok"}
+    return {"status": "success"}
 
-# Đăng xuất: Xoá Cookie và vô hiệu hoá session
 @app.get("/logout")
-async def logout(response: Response, session_token: str = Cookie(None)):
+async def logout(response: Response, session_token: str = Cookie(default=None)):
     if session_token and session_token in ACTIVE_SESSIONS:
         del ACTIVE_SESSIONS[session_token]
     resp = RedirectResponse(url="/login", status_code=302)
     resp.delete_cookie("session_token")
     return resp
 
-
-# Cấu hình môi trường & AI
+# =========================================================================
+# 3. CẤU HÌNH AI & PHỤ TRỢ
+# =========================================================================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-MODEL_DEFAULT = "gemini-3.1-flash-lite"
+MODEL_DEFAULT = "gemini-2.5-flash"
 
 # Font Unicode cho FPDF
 FONT_REGULAR = "Roboto-Regular.ttf"
@@ -390,57 +149,9 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
         return f"- Trước mổ: {payload.get('bs_truoc_mo', '')}\n- Trong mổ: {payload.get('bs_trong_mo', '')}\n- Sau mổ: {payload.get('bs_sau_mo', '')}"
     return payload.get("benh_su", "")
 
-@app.post("/api/auth/request-otp")
-async def api_request_otp(payload: Dict[str, Any]):
-    # Hỗ trợ nhận cả trường 'email' hoặc 'username' từ frontend gửi lên
-    email = payload.get("email") or payload.get("username") or ""
-    email = str(email).strip().lower()
-    
-    if not email or "@" not in email:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập đúng định dạng Email hợp lệ!")
-
-    otp_code = f"{random.randint(100000, 999999)}"
-    OTP_STORAGE[email] = {
-        "otp": otp_code,
-        "expires": datetime.now().timestamp() + 300
-    }
-
-    send_otp_email(email, otp_code)
-    return {"message": "Mã OTP đã được gửi."}
-
-@app.post("/api/auth/verify-otp")
-async def api_verify_otp(payload: Dict[str, Any], response: Response):
-    email = payload.get("email", "").strip().lower()
-    otp_code = payload.get("otp", "").strip()
-    password = payload.get("password", "")
-
-    otp_info = OTP_STORAGE.get(email)
-    if not otp_info or otp_info["otp"] != otp_code:
-        raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ!")
-    if datetime.now().timestamp() > otp_info["expires"]:
-        del OTP_STORAGE[email]
-        raise HTTPException(status_code=400, detail="Mã OTP đã hết hạn!")
-
-    if password != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="Mật khẩu hệ thống (APP_PASSWORD) không chính xác!")
-
-    session_token = secrets.token_urlsafe(32)
-    max_age = 30 * 24 * 3600
-    ACTIVE_SESSIONS[session_token] = {
-        "email": email,
-        "expires": datetime.now().timestamp() + max_age
-    }
-    del OTP_STORAGE[email]
-
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        max_age=max_age,
-        httponly=True,
-        samesite="lax"
-    )
-    return {"status": "success"}
-# --- CÁC ENDPOINT AI ---
+# =========================================================================
+# 4. CÁC ENDPOINT AI & OCR
+# =========================================================================
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
     client = get_ai_client()
@@ -511,7 +222,7 @@ YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 3 thẻ:
     try:
         response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         txt = response.text or ""
-        mt, ct, td = "", "", ""
+        mt, ct, td = "", "" , ""
         if "[MUC_TIEU]" in txt and "[DIEU_TRI_CU_THE]" in txt and "[THEO_DOI]" in txt:
             p1 = txt.split("[DIEU_TRI_CU_THE]")
             mt = p1[0].replace("[MUC_TIEU]", "").strip()
@@ -639,7 +350,9 @@ async def api_ocr_batch(
             results.append({"ket_qua": f"Lỗi xử lý: {str(err)}", "phien_giai": "-"})
     return {"results": results}
 
-# --- PDF ENGINE HỖ TRỢ NHIỀU ẢNH TRÊN MỖI DÒNG CLS ---
+# =========================================================================
+# 5. KẾT XUẤT PDF & PPTX
+# =========================================================================
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
