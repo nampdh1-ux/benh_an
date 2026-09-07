@@ -109,7 +109,13 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
         f"Khám toàn thân: {payload.get('kham_toan_than')}\n"
         f"Chẩn đoán sơ bộ: {payload.get('chan_doan_so_bo')}"
     )
-    prompt = f"""Bạn là bác sĩ lâm sàng. Dựa vào ca bệnh:\n{context}\nHãy đưa ra:\n1. Danh sách Chẩn đoán phân biệt\n2. Biện luận chẩn đoán sơ bộ\nTrả về đúng 2 thẻ: [CHAN_DOAN_PHAN_BIET] ... [BIEN_LUAN_SO_BO] ..."""
+    prompt = f"""Bạn là một bác sĩ lâm sàng thực thụ và giàu kinh nghiệm. Hãy nhìn vào toàn thể ca bệnh dưới đây, phân tích logic giữa bệnh cảnh, triệu chứng cơ năng, thực thể và chẩn đoán sơ bộ để đưa ra:
+                    1. Danh sách CHẨN ĐOÁN PHÂN BIỆT (Differential Diagnosis): sắp xếp thứ tự từ khả năng cao nhất đến thấp hơn, từ bệnh lý cấp cứu nguy hiểm đến ít cấp cứu hơn.
+                    2. BIỆN LUẬN CHẨN ĐOÁN SƠ BỘ: Lập luận chặt chẽ vì sao nghĩ đến chẩn đoán sơ bộ và vì sao cần phân biệt với các bệnh lý nêu trên.
+
+                    Dữ kiện ca bệnh:\n{context}\nYÊU CẦU ĐẦU RA (Xuất ra đúng 2 khối nhãn sau, không viết thêm lời dẫn chào hỏi):\n1. Danh sách Chẩn đoán phân biệt:  1. Tên bệnh A
+                    2. Tên bệnh B
+                    3. Tên bệnh C\n2. Biện luận chẩn đoán sơ bộ (Nội dung đoạn văn biện luận logic, súc tích)\nTrả về đúng 2 thẻ: [CHAN_DOAN_PHAN_BIET] ... [BIEN_LUAN_SO_BO] ..."""
     try:
         response = client.models.generate_content(
             model=MODEL_DEFAULT,
