@@ -213,28 +213,98 @@ async def api_ai_critique(payload: Dict[str, Any]):
     except Exception as e:
         return {"nhan_xet_tong_the": f"Lỗi phản biện: {str(e)}", "danh_sach_cau_hoi": []}
 
+from google.genai import types
+
 @app.post("/api/ocr/batch")
 async def api_ocr_batch(files: List[UploadFile] = File(...)):
     client = get_ai_client()
     if not client:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trên Render!")
+    
     results = []
-    ocr_prompt = "Đọc phiếu xét nghiệm và trả về JSON có 2 key: 'ket_qua' (chỉ số xét nghiệm) và 'phien_giai' (biện luận chỉ số bất thường)."
+    ocr_prompt = """
+    Bạn là trợ lý y khoa chuyên đọc cận lâm sàng. Hãy đọc kỹ phiếu xét nghiệm / hình ảnh y khoa này và trích xuất thông tin.
+    YÊU CẦU BẮT BUỘC: Trả về kết quả đúng định dạng JSON có 2 trường (keys):
+    - "ket_qua": Liệt kê các chỉ số xét nghiệm, kết quả thăm dò (mỗi chỉ số một dòng, ghi rõ trị số và đơn vị nếu có).
+    - "phien_giai": Đánh giá, biện giải các chỉ số bất thường, tăng/giảm hoặc kết luận hình ảnh học.
+    """
+    
     for file in files:
         try:
-            contents = await file.read()
-            img = Image.open(io.BytesIO(contents))
-            response = client.models.generate_content(
-                model="gemini-3.1-flash-lite",
-                contents=[ocr_prompt, img],
+            raw_bytes = await file.read()
+            if not raw_bytes:
+                continue
+
+            # Mở và chuẩn hóa ảnh qua Pillow: Tự xoay đúng chiều EXIF, resize nếu ảnh quá lớn, chuyển sang JPEG
+            try:
+                img = Image.open(io.BytesIO(raw_bytes))
+                # Tự động xoay theo EXIF của camera điện thoại nếu có
+                try:
+                    import PIL.ImageOps as ImageOps
+                    img = ImageOps.exif_transpose(img)
+                except Exception:
+                    pass
+
+                # Chuyển hệ màu RGB (tránh lỗi khi gặp ảnh PNG có kênh alpha RGBA)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Giới hạn kích thước tối đa 1600px để xử lý nhanh và tiết kiệm băng thông
+                max_size = 1600
+                if max(img.size) > max_size:
+                    img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=85)
+                optimized_bytes = buf.getvalue()
+                mime_type = "image/jpeg"
+            except Exception:
+                # Nếu Pillow không đọc được thì fallback dùng bytes gốc
+                optimized_bytes = raw_bytes
+                mime_type = file.content_type or "image/jpeg"
+
+            # Đóng gói Part đúng chuẩn của SDK google-genai
+            image_part = types.Part.from_bytes(
+                data=optimized_bytes,
+                mime_type=mime_type
             )
-            resp = (response.text or "").strip()
-            if resp.startswith("```json"): resp = resp[7:]
-            if resp.startswith("```"): resp = resp[3:]
-            if resp.endswith("```"): resp = resp[:-3]
-            results.append(json.loads(resp.strip()))
-        except Exception:
-            results.append({"ket_qua": "Không thể phân tích ảnh", "phien_giai": "-"})
+
+            # Gọi Gemini với cấu hình ép kiểu trả về JSON thuần
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[image_part, ocr_prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            
+            resp_text = (response.text or "").strip()
+            # Bóc tách an toàn nếu có markdown code block
+            if resp_text.startswith("```json"):
+                resp_text = resp_text[7:]
+            if resp_text.startswith("```"):
+                resp_text = resp_text[3:]
+            if resp_text.endswith("```"):
+                resp_text = resp_text[:-3]
+            
+            parsed = json.loads(resp_text.strip())
+            
+            # Đảm bảo có đủ 2 key chuẩn string
+            kq = parsed.get("ket_qua", "")
+            pg = parsed.get("phien_giai", "")
+            results.append({
+                "ket_qua": kq if kq else "Đã phân tích nhưng không nhận diện được chỉ số cụ thể.",
+                "phien_giai": pg if pg else "-"
+            })
+            
+        except Exception as err:
+            print(f"Lỗi chi tiết OCR từng ảnh: {err}")
+            # Trả về thông báo lỗi cụ thể để kiểm tra
+            results.append({
+                "ket_qua": f"Lỗi xử lý: {str(err)}",
+                "phien_giai": "Vui lòng chụp rõ nét hơn hoặc thử lại."
+            })
+
     return {"results": results}
 
 # --- BỘ TẠO PDF TIẾNG VIỆT UNICODE ---
