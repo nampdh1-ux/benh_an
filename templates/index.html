@@ -907,97 +907,81 @@
     let clsRowCount = 0;
 
     // HÀM TẠO HÀNG CẬN LÂM SÀNG CÓ NÚT CHỌN ẢNH CHUẨN WIN2K
-    let clsRowImages = {}; // Lưu trữ danh sách ảnh Base64 cho từng hàng
-
-    function addClsRow(kq = '', pg = '', savedImgs = []) {
+    function addClsRow(kq = '', pg = '', imgSrc = '') {
         const tbody = document.getElementById('cls-tbody');
         const rIdx = clsRowCount++;
-        clsRowImages[rIdx] = savedImgs || [];
-
         const tr = document.createElement('tr');
         tr.id = `cls-row-${rIdx}`;
         tr.innerHTML = `
             <td>
                 <textarea id="cls_kq_${rIdx}" rows="3" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()">${kq}</textarea>
-                <div style="margin-top: 5px;">
-                    <label style="font-size: 11px; font-weight: bold; cursor: pointer;">
-                        📷 Đính kèm ảnh (Cho phép chọn nhiều ảnh):
-                        <input type="file" id="cls_file_${rIdx}" multiple accept="image/*" onchange="handleRowMultipleImages(event, ${rIdx})" style="font-size: 11px; margin-top: 2px;">
-                    </label>
-                    <div id="cls_preview_${rIdx}" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;"></div>
+                <div style="margin-top: 5px; padding-top: 5px; border-top: 1px dashed #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <input type="file" id="cls_img_${rIdx}" accept="image/*" onchange="previewRowImg(event, ${rIdx})" style="display: none;">
+                    
+                    <button type="button" class="btn-file-custom" onclick="document.getElementById('cls_img_${rIdx}').click()">
+                        📷 Chọn ảnh đính kèm...
+                    </button>
+                    
+                    <button type="button" id="btn_remove_img_${rIdx}" class="btn-file-custom" onclick="clearRowImg(${rIdx})" style="display: ${imgSrc ? 'inline-block' : 'none'};">
+                        ✖ Xóa ảnh
+                    </button>
+                    
+                    <span id="cls_img_name_${rIdx}" style="font-size: 11px; color: #0a246a; font-weight: bold;">
+                        ${imgSrc ? '✅ Đã có ảnh' : 'Chưa chọn ảnh'}
+                    </span>
+                    
+                    <input type="hidden" id="cls_img_data_${rIdx}" value="${imgSrc}">
+                </div>
+                <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
+                    ${imgSrc ? `<img src="${imgSrc}" style="max-width: 160px; max-height: 120px; border: 1px solid #808080; display: block; margin-top: 4px;">` : ''}
                 </div>
             </td>
             <td>
-                <textarea id="cls_pg_${rIdx}" rows="4" placeholder="Biện giải lâm sàng kết quả..." oninput="autoSave()">${pg}</textarea>
+                <textarea id="cls_pg_${rIdx}" rows="6" placeholder="Biện giải lâm sàng..." oninput="autoSave()">${pg}</textarea>
             </td>
         `;
         tbody.appendChild(tr);
-
-        // Render lại ảnh xem trước nếu nạp từ bản nháp
-        if (savedImgs && savedImgs.length > 0) {
-            renderPreviewImages(rIdx);
-        }
     }
 
-    // Đọc nhiều ảnh người dùng chọn và chuyển thành Base64
-    function handleRowMultipleImages(event, rowIdx) {
-        const files = event.target.files;
-        if (!files || !files.length) return;
-
-        if (!clsRowImages[rowIdx]) clsRowImages[rowIdx] = [];
-
-        Array.from(files).forEach(file => {
+    function previewRowImg(e, idx) {
+        const file = e.target.files[0];
+        const container = document.getElementById(`cls_preview_${idx}`);
+        const hiddenInput = document.getElementById(`cls_img_data_${idx}`);
+        const nameLabel = document.getElementById(`cls_img_name_${idx}`);
+        const removeBtn = document.getElementById(`btn_remove_img_${idx}`);
+        
+        container.innerHTML = "";
+        if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                clsRowImages[rowIdx].push(e.target.result);
-                renderPreviewImages(rowIdx);
+            reader.onload = function(evt) {
+                const b64 = evt.target.result;
+                hiddenInput.value = b64;
+                const img = document.createElement('img');
+                img.src = b64;
+                img.style.maxWidth = '160px';
+                img.style.maxHeight = '120px';
+                img.style.border = '1px solid #808080';
+                img.style.display = 'block';
+                img.style.marginTop = '4px';
+                container.appendChild(img);
+                
+                nameLabel.innerText = `✅ ${file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name}`;
+                removeBtn.style.display = 'inline-block';
                 autoSave();
             };
             reader.readAsDataURL(file);
-        });
+        } else {
+            clearRowImg(idx);
+        }
     }
 
-    // Hiển thị thumbnail xem trước ảnh kèm nút xóa ảnh nhỏ
-    function renderPreviewImages(rowIdx) {
-        const container = document.getElementById(`cls_preview_${rowIdx}`);
-        if (!container) return;
-        container.innerHTML = "";
-        
-        const imgs = clsRowImages[rowIdx] || [];
-        imgs.forEach((b64, imgIdx) => {
-            const wrap = document.createElement('div');
-            wrap.style.position = 'relative';
-            wrap.style.display = 'inline-block';
-
-            const img = document.createElement('img');
-            img.src = b64;
-            img.style.width = '70px';
-            img.style.height = '70px';
-            img.style.objectFit = 'cover';
-            img.style.border = '1px solid #808080';
-
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.innerText = '×';
-            delBtn.title = 'Xóa ảnh này';
-            delBtn.style.position = 'absolute';
-            delBtn.style.top = '0';
-            delBtn.style.right = '0';
-            delBtn.style.background = '#800000';
-            delBtn.style.color = '#fff';
-            delBtn.style.border = 'none';
-            delBtn.style.padding = '0 4px';
-            delBtn.style.cursor = 'pointer';
-            delBtn.onclick = function() {
-                clsRowImages[rowIdx].splice(imgIdx, 1);
-                renderPreviewImages(rowIdx);
-                autoSave();
-            };
-
-            wrap.appendChild(img);
-            wrap.appendChild(delBtn);
-            container.appendChild(wrap);
-        });
+    function clearRowImg(idx) {
+        document.getElementById(`cls_img_${idx}`).value = "";
+        document.getElementById(`cls_img_data_${idx}`).value = "";
+        document.getElementById(`cls_preview_${idx}`).innerHTML = "";
+        document.getElementById(`cls_img_name_${idx}`).innerText = "Chưa chọn ảnh";
+        document.getElementById(`btn_remove_img_${idx}`).style.display = "none";
+        autoSave();
     }
 
     function removeClsRow() {
@@ -1005,15 +989,12 @@
             clsRowCount--;
             const tr = document.getElementById(`cls-row-${clsRowCount}`);
             if (tr) tr.remove();
-            delete clsRowImages[clsRowCount];
             autoSave();
         }
     }
 
     function getFormPayload() {
-        const isHauPhau = document.getElementById('ba_hauphau').checked;
-        const loaiBa = isHauPhau ? "Hậu phẫu" : "Nội khoa / Tiền phẫu";
-
+        const loaiBa = document.getElementById('current_loai_ba').value || "Nội khoa / Tiền phẫu";
         const payload = {
             loai_benh_an: loaiBa,
             so_hang_cls: clsRowCount
@@ -1021,17 +1002,11 @@
 
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
-            if (el.id && el.type !== 'radio' && el.type !== 'file' && el.id !== 'loai_benh_an') {
+            if (el.id && el.type !== 'file' && el.id !== 'loai_benh_an') {
                 payload[el.id] = el.value;
             }
         });
 
-        // Đóng gói mảng ảnh Base64 của từng hàng cận lâm sàng
-        for (let i = 0; i < clsRowCount; i++) {
-            payload[`cls_imgs_${i}`] = clsRowImages[i] || [];
-        }
-
-        // Tính BMI
         const w = parseFloat(document.getElementById('sh_can_nang').value) || 0;
         const h = parseFloat(document.getElementById('sh_chieu_cao').value) || 0;
         if (w > 0 && h > 0) {
@@ -1402,10 +1377,13 @@
 
         document.getElementById('cls-tbody').innerHTML = "";
         clsRowCount = 0;
-        clsRowImages = {};
         const numRows = data.so_hang_cls || 3;
         for (let i = 0; i < numRows; i++) {
-            addClsRow(data[`cls_kq_${i}`] || '', data[`cls_pg_${i}`] || '', data[`cls_imgs_${i}`] || []);
+            addClsRow(
+                data[`cls_kq_${i}`] || '', 
+                data[`cls_pg_${i}`] || '', 
+                data[`cls_img_data_${i}`] || ''
+            );
         }
         calcBMI();
         reorderOrgans();
