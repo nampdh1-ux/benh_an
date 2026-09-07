@@ -91,7 +91,7 @@ async def logout(response: Response, session_token: str = Cookie(default=None)):
 # 3. CẤU HÌNH AI & PHỤ TRỢ
 # =========================================================================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-MODEL_DEFAULT = "gemini-2.5-flash"
+MODEL_DEFAULT = "gemini-3.1-flash-lite"
 
 # Font Unicode cho FPDF
 FONT_REGULAR = "Roboto-Regular.ttf"
