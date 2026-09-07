@@ -1207,14 +1207,20 @@
         const btn = document.getElementById('btn-ai-ocr');
         const originText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = "⏳ Đang phân tích OCR...";
+        btn.innerText = "⏳ Đang phân tích OCR cùng ngữ cảnh...";
         
         const formData = new FormData();
+        // 1. Đính kèm các file ảnh xét nghiệm
         for (let i = 0; i < fileInput.files.length; i++) {
             formData.append('files', fileInput.files[i]);
         }
+
+        // 2. Lấy toàn bộ ngữ cảnh bệnh án (Nội khoa hoặc Hậu phẫu) đã nhập phía trên để gửi kèm
+        const clinicalPayload = getFormPayload();
+        formData.append('context', JSON.stringify(clinicalPayload));
+
         const st = document.getElementById('ocr-status');
-        st.innerText = 'Đang gửi ảnh lên Gemini phân tích...';
+        st.innerText = 'Đang phân tích chỉ số & đối chiếu bệnh cảnh lâm sàng...';
         
         try {
             const res = await fetch('/api/ocr/batch', { method: 'POST', body: formData });
@@ -1227,7 +1233,7 @@
                 data.results.forEach(it => {
                     fillOrAddClsRow(it.ket_qua, it.phien_giai);
                 });
-                st.innerText = `✅ Đã phân tích & điền xong ${data.results.length} ảnh!`;
+                st.innerText = `✅ Đã phân tích & biện giải xong ${data.results.length} ảnh!`;
                 autoSave();
             } else {
                 st.innerText = 'Không nhận diện được nội dung từ ảnh.';
