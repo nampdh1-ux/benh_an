@@ -216,41 +216,85 @@ async def api_ai_critique(payload: Dict[str, Any]):
 
 from google.genai import types
 
+from google.genai import types
+from fastapi import Form
+
 @app.post("/api/ocr/batch")
-async def api_ocr_batch(files: List[UploadFile] = File(...)):
+async def api_ocr_batch(
+    files: List[UploadFile] = File(...),
+    context: str = Form("{}")
+):
     client = get_ai_client()
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trên Render!")
     
-    results = []
-    ocr_prompt = """
-    Bạn là trợ lý y khoa chuyên đọc cận lâm sàng. Hãy đọc kỹ phiếu xét nghiệm / hình ảnh y khoa này và trích xuất thông tin.
-    YÊU CẦU BẮT BUỘC: Trả về kết quả đúng định dạng JSON có 2 trường (keys):
-    - "ket_qua": Liệt kê các chỉ số xét nghiệm, kết quả thăm dò (mỗi chỉ số một dòng, ghi rõ trị số và đơn vị nếu có).
-    - "phien_giai": Đánh giá, biện giải các chỉ số bất thường, tăng/giảm hoặc kết luận hình ảnh học.
-    """
+    # Giải mã ngữ cảnh lâm sàng gửi kèm từ trình duyệt
+    try:
+        ctx_data = json.loads(context)
+    except Exception:
+        ctx_data = {}
+
+    loai_ba = ctx_data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
+    is_hp = (loai_ba == "Hậu phẫu")
+
+    # Xây dựng khối tóm tắt ca bệnh cho AI đối chiếu
+    if is_hp:
+        clinical_summary = f"""
+        [HỒ SƠ BỆNH ÁN HẬU PHẪU]
+        - Bệnh nhân: {ctx_data.get('tuoi', '--')} tuổi, Giới tính: {ctx_data.get('gioi_tinh', '--')}
+        - Lý do vào viện / Chẩn đoán trước mổ: {ctx_data.get('ly_do_vao_vien', '')} | {ctx_data.get('bs_truoc_mo', '')}
+        - Diễn biến trong mổ (Phương pháp mổ, chẩn đoán sau mổ): 
+          {ctx_data.get('bs_trong_mo', '')}
+        - Thời điểm khám: {ctx_data.get('ngay_hau_phau', 'Hậu phẫu')}
+        - Tình trạng sau mổ: {ctx_data.get('bs_sau_mo', '')}
+        - Vết mổ: {ctx_data.get('kham_vet_mo', '')} | Dẫn lưu: {ctx_data.get('kham_dan_luu', '')}
+        - Chẩn đoán sơ bộ / Biến chứng nghi ngờ: {ctx_data.get('chan_doan_so_bo', '')}
+        """
+    else:
+        clinical_summary = f"""
+        [HỒ SƠ BỆNH ÁN NỘI KHOA / TIỀN PHẪU]
+        - Bệnh nhân: {ctx_data.get('tuoi', '--')} tuổi, Giới tính: {ctx_data.get('gioi_tinh', '--')}
+        - Lý do vào viện: {ctx_data.get('ly_do_vao_vien', '')}
+        - Bệnh sử tóm tắt: {ctx_data.get('benh_su', '')}
+        - Tiền sử: {ctx_data.get('ts_noi_khoa', '')}
+        - Khám lúc vào viện / Toàn thân: {ctx_data.get('kham_vao_vien', '')} | {ctx_data.get('kham_toan_than', '')}
+        - Chẩn đoán sơ bộ: {ctx_data.get('chan_doan_so_bo', '')}
+        - Chẩn đoán phân biệt: {ctx_data.get('chan_doan_phan_biet', '')}
+        """
+
+    ocr_prompt = f"""
+    Bạn là bác sĩ lâm sàng giàu kinh nghiệm. Dưới đây là thông tin bệnh án hiện tại:
+    {clinical_summary}
+
+    NHIỆM VỤ:
+    Hãy đọc kỹ hình ảnh phiếu cận lâm sàng đính kèm và trích xuất thông tin ĐỐI CHIẾU VỚI BỆNH CẢNH TRÊN:
+    1. "ket_qua": Liệt kê các chỉ số xét nghiệm, kết quả thăm dò (mỗi chỉ số một dòng, kèm đơn vị và khoảng tham chiếu nếu có).
+    2. "phien_giai": Biện luận lâm sàng các chỉ số bất thường GẮN LIỀN VỚI CA BỆNH ĐANG XÉT. 
+       - Nếu là Hậu phẫu: Đánh giá chỉ số có phù hợp với ngày hậu phẫu không? Có dấu hiệu nhiễm trùng vết mổ, mất máu trong ổ bụng, rối loạn điện giải hay suy cơ quan sau mổ không?
+       - Nếu là Nội khoa: Chỉ số này ủng hộ hay loại trừ chẩn đoán sơ bộ/phân biệt nào?
     
+    YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG JSON thuần có 2 keys: "ket_qua" (chuỗi văn bản) và "phien_giai" (chuỗi văn bản).
+    """
+
+    results = []
     for file in files:
         try:
             raw_bytes = await file.read()
             if not raw_bytes:
                 continue
 
-            # Mở và chuẩn hóa ảnh qua Pillow: Tự xoay đúng chiều EXIF, resize nếu ảnh quá lớn, chuyển sang JPEG
+            # Chuẩn hóa ảnh qua Pillow: Tự xoay EXIF và tối ưu dung lượng
             try:
                 img = Image.open(io.BytesIO(raw_bytes))
-                # Tự động xoay theo EXIF của camera điện thoại nếu có
                 try:
                     import PIL.ImageOps as ImageOps
                     img = ImageOps.exif_transpose(img)
                 except Exception:
                     pass
 
-                # Chuyển hệ màu RGB (tránh lỗi khi gặp ảnh PNG có kênh alpha RGBA)
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 
-                # Giới hạn kích thước tối đa 1600px để xử lý nhanh và tiết kiệm băng thông
                 max_size = 1600
                 if max(img.size) > max_size:
                     img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
@@ -260,17 +304,15 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
                 optimized_bytes = buf.getvalue()
                 mime_type = "image/jpeg"
             except Exception:
-                # Nếu Pillow không đọc được thì fallback dùng bytes gốc
                 optimized_bytes = raw_bytes
                 mime_type = file.content_type or "image/jpeg"
 
-            # Đóng gói Part đúng chuẩn của SDK google-genai
             image_part = types.Part.from_bytes(
                 data=optimized_bytes,
                 mime_type=mime_type
             )
 
-            # Gọi Gemini với cấu hình ép kiểu trả về JSON thuần
+            # Sử dụng chuẩn model gemini-3.1-flash-lite
             response = client.models.generate_content(
                 model="gemini-3.1-flash-lite",
                 contents=[image_part, ocr_prompt],
@@ -280,30 +322,19 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
             )
             
             resp_text = (response.text or "").strip()
-            # Bóc tách an toàn nếu có markdown code block
-            if resp_text.startswith("```json"):
-                resp_text = resp_text[7:]
-            if resp_text.startswith("```"):
-                resp_text = resp_text[3:]
-            if resp_text.endswith("```"):
-                resp_text = resp_text[:-3]
+            if resp_text.startswith("```json"): resp_text = resp_text[7:]
+            if resp_text.startswith("```"): resp_text = resp_text[3:]
+            if resp_text.endswith("```"): resp_text = resp_text[:-3]
             
             parsed = json.loads(resp_text.strip())
-            
-            # Đảm bảo có đủ 2 key chuẩn string
-            kq = parsed.get("ket_qua", "")
-            pg = parsed.get("phien_giai", "")
             results.append({
-                "ket_qua": kq if kq else "Đã phân tích nhưng không nhận diện được chỉ số cụ thể.",
-                "phien_giai": pg if pg else "-"
+                "ket_qua": parsed.get("ket_qua", "Không nhận diện được chỉ số cụ thể."),
+                "phien_giai": parsed.get("phien_giai", "-")
             })
-            
         except Exception as err:
-            print(f"Lỗi chi tiết OCR từng ảnh: {err}")
-            # Trả về thông báo lỗi cụ thể để kiểm tra
             results.append({
-                "ket_qua": f"Lỗi xử lý: {str(err)}",
-                "phien_giai": "Vui lòng chụp rõ nét hơn hoặc thử lại."
+                "ket_qua": f"Lỗi đọc ảnh: {str(err)}",
+                "phien_giai": "Vui lòng chụp lại rõ nét hơn."
             })
 
     return {"results": results}
