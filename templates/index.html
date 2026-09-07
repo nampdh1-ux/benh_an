@@ -159,6 +159,37 @@
         }
 
         /* TỐI ƯU GIAO DIỆN DI ĐỘNG (MOBILE RESPONSIVE) - CHUẨN XÁC */
+        /* Khung cuộn ngang bảo vệ bảng trên mọi kích thước màn hình */
+        .cls-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 8px;
+            border: 1px solid #808080;
+            background: #ffffff;
+        }
+
+        .cls-table { 
+            width: 100%; 
+            min-width: 500px; /* Đảm bảo 2 cột không bị bóp nghẹt trên màn hình nhỏ */
+            border-collapse: collapse; 
+            background: #ffffff; 
+        }
+        .cls-table th { 
+            background: #d4d0c8; 
+            border: 1px solid #808080; 
+            padding: 6px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 11px;
+        }
+        .cls-table td { 
+            border: 1px solid #808080; 
+            padding: 6px; 
+            vertical-align: top; 
+        }
+
+        /* TỐI ƯU GIAO DIỆN DI ĐỘNG (MOBILE RESPONSIVE) - HOÀN TOÀN KHÔNG DÙNG ::before */
         @media (max-width: 768px) {
             body { padding: 4px; }
             .form-grid-3, .form-grid-2 { grid-template-columns: 1fr !important; gap: 6px; }
@@ -167,63 +198,6 @@
             .toc-dropdown-wrapper { top: 8px; right: 8px; }
             .quick-select-menu { width: 260px; right: -10px; }
             #pdf-preview-frame { height: 420px !important; }
-
-            /* SỬA TRIỆT ĐỂ LỖI CHỒNG CHỮ BẢNG CẬN LÂM SÀNG */
-            .cls-table {
-                display: block !important;
-                width: 100% !important;
-                border: none !important;
-                background: transparent !important;
-            }
-            .cls-table thead {
-                display: none !important; /* Ẩn thead dạng bảng */
-            }
-            .cls-table tbody {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 12px !important;
-                width: 100% !important;
-            }
-            .cls-table tr {
-                display: flex !important;
-                flex-direction: column !important;
-                width: 100% !important;
-                border: 2px solid #808080 !important;
-                background: #ece9d8 !important;
-                padding: 8px !important;
-                box-sizing: border-box !important;
-            }
-            .cls-table td {
-                display: flex !important;
-                flex-direction: column !important;
-                width: 100% !important;
-                padding: 4px 0 !important;
-                border: none !important;
-                box-sizing: border-box !important;
-            }
-            /* Nhãn rõ ràng, tách dòng hoàn toàn không bị đè chữ */
-            .cls-table td:first-child::before {
-                content: "📋 KẾT QUẢ CẬN LÂM SÀNG:" !important;
-                display: block !important;
-                font-weight: 700 !important;
-                font-size: 11.5px !important;
-                color: #0a246a !important;
-                margin-bottom: 4px !important;
-            }
-            .cls-table td:last-child::before {
-                content: "🔍 PHIÊN GIẢI / BIỆN GIẢI:" !important;
-                display: block !important;
-                font-weight: 700 !important;
-                font-size: 11.5px !important;
-                color: #0a246a !important;
-                margin-top: 6px !important;
-                margin-bottom: 4px !important;
-            }
-            .cls-table textarea {
-                width: 100% !important;
-                box-sizing: border-box !important;
-                min-height: 70px !important;
-            }
         }
     </style>
 </head>
