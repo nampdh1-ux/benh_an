@@ -3,15 +3,18 @@ import hashlib
 import io
 import json
 import os
+import random
 import re
-import secrets
+import smtplib
 import unicodedata
 import urllib.request
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Any, Dict, List
 
-from fastapi import Cookie, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fpdf import FPDF
 from google import genai
@@ -23,73 +26,10 @@ from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 from pydantic import BaseModel
 
-# =========================================================================
-# 1. KHỞI TẠO APP VÀ TEMPLATES
-# =========================================================================
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
 
-# =========================================================================
-# 2. CẤU HÌNH XÁC THỰC DUY NHẤT BẰNG APP_PASSWORD
-# =========================================================================
-APP_PASSWORD = os.getenv("APP_PASSWORD", "MatKhau123@").strip()
-ACTIVE_SESSIONS: Dict[str, float] = {}  # {session_token: expire_timestamp}
-
-def check_authenticated(session_token: str = None) -> bool:
-    if not session_token or session_token not in ACTIVE_SESSIONS:
-        return False
-    if datetime.now().timestamp() > ACTIVE_SESSIONS[session_token]:
-        del ACTIVE_SESSIONS[session_token]
-        return False
-    return True
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, session_token: str = Cookie(default=None)):
-    if check_authenticated(session_token):
-        return RedirectResponse(url="/", status_code=302)
-    return templates.TemplateResponse(request, "login.html")
-
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request, session_token: str = Cookie(default=None)):
-    if not check_authenticated(session_token):
-        return RedirectResponse(url="/login", status_code=302)
-    return templates.TemplateResponse(request, "index.html")
-
-@app.post("/api/auth/login")
-async def api_login(payload: Dict[str, Any], response: Response):
-    password = str(payload.get("password", "")).strip()
-
-    if not password:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập mật khẩu!")
-
-    if password != APP_PASSWORD:
-        raise HTTPException(status_code=401, detail="Mật khẩu hệ thống không chính xác!")
-
-    # Cấp token phiên làm việc 30 ngày
-    token = secrets.token_urlsafe(32)
-    duration = 30 * 24 * 3600
-    ACTIVE_SESSIONS[token] = datetime.now().timestamp() + duration
-
-    response.set_cookie(
-        key="session_token",
-        value=token,
-        max_age=duration,
-        httponly=True,
-        samesite="lax"
-    )
-    return {"status": "success"}
-
-@app.get("/logout")
-async def logout(response: Response, session_token: str = Cookie(default=None)):
-    if session_token and session_token in ACTIVE_SESSIONS:
-        del ACTIVE_SESSIONS[session_token]
-    resp = RedirectResponse(url="/login", status_code=302)
-    resp.delete_cookie("session_token")
-    return resp
-
-# =========================================================================
-# 3. CẤU HÌNH AI & PHỤ TRỢ
-# =========================================================================
+# Cấu hình môi trường & AI
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 MODEL_DEFAULT = "gemini-3.1-flash-lite"
 
@@ -149,9 +89,11 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
         return f"- Trước mổ: {payload.get('bs_truoc_mo', '')}\n- Trong mổ: {payload.get('bs_trong_mo', '')}\n- Sau mổ: {payload.get('bs_sau_mo', '')}"
     return payload.get("benh_su", "")
 
-# =========================================================================
-# 4. CÁC ENDPOINT AI & OCR
-# =========================================================================
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse(request, "index.html")
+
+# --- CÁC ENDPOINT AI ---
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
     client = get_ai_client()
@@ -222,7 +164,7 @@ YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 3 thẻ:
     try:
         response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         txt = response.text or ""
-        mt, ct, td = "", "" , ""
+        mt, ct, td = "", "", ""
         if "[MUC_TIEU]" in txt and "[DIEU_TRI_CU_THE]" in txt and "[THEO_DOI]" in txt:
             p1 = txt.split("[DIEU_TRI_CU_THE]")
             mt = p1[0].replace("[MUC_TIEU]", "").strip()
@@ -350,9 +292,7 @@ async def api_ocr_batch(
             results.append({"ket_qua": f"Lỗi xử lý: {str(err)}", "phien_giai": "-"})
     return {"results": results}
 
-# =========================================================================
-# 5. KẾT XUẤT PDF & PPTX
-# =========================================================================
+# --- PDF ENGINE HỖ TRỢ NHIỀU ẢNH TRÊN MỖI DÒNG CLS ---
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
