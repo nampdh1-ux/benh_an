@@ -412,7 +412,7 @@ async def api_export_pdf(payload: Dict[str, Any]):
         # ĐỊNH NGHĨA HÀM KHỐI CHO CÁC MỤC LOGIC
         def sec_tom_tat(num_rom):
             pdf.add_sec(f"{num_rom}. TÓM TẮT BỆNH ÁN")
-            pdf.add_txt(payload.get("tom_tat", ""))
+            pdf.add_txt(format_bullet_points(payload.get("tom_tat", "")))
 
         def sec_chan_doan_so_bo(num_sb, num_pb, num_bl):
             pdf.add_sec(f"{num_sb}. CHẨN ĐOÁN SƠ BỘ")
