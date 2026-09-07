@@ -130,7 +130,7 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
     """
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
         )
         resp = response.text or ""
@@ -154,7 +154,7 @@ async def api_ai_treatment(payload: Dict[str, Any]):
     prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
         )
         txt = response.text or ""
@@ -178,7 +178,7 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
     prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
         )
         res_text = response.text or ""
@@ -202,7 +202,7 @@ async def api_ai_critique(payload: Dict[str, Any]):
     Trả về ĐÚNG định dạng JSON thuần: {{"nhan_xet_tong_the": "...", "danh_sach_cau_hoi": [{{"chu_de": "...", "cau_hoi": "...", "goi_y_tra_loi": "..."}}]}}"""
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
         )
         res_pb = (response.text or "").strip()
@@ -225,7 +225,7 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
             contents = await file.read()
             img = Image.open(io.BytesIO(contents))
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash-lite",
                 contents=[ocr_prompt, img],
             )
             resp = (response.text or "").strip()
