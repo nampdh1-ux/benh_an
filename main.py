@@ -150,7 +150,71 @@ def send_otp_email(to_email: str, otp_code: str):
 # =========================================================================
 # CÁC ENDPOINT AUTHENTICATION
 # =========================================================================
+import traceback
 
+@app.get("/api/auth/debug-email")
+async def debug_email_diagnostics(test_email: str = None):
+    """
+    Endpoint chẩn đoán lỗi SMTP chuyên sâu.
+    Truy cập qua: /api/auth/debug-email?test_email=email_cua_ban@gmail.com
+    """
+    logs = []
+    
+    # 1. Kiểm tra cấu hình biến môi trường
+    logs.append("=== 1. KIỂM TRA BIẾN MÔI TRƯỜNG ===")
+    logs.append(f"SENDER_EMAIL: {'Đã có (' + SENDER_EMAIL + ')' if SENDER_EMAIL else '❌ TRỐNG'}")
+    logs.append(f"SENDER_APP_PASSWORD: {'Đã có (' + str(len(SENDER_APP_PASSWORD)) + ' ký tự)' if SENDER_APP_PASSWORD else '❌ TRỐNG'}")
+    logs.append(f"APP_PASSWORD: {'Đã có (' + str(len(APP_PASSWORD)) + ' ký tự)' if APP_PASSWORD else '❌ TRỐNG'}")
+    logs.append(f"ADMIN_EMAIL: {'Đã có (' + ADMIN_EMAIL + ')' if ADMIN_EMAIL else '❌ TRỐNG'}")
+
+    target_email = test_email or ADMIN_EMAIL or SENDER_EMAIL
+    if not target_email:
+        return {"diagnostics": logs, "error": "Chưa có email đích để test! Thêm ?test_email=... vào sau URL"}
+
+    if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
+        return {"diagnostics": logs, "error": "Thiếu SENDER_EMAIL hoặc SENDER_APP_PASSWORD trong Render Environment!"}
+
+    # 2. Thử nghiệm kết nối SSL Cổng 465
+    logs.append(f"\n=== 2. THỬ KẾT NỐI SMTP_SSL (Cổng 465) TỚI {target_email} ===")
+    try:
+        logs.append("-> Đang bắt tay SSL với smtp.gmail.com:465...")
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
+        logs.append("-> Kết nối socket thành công.")
+        
+        logs.append(f"-> Đang xác thực tài khoản {SENDER_EMAIL}...")
+        server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
+        logs.append("-> Xác thực login thành công!")
+
+        msg = MIMEMultipart()
+        msg["From"] = SENDER_EMAIL
+        msg["To"] = target_email
+        msg["Subject"] = "[TEST CHẨN ĐOÁN] Kiểm tra gửi mail từ hệ thống"
+        msg.attach(MIMEText("Nếu bạn nhận được mail này, hệ thống gửi email đã hoạt động 100%!", "plain", "utf-8"))
+        
+        server.sendmail(SENDER_EMAIL, [target_email], msg.as_string())
+        server.quit()
+        logs.append(f"-> ĐÃ GỬI THÀNH CÔNG VÀO HỘP THƯ: {target_email}")
+        return {"status": "SUCCESS", "details": logs}
+    except smtplib.SMTPAuthenticationError as auth_err:
+        logs.append(f"❌ LỖI XÁC THỰC GOOGLE (Sai User/Pass): {auth_err}")
+        logs.append("-> Hướng xử lý: Mật khẩu SENDER_APP_PASSWORD phải là App Password 16 ký tự tạo từ tài khoản Google (bật 2-Step Verification), không phải mật khẩu đăng nhập Gmail thường.")
+    except Exception as exc:
+        logs.append(f"❌ LỖI KẾT NỐI HOẶC HỆ THỐNG: {exc}")
+        logs.append(traceback.format_exc())
+
+    # 3. Thử nghiệm phương án phụ Cổng 587 (TLS) nếu 465 thất bại
+    logs.append(f"\n=== 3. THỬ PHƯƠNG ÁN PHỤ CỔNG 587 (STARTTLS) ===")
+    try:
+        logs.append("-> Đang kết nối smtp.gmail.com:587...")
+        server587 = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server587.starttls()
+        server587.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
+        logs.append("-> Cổng 587 login thành công!")
+        server587.quit()
+    except Exception as exc587:
+        logs.append(f"❌ Cổng 587 cũng thất bại: {exc587}")
+
+    return {"status": "FAILED", "details": logs}
 # Trang đăng nhập Win2K
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, session_token: str = Cookie(None)):
