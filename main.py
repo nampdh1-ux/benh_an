@@ -389,12 +389,14 @@ class RobustUnicodePDF(FPDF):
     import base64
 
 # Trong class RobustUnicodePDF, cập nhật lại hàm render_table_cls:
+    import tempfile
+
     def render_table_cls(self, cls_rows):
         col_w = (self.w - self.l_margin - self.r_margin) / 2.0
         line_h = 5.0
         self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
         self.set_fill_color(230, 235, 245)
-        if self.get_y() > 240:
+        if self.get_y() > 230:
             self.add_page()
         self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
         self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
@@ -406,21 +408,24 @@ class RobustUnicodePDF(FPDF):
             
             pil_img = None
             img_render_h = 0
+            
+            # Xử lý Base64 an toàn tuyệt đối
             if img_b64 and len(str(img_b64).strip()) > 50:
                 try:
                     clean_b64 = str(img_b64)
                     if "," in clean_b64:
                         clean_b64 = clean_b64.split(",", 1)[1]
-                    img_bytes = base64.b64decode(clean_b64)
-                    pil_img = Image.open(io.BytesIO(img_bytes))
+                    img_data = base64.b64decode(clean_b64)
+                    
+                    pil_img = Image.open(io.BytesIO(img_data))
                     if pil_img.mode not in ("RGB", "L"):
                         pil_img = pil_img.convert("RGB")
-                    img_render_h = 45.0  # Chiều cao dành riêng cho ảnh
+                    img_render_h = 45.0  # Chiều cao khung ảnh
                 except Exception as err:
-                    print(f"Lỗi nạp ảnh PIL: {err}")
+                    txt_kq += f"\n[LỖI NẠP ẢNH TỪ TRÌNH DUYỆT: {str(err)}]"
                     pil_img = None
-                    img_render_h = 0
 
+            # Tính toán layout chiều cao dòng
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
             
@@ -441,19 +446,23 @@ class RobustUnicodePDF(FPDF):
             self.rect(curr_x, curr_y, col_w, row_h)
             self.rect(curr_x + col_w, curr_y, col_w, row_h)
 
-            # 1. In text kết quả
+            # 1. In chữ Cột Trái
             self.set_xy(curr_x + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
             
-            # 2. In ảnh người dùng tự chọn vào ngay dưới text
+            # 2. In Hình Ảnh
             if pil_img:
                 try:
                     img_y = self.get_y() + 2
                     self.image(pil_img, x=curr_x + 3, y=img_y, w=col_w - 6, h=img_render_h)
                 except Exception as img_err:
-                    print(f"Lỗi vẽ ảnh PDF: {img_err}")
+                    # Nếu FPDF lỗi, in dòng chữ báo lỗi ra PDF để ta nhìn thấy ngay
+                    self.set_xy(curr_x + 2, img_y)
+                    self.set_text_color(255, 0, 0)
+                    self.multi_cell(col_w - 4, line_h, self.clean_text(f"[LỖI IN ẢNH VÀO PDF: {str(img_err)}]"))
+                    self.set_text_color(0, 0, 0)
 
-            # 3. In phiên giải bên cột phải
+            # 3. In chữ Cột Phải
             self.set_xy(curr_x + col_w + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
             
