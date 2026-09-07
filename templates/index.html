@@ -207,6 +207,12 @@
             .quick-select-menu { width: 260px; right: -10px; }
             #pdf-preview-frame { height: 420px !important; }
         }
+        /* Tự động ẩn thanh cuộn dọc để textarea co giãn mượt mà */
+        textarea {
+            overflow-y: hidden !important;
+            resize: none !important;
+            transition: height 0.08s ease-out;
+        }
     </style>
 </head>
 <body>
