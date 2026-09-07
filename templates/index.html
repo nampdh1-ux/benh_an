@@ -907,33 +907,25 @@
     let clsRowCount = 0;
 
     // HÀM TẠO HÀNG CẬN LÂM SÀNG CÓ NÚT CHỌN ẢNH CHUẨN WIN2K
-    function addClsRow(kq = '', pg = '', imgSrc = '') {
+    let clsRowImages = {}; // Lưu trữ ảnh Base64 trong bộ nhớ tạm của trang
+
+    function addClsRow(kq = '', pg = '', imgData = '') {
         const tbody = document.getElementById('cls-tbody');
         const rIdx = clsRowCount++;
+        if (imgData) {
+            clsRowImages[rIdx] = imgData;
+        }
+
         const tr = document.createElement('tr');
         tr.id = `cls-row-${rIdx}`;
         tr.innerHTML = `
             <td>
                 <textarea id="cls_kq_${rIdx}" rows="3" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()">${kq}</textarea>
-                <div style="margin-top: 5px; padding-top: 5px; border-top: 1px dashed #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <input type="file" id="cls_img_${rIdx}" accept="image/*" onchange="previewRowImg(event, ${rIdx})" style="display: none;">
-                    
-                    <button type="button" class="btn-file-custom" onclick="document.getElementById('cls_img_${rIdx}').click()">
-                        📷 Chọn ảnh đính kèm...
-                    </button>
-                    
-                    <button type="button" id="btn_remove_img_${rIdx}" class="btn-file-custom" onclick="clearRowImg(${rIdx})" style="display: ${imgSrc ? 'inline-block' : 'none'};">
-                        ✖ Xóa ảnh
-                    </button>
-                    
-                    <span id="cls_img_name_${rIdx}" style="font-size: 11px; color: #0a246a; font-weight: bold;">
-                        ${imgSrc ? '✅ Đã có ảnh' : 'Chưa chọn ảnh'}
-                    </span>
-                    
-                    <input type="hidden" id="cls_img_data_${rIdx}" value="${imgSrc}">
-                </div>
-                <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
-                    ${imgSrc ? `<img src="${imgSrc}" style="max-width: 160px; max-height: 120px; border: 1px solid #808080; display: block; margin-top: 4px;">` : ''}
+                <div style="margin-top: 5px; border-top: 1px dashed #808080; padding-top: 4px;">
+                    <input type="file" id="cls_file_${rIdx}" accept="image/*" onchange="handleRowImage(event, ${rIdx})" style="font-size: 11px;">
+                    <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
+                        ${imgData ? `<img src="${imgData}" style="max-height: 80px; border: 1px solid #808080;">` : ''}
+                    </div>
                 </div>
             </td>
             <td>
@@ -941,6 +933,21 @@
             </td>
         `;
         tbody.appendChild(tr);
+    }
+
+    function handleRowImage(e, idx) {
+        const file = e.target.files[0];
+        const preview = document.getElementById(`cls_preview_${idx}`);
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const b64 = evt.target.result;
+            clsRowImages[idx] = b64;
+            preview.innerHTML = `<img src="${b64}" style="max-height: 80px; border: 1px solid #808080;">`;
+            autoSave();
+        };
+        reader.readAsDataURL(file);
     }
 
     function previewRowImg(e, idx) {
