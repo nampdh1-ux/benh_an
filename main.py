@@ -394,7 +394,7 @@ class RobustUnicodePDF(FPDF):
         line_h = 5.0
         self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
         self.set_fill_color(230, 235, 245)
-        if self.get_y() > 250:
+        if self.get_y() > 240:
             self.add_page()
         self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
         self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
@@ -404,15 +404,31 @@ class RobustUnicodePDF(FPDF):
             txt_kq = format_bullet_points(kq) if kq else "-"
             txt_pg = format_bullet_points(pg) if pg else "-"
             
-            # Tính chiều cao văn bản mỗi cột
+            pil_img = None
+            img_render_h = 0
+            if img_b64 and len(str(img_b64).strip()) > 50:
+                try:
+                    clean_b64 = str(img_b64)
+                    if "," in clean_b64:
+                        clean_b64 = clean_b64.split(",", 1)[1]
+                    img_bytes = base64.b64decode(clean_b64)
+                    pil_img = Image.open(io.BytesIO(img_bytes))
+                    if pil_img.mode not in ("RGB", "L"):
+                        pil_img = pil_img.convert("RGB")
+                    img_render_h = 45.0  # Chiều cao dành riêng cho ảnh
+                except Exception as err:
+                    print(f"Lỗi nạp ảnh PIL: {err}")
+                    pil_img = None
+                    img_render_h = 0
+
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
             
-            # Nếu có ảnh Base64, cộng thêm chiều cao dự kiến cho khung ảnh (khoảng 45mm)
-            img_h = 45 if img_b64 else 0
-            row_h = max(max(nb_l * line_h + img_h, nb_r * line_h) + 6, 12)
+            col_l_h = nb_l * line_h + (img_render_h + 4 if pil_img else 0)
+            col_r_h = nb_r * line_h
+            row_h = max(max(col_l_h, col_r_h) + 6, 12)
             
-            if self.get_y() + row_h > 275:
+            if self.get_y() + row_h > 270:
                 self.add_page()
                 self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 9.5)
                 self.set_fill_color(230, 235, 245)
@@ -425,27 +441,22 @@ class RobustUnicodePDF(FPDF):
             self.rect(curr_x, curr_y, col_w, row_h)
             self.rect(curr_x + col_w, curr_y, col_w, row_h)
 
-            # In nội dung cột trái (kết quả + ảnh)
+            # 1. In text kết quả
             self.set_xy(curr_x + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
             
-            # Vẽ ảnh nếu có dữ liệu Base64 hợp lệ
-            if img_b64:
+            # 2. In ảnh người dùng tự chọn vào ngay dưới text
+            if pil_img:
                 try:
-                    if "," in img_b64:
-                        img_b64 = img_b64.split(",", 1)[1]
-                    img_bytes = base64.b64decode(img_b64)
-                    img_stream = io.BytesIO(img_bytes)
                     img_y = self.get_y() + 2
-                    self.image(img_stream, x=curr_x + 4, y=img_y, w=col_w - 8, h=40)
-                except Exception as e:
-                    print(f"Lỗi chèn ảnh vào PDF: {e}")
+                    self.image(pil_img, x=curr_x + 3, y=img_y, w=col_w - 6, h=img_render_h)
+                except Exception as img_err:
+                    print(f"Lỗi vẽ ảnh PDF: {img_err}")
 
-            # In nội dung cột phải (phiên giải)
+            # 3. In phiên giải bên cột phải
             self.set_xy(curr_x + col_w + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
             
-            # Chuyển trỏ xuống dòng tiếp theo
             self.set_xy(curr_x, curr_y + row_h)
         self.ln(3)
 
