@@ -5,6 +5,7 @@ import os
 import random
 import re
 import smtplib
+import unicodedata
 import urllib.request
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -23,7 +24,7 @@ from pptx.util import Inches, Pt
 from pydantic import BaseModel
 import google.generativeai as genai
 
-app = FastAPI(title="Benh An Lam Sang Win2K")
+app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
 
 # Cấu hình biến môi trường
@@ -32,37 +33,48 @@ SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
 APP_PASSWORD = os.getenv("APP_PASSWORD", "123456")
 AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "clinical_secret_2026")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 
-# Tự động tải font Unicode hỗ trợ tiếng Việt nếu chưa có trên server Render
-FONT_REGULAR_PATH = "DejaVuSans.ttf"
-FONT_BOLD_PATH = "DejaVuSans-Bold.ttf"
+# --- TẢI FONT UNICODE TIẾNG VIỆT TỪ NGUỒN CHÍNH THỨC ---
+FONT_REGULAR = "Roboto-Regular.ttf"
+FONT_BOLD = "Roboto-Bold.ttf"
 
-def ensure_unicode_fonts():
-    base_url = "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/"
-    if not os.path.exists(FONT_REGULAR_PATH):
-        try:
-            urllib.request.urlretrieve(base_url + "DejaVuSans.ttf", FONT_REGULAR_PATH)
-        except Exception as e:
-            print(f"Không thể tải font Regular: {e}")
-    if not os.path.exists(FONT_BOLD_PATH):
-        try:
-            urllib.request.urlretrieve(base_url + "DejaVuSans-Bold.ttf", FONT_BOLD_PATH)
-        except Exception as e:
-            print(f"Không thể tải font Bold: {e}")
+def download_fonts_if_missing():
+    # Sử dụng link raw chính thức từ GitHub Google Fonts
+    urls = {
+        FONT_REGULAR: "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Regular.ttf",
+        FONT_BOLD: "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf"
+    }
+    for filename, url in urls.items():
+        if not os.path.exists(filename) or os.path.getsize(filename) < 10000:
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=15) as resp, open(filename, 'wb') as f:
+                    f.write(resp.read())
+                print(f"✅ Đã tải thành công font: {filename}")
+            except Exception as e:
+                print(f"⚠️ Chưa thể tải {filename}: {e}")
 
-ensure_unicode_fonts()
+download_fonts_if_missing()
 
-def get_ai_model():
+def get_ai_model(model_name: str = "gemini-2.5-flash"):
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return None
     try:
         genai.configure(api_key=api_key)
-        # Ưu tiên các dòng flash hỗ trợ tốt và ổn định
-        return genai.GenerativeModel("gemini-2.5-flash")
-    except Exception:
+        return genai.GenerativeModel(model_name)
+    except Exception as e:
+        print(f"Lỗi khởi tạo AI: {e}")
         return None
+
+def strip_accents(text: Any) -> str:
+    """Khử dấu an toàn dự phòng khi bắt buộc dùng font Latinh"""
+    if not text:
+        return ""
+    text = unicodedata.normalize('NFD', str(text))
+    text = re.sub(r'[\u0300-\u036f]', '', text)
+    return text.replace('đ', 'd').replace('Đ', 'D')
 
 def format_bullet_points(text: str) -> str:
     if not text or not str(text).strip():
@@ -92,7 +104,7 @@ async def index(request: Request):
 async def api_ai_cdpb(payload: Dict[str, Any]):
     model = get_ai_model()
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trong Environment Variables của Render!")
+        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY trong Environment của Render!")
     
     benh_su_str = get_benh_su_text(payload)
     context = (
@@ -108,7 +120,7 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
     {context}
     
     Hãy đưa ra:
-    1. Danh sách Chẩn đoán phân biệt
+    1. Danh sách Chẩn đoán phân biệt (Differential Diagnosis)
     2. Biện luận chẩn đoán sơ bộ
     Trả về ĐÚNG 2 thẻ:
     [CHAN_DOAN_PHAN_BIET]
@@ -127,13 +139,13 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
             cdpb = resp.strip()
         return {"chan_doan_phan_biet": cdpb, "bien_luan": bl}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi AI: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi Gemini: {str(e)}")
 
 @app.post("/api/ai/treatment")
 async def api_ai_treatment(payload: Dict[str, Any]):
     model = get_ai_model()
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     context = f"Loại: {payload.get('loai_benh_an')}\nChẩn đoán: {payload.get('chan_doan_xac_dinh')}\nTiền sử: {payload.get('ts_noi_khoa')}"
     prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
     try:
@@ -153,7 +165,7 @@ async def api_ai_treatment(payload: Dict[str, Any]):
 async def api_ai_prognosis(payload: Dict[str, Any]):
     model = get_ai_model()
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     context = f"Chẩn đoán: {payload.get('chan_doan_xac_dinh')}\nĐiều trị: {payload.get('dt_cu_the')}"
     prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
     try:
@@ -171,7 +183,7 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
 async def api_ai_critique(payload: Dict[str, Any]):
     model = get_ai_model()
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     phong_cach = payload.get("phong_cach", "Học thuật & Hướng dẫn")
     context = f"Bệnh sử: {get_benh_su_text(payload)}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
     prompt = f"""Bạn là Giảng viên lâm sàng. Nhận xét ca bệnh ({context}) theo phong cách {phong_cach}.
@@ -189,7 +201,7 @@ async def api_ai_critique(payload: Dict[str, Any]):
 async def api_ocr_batch(files: List[UploadFile] = File(...)):
     model = get_ai_model()
     if not model:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cài đặt GEMINI_API_KEY!")
     results = []
     ocr_prompt = "Đọc phiếu xét nghiệm và trả về JSON có 2 key: 'ket_qua' (chỉ số xét nghiệm) và 'phien_giai' (biện luận chỉ số bất thường)."
     for file in files:
@@ -205,40 +217,58 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
             results.append({"ket_qua": "Không thể phân tích ảnh", "phien_giai": "-"})
     return {"results": results}
 
-# --- XUẤT VĂN BẢN PDF UNICODE TIẾNG VIỆT ĐẦY ĐỦ DẤU ---
-class UnicodePDF(FPDF):
+# --- BỘ TẠO PDF TIẾNG VIỆT AN TOÀN TUYỆT ĐỐI ---
+class RobustUnicodePDF(FPDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if os.path.exists(FONT_REGULAR_PATH) and os.path.exists(FONT_BOLD_PATH):
-            self.add_font("DejaVu", "", FONT_REGULAR_PATH)
-            self.add_font("DejaVu", "B", FONT_BOLD_PATH)
-            self.font_family_name = "DejaVu"
+        self.use_unicode = False
+        # Ưu tiên font Roboto
+        if os.path.exists(FONT_REGULAR) and os.path.exists(FONT_BOLD):
+            try:
+                self.add_font("Roboto", "", FONT_REGULAR)
+                self.add_font("Roboto", "B", FONT_BOLD)
+                self.font_family_name = "Roboto"
+                self.use_unicode = True
+            except Exception:
+                self.font_family_name = "Helvetica"
         else:
             self.font_family_name = "Helvetica"
 
+    def clean_text(self, text: Any) -> str:
+        s = str(text or "")
+        # Nếu nạp được font Unicode -> Giữ nguyên tiếng Việt có dấu
+        # Nếu chưa nạp được font -> Tự động khử dấu để FPDF không bị Exception
+        if self.use_unicode:
+            return s
+        return strip_accents(s)
+
     def header(self):
         if self.page_no() == 1:
-            self.set_font(self.font_family_name, "B", 15)
-            self.cell(0, 8, "BỆNH ÁN LÂM SÀNG", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 15)
+            self.cell(0, 8, self.clean_text("BỆNH ÁN LÂM SÀNG"), align="C", new_x="LMARGIN", new_y="NEXT")
             self.set_font(self.font_family_name, "", 9)
-            self.cell(0, 4, f"Thời gian lập: {datetime.now().strftime('%d/%m/%Y %H:%M')}", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.cell(0, 4, self.clean_text(f"Thời gian lập: {datetime.now().strftime('%d/%m/%Y %H:%M')}"), align="C", new_x="LMARGIN", new_y="NEXT")
             self.ln(4)
 
     def add_sec(self, title: str):
-        self.set_font(self.font_family_name, "B", 11)
+        self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 11)
         self.set_fill_color(225, 235, 245)
-        self.cell(0, 7, str(title), fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 7, self.clean_text(title), fill=True, new_x="LMARGIN", new_y="NEXT")
         self.ln(1)
 
     def add_txt(self, text: str):
         self.set_font(self.font_family_name, "", 9.5)
-        self.multi_cell(0, 5, str(text).strip() if str(text).strip() else "Chưa ghi nhận thông tin.")
+        self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
         self.ln(2)
 
 @app.post("/api/export/pdf")
 async def api_export_pdf(payload: Dict[str, Any]):
     try:
-        pdf = UnicodePDF()
+        # Đảm bảo font luôn sẵn sàng
+        if not os.path.exists(FONT_REGULAR):
+            download_fonts_if_missing()
+
+        pdf = RobustUnicodePDF()
         pdf.add_page()
         
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
