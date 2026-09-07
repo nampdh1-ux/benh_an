@@ -895,25 +895,115 @@
         autoSave();
     }
 
+    // HÀM TÍNH TOÁN VÀ TẠO CÂU DẪN TỰ ĐỘNG CHUẨN LÂM SÀNG
     function generateIntroTomTat() {
         const isHauPhau = (document.getElementById('current_loai_ba').value === "Hậu phẫu");
-        const ht = document.getElementById('ho_ten').value.trim() || "...";
-        const tuoi = document.getElementById('tuoi').value.trim() || "...";
-        const gioi = (document.getElementById('gioi_tinh').value || "Nam").toLowerCase();
-        const ld = document.getElementById('ly_do_vao_vien').value.trim() || "...";
-        const ts = document.getElementById('ts_noi_khoa').value.trim() || "chưa ghi nhận bất thường";
+        const val = (id) => (document.getElementById(id) ? document.getElementById(id).value.trim() : "");
         
+        const ht = val('ho_ten') || "...";
+        const tuoi = val('tuoi') ? `${val('tuoi')} tuổi` : "... tuổi";
+        const gioi = (val('gioi_tinh') || "Nam").toLowerCase();
+        const ld = val('ly_do_vao_vien') || "...";
+        
+        // Tiền sử: Ưu tiên nội khoa, nếu có tiền sử thì thêm chữ "tiền sử ..."
+        const tsRaw = val('ts_noi_khoa');
+        const ts = tsRaw ? `tiền sử ${tsRaw},` : "tiền sử chưa ghi nhận bất thường,";
+
         let intro = "";
-        if (isHauPhau) {
-            const ngayHp = document.getElementById('ngay_hau_phau').value.trim() || "ngày thứ ...";
-            intro = `Bệnh nhân ${gioi} ${tuoi} tuổi, tiền sử ${ts}, vào viện vì ${ld}. Hiện tại hậu phẫu ${ngayHp}. Qua hỏi bệnh và thăm khám ghi nhận:\n- Sinh hiệu ổn định\n- Vết mổ: ${document.getElementById('kham_vet_mo').value.trim() || 'sạch, khô'}\n- Dẫn lưu: ${document.getElementById('kham_dan_luu').value.trim() || 'không có'}`;
+
+        if (!isHauPhau) {
+            // =========================================================
+            // 1. DÀNH CHO NỘI KHOA / TIỀN PHẪU
+            // =========================================================
+            // Bóc tách số ngày từ text bệnh sử: "cách vào viện ... ngày" hoặc "trước vào viện ... ngày"
+            const bsText = val('benh_su');
+            let daysBeforeHospital = 0;
+            const matchBefore = bsText.match(/cách\s+(?:ngày\s+)?vào\s+viện\s+(\d+)\s*ngày/i) ||
+                                bsText.match(/cách\s+nv\s+(\d+)\s*ngày/i) ||
+                                bsText.match(/trước\s+(?:khi\s+)?vào\s+viện\s+(\d+)\s*ngày/i) ||
+                                bsText.match(/khởi\s+phát\s+(?:cách\s+đây\s+)?(\d+)\s*ngày/i);
+            
+            if (matchBefore && matchBefore[1]) {
+                daysBeforeHospital = parseInt(matchBefore[1], 10);
+            }
+
+            // Tính số ngày nằm viện = (Ngày làm bệnh án - Ngày vào viện)
+            let daysInHospital = 0;
+            const parseDate = (dStr) => {
+                if (!dStr) return null;
+                // Nhận dạng cả dạng "DD/MM/YYYY HH:mm" hoặc "DD/MM/YYYY" hoặc "YYYY-MM-DD"
+                const parts = dStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+                if (parts) {
+                    return new Date(parts[3], parts[2] - 1, parts[1]);
+                }
+                const d = new Date(dStr);
+                return isNaN(d.getTime()) ? null : d;
+            };
+
+            const dtVaoVien = parseDate(val('ngay_vao_vien'));
+            const dtLamBa = parseDate(val('ngay_lam_benh_an')) || new Date();
+
+            if (dtVaoVien && dtLamBa) {
+                const diffTime = Math.abs(dtLamBa.getTime() - dtVaoVien.getTime());
+                daysInHospital = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            // Tổng số ngày diễn biến bệnh
+            let totalDays = daysBeforeHospital + daysInHospital;
+            let strDienBien = "";
+            if (totalDays > 0) {
+                strDienBien = `${totalDays} ngày`;
+            } else if (daysBeforeHospital > 0) {
+                strDienBien = `${daysBeforeHospital} ngày`;
+            } else {
+                strDienBien = "ngày thứ ...";
+            }
+
+            intro = `Bệnh nhân ${gioi} ${tuoi}, ${ts} vào viện vì ${ld}. Hiện tại bệnh diễn biến ${strDienBien}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng triệu chứng sau:\n- `;
+
         } else {
-            intro = `Bệnh nhân ${gioi} ${tuoi} tuổi, tiền sử ${ts}, vào viện vì ${ld}. Qua hỏi bệnh và thăm khám phát hiện các hội chứng và triệu chứng sau:\n- `;
+            // =========================================================
+            // 2. DÀNH CHO HẬU PHẪU
+            // =========================================================
+            // Trích xuất các trường từ ô Tình trạng trước mổ & trong mổ
+            const truocMo = val('bs_truoc_mo');
+            const trongMo = val('bs_trong_mo');
+            
+            // 1. Chẩn đoán trước mổ
+            let cdTruocMo = "...";
+            const mCdTruoc = truocMo.match(/chẩn\s*đoán\s*trước\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
+            if (mCdTruoc) cdTruocMo = mCdTruoc[1].trim();
+            else if (truocMo) cdTruocMo = truocMo.split('\n')[0].trim();
+
+            // 2. Phương pháp phẫu thuật
+            let ppMo = "...";
+            const mPpMo = trongMo.match(/phương\s*pháp\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
+            if (mPpMo) ppMo = mPpMo[1].trim();
+
+            // 3. Phương pháp gây mê
+            let ppMe = "...";
+            const mPpMe = trongMo.match(/phương\s*pháp\s*gây\s*mê\s*[:\-]?\s*([^\n\.]+)/i);
+            if (mPpMe) ppMe = mPpMe[1].trim();
+
+            // 4. Chẩn đoán sau mổ
+            let cdSauMo = "...";
+            const mCdSau = trongMo.match(/chẩn\s*đoán\s*sau\s*mổ\s*[:\-]?\s*([^\n\.]+)/i);
+            if (mCdSau) cdSauMo = mCdSau[1].trim();
+
+            // 5. Ngày hậu phẫu
+            let ngayHp = val('ngay_hau_phau');
+            if (!ngayHp) ngayHp = "thứ ...";
+            // Làm sạch chữ nếu người dùng lỡ gõ thừa chữ "ngày"
+            ngayHp = ngayHp.replace(/hậu\s*phẫu\s*ngày\s*/i, '').replace(/ngày\s*/i, '').trim();
+
+            intro = `Bệnh nhân ${gioi} ${tuoi}, ${ts} vào viện vì ${ld}, chẩn đoán trước mổ là ${cdTruocMo}, được xử trí ${ppMo}, qua phương pháp gây mê ${ppMe}, chẩn đoán sau mổ là ${cdSauMo}. Hiện tại hậu phẫu ngày ${ngayHp}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:\n- `;
         }
 
+        // Chèn vào textarea Tóm tắt bệnh án
         const cur = document.getElementById('tom_tat').value.trim();
         document.getElementById('tom_tat').value = cur ? (intro + "\n" + cur) : intro;
         autoSave();
+        if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
     }
 
     // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG VỚI NHIỀU ẢNH TRÊN MỖI HÀNG ---
