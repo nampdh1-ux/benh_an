@@ -271,7 +271,7 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
 
             # Gọi Gemini với cấu hình ép kiểu trả về JSON thuần
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash",
                 contents=[image_part, ocr_prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
