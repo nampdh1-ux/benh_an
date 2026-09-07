@@ -893,17 +893,16 @@
     }
 
     // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG & ĐÍNH KÈM ẢNH ---
+    // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG & NHIỀU ẢNH TRÊN MỖI HÀNG ---
     var clsRowCount = 0;
-    var clsRowImages = {}; // Bộ nhớ lưu Base64 ảnh người dùng tự chọn
+    var clsRowImages = {}; // Cấu trúc lưu trữ: { 0: [b64_1, b64_2], 1: [...] }
 
-    function addClsRow(kq = '', pg = '', imgData = '') {
+    function addClsRow(kq = '', pg = '', imgList = []) {
         const tbody = document.getElementById('cls-tbody');
         if (!tbody) return;
         const rIdx = clsRowCount++;
 
-        if (imgData) {
-            clsRowImages[rIdx] = imgData;
-        }
+        clsRowImages[rIdx] = Array.isArray(imgList) ? imgList : (imgList ? [imgList] : []);
 
         const tr = document.createElement('tr');
         tr.id = `cls-row-${rIdx}`;
@@ -911,11 +910,9 @@
             <td style="padding: 6px; vertical-align: top;">
                 <textarea id="cls_kq_${rIdx}" rows="4" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()" style="width: 100%; box-sizing: border-box;">${kq}</textarea>
                 <div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed #808080;">
-                    <label style="font-weight: bold; font-size: 11px;">📷 Đính kèm ảnh kết quả/hình ảnh học:</label><br>
-                    <input type="file" accept="image/*" onchange="handleManualRowImage(event, ${rIdx})" style="margin-top: 2px; font-size: 11px; width: 100%;">
-                    <div id="cls_preview_${rIdx}" style="margin-top: 4px;">
-                        ${imgData ? `<div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;"><img src="${imgData}" style="max-height: 65px; border: 1px solid #808080;"><span style="color: green; font-size: 11px; font-weight: bold;">✔ Đã nhận ảnh</span></div>` : ''}
-                    </div>
+                    <label style="font-weight: bold; font-size: 11px;">📷 Đính kèm ảnh (chọn được nhiều ảnh cùng lúc):</label><br>
+                    <input type="file" multiple accept="image/jpeg, image/png, image/jpg" onchange="handleMultipleRowImages(event, ${rIdx})" style="margin-top: 2px; font-size: 11px; width: 100%;">
+                    <div id="cls_preview_${rIdx}" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px;"></div>
                 </div>
             </td>
             <td style="padding: 6px; vertical-align: top;">
@@ -923,6 +920,7 @@
             </td>
         `;
         tbody.appendChild(tr);
+        renderRowThumbnails(rIdx);
     }
 
     function removeClsRow() {
@@ -935,65 +933,59 @@
         }
     }
 
-    // Đọc và nén ảnh xuống kích thước tối ưu trước khi gửi lên PDF
-    function handleManualRowImage(event, idx) {
-        const file = event.target.files[0];
-        const preview = document.getElementById(`cls_preview_${idx}`);
-        if (!file) {
-            delete clsRowImages[idx];
-            if (preview) preview.innerHTML = '';
-            autoSave();
-            return;
-        }
+    function handleMultipleRowImages(event, idx) {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                // Tự động thu nhỏ ảnh xuống tối đa 800px để xuất PDF nhanh và không bị quá tải
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const maxDim = 800;
+        if (!clsRowImages[idx]) clsRowImages[idx] = [];
 
-                if (width > height && width > maxDim) {
-                    height = Math.round((height * maxDim) / width);
-                    width = maxDim;
-                } else if (height > maxDim) {
-                    width = Math.round((width * maxDim) / height);
-                    height = maxDim;
+        let loaded = 0;
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                clsRowImages[idx].push(e.target.result);
+                loaded++;
+                if (loaded === files.length) {
+                    renderRowThumbnails(idx);
+                    autoSave();
                 }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const compressedB64 = canvas.toDataURL('image/jpeg', 0.8);
-                clsRowImages[idx] = compressedB64;
-
-                if (preview) {
-                    preview.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
-                            <img src="${compressedB64}" style="max-height: 65px; border: 1px solid #808080;">
-                            <span style="color: green; font-size: 11px; font-weight: bold;">✔ Đã nhận ảnh</span>
-                        </div>
-                    `;
-                }
-                autoSave();
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
+        });
+        event.target.value = "";
     }
 
-    function getFormPayload() {
-        const loaiBa = document.getElementById('current_loai_ba').value || "Nội khoa / Tiền phẫu";
+    function renderRowThumbnails(idx) {
+        const container = document.getElementById(`cls_preview_${idx}`);
+        if (!container) return;
+        container.innerHTML = "";
 
-        const payload = {
-            loai_benh_an: loaiBa,
-            so_hang_cls: clsRowCount
-        };
+        const list = clsRowImages[idx] || [];
+        list.forEach((b64, imgIdx) => {
+            const wrap = document.createElement('div');
+            wrap.style = "position: relative; display: inline-block; border: 1px solid #808080; background: #fff; padding: 2px;";
+            wrap.innerHTML = `
+                <img src="${b64}" style="height: 50px; display: block;">
+                <button type="button" onclick="removeSingleImage(${idx}, ${imgIdx})" style="position: absolute; top: -5px; right: -5px; background: red; color: #fff; border: 1px solid #000; font-size: 9px; cursor: pointer; border-radius: 50%; width: 16px; height: 16px; line-height: 12px; padding: 0;">×</button>
+            `;
+            container.appendChild(wrap);
+        });
+    }
+
+    function removeSingleImage(rowIdx, imgIdx) {
+        if (clsRowImages[rowIdx]) {
+            clsRowImages[rowIdx].splice(imgIdx, 1);
+            renderRowThumbnails(rowIdx);
+            autoSave();
+        }
+    }
+
+    // Gắn danh sách mảng ảnh của từng hàng vào payload
+        for (let i = 0; i < clsRowCount; i++) {
+            if (clsRowImages[i] && clsRowImages[i].length > 0) {
+                payload[`cls_img_list_${i}`] = clsRowImages[i];
+            }
+        }
 
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
