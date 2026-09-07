@@ -213,6 +213,42 @@
             resize: none !important;
             transition: height 0.08s ease-out;
         }
+        /* NÚT CHỌN FILE CHUẨN WIN2K */
+        .btn-win2k-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            color: #000000;
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff !important;
+            border-left: 2px solid #ffffff !important;
+            border-right: 2px solid #404040 !important;
+            border-bottom: 2px solid #404040 !important;
+            box-shadow: 1px 1px 0px #000000;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-win2k-file:hover {
+            background: #e4e0d8;
+        }
+        .btn-win2k-file:active {
+            border-top: 2px solid #404040 !important;
+            border-left: 2px solid #404040 !important;
+            border-right: 2px solid #ffffff !important;
+            border-bottom: 2px solid #ffffff !important;
+            box-shadow: inset 1px 1px 0px #000000;
+            padding: 4px 9px 2px 11px;
+        }
+        .file-status-label {
+            font-size: 11px;
+            color: #555555;
+            font-style: italic;
+            margin-left: 6px;
+        }
     </style>
 </head>
 <body>
@@ -594,8 +630,10 @@
 
                         <div class="sub-section-header">2. Cận lâm sàng đã có (Tích hợp OCR)</div>
                         <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <label>📷 Tải ảnh xét nghiệm:</label>
-                            <input type="file" id="ocr_files" multiple accept="image/*" style="width: auto;">
+                            <label style="font-weight: bold;">📷 Tải ảnh xét nghiệm:</label>
+<label class="btn-win2k-file" for="ocr_files">📁 Chọn tệp...</label>
+<input type="file" id="ocr_files" multiple accept="image/*" style="display: none;" onchange="updateOcrFileLabel(this)">
+<span id="ocr_file_count" class="file-status-label">Chưa chọn tệp nào</span>
                             <button type="button" class="btn-ai" id="btn-ai-ocr" onclick="runBatchOCR()">⚡ AI Phân Tích & Điền Bảng</button>
                             <span id="ocr-status" style="font-weight: bold; color: #0a246a;"></span>
                         </div>
@@ -1005,7 +1043,18 @@
         autoSave();
         if (typeof triggerAllTextareasExpand === 'function') triggerAllTextareasExpand();
     }
-
+    function updateOcrFileLabel(input) {
+    const lbl = document.getElementById('ocr_file_count');
+    if (input.files && input.files.length > 0) {
+        lbl.innerText = `Đã chọn ${input.files.length} ảnh`;
+        lbl.style.color = '#0a246a';
+        lbl.style.fontWeight = 'bold';
+    } else {
+        lbl.innerText = 'Chưa chọn tệp nào';
+        lbl.style.color = '#555555';
+        lbl.style.fontWeight = 'normal';
+    }
+}
     // --- QUẢN LÝ BẢNG CẬN LÂM SÀNG VỚI NHIỀU ẢNH TRÊN MỖI HÀNG ---
     var clsRowCount = 0;
     var clsRowImages = {};
@@ -1022,10 +1071,13 @@
         tr.innerHTML = `
             <td style="padding: 6px; vertical-align: top;">
                 <textarea id="cls_kq_${rIdx}" rows="4" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()" style="width: 100%; box-sizing: border-box;">${kq}</textarea>
-                <div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed #808080;">
-                    <label style="font-weight: bold; font-size: 11px;">📷 Đính kèm ảnh (chọn được nhiều ảnh cùng lúc):</label><br>
-                    <input type="file" multiple accept="image/jpeg, image/png, image/jpg" onchange="handleMultipleRowImages(event, ${rIdx})" style="margin-top: 2px; font-size: 11px; width: 100%;">
-                    <div id="cls_preview_${rIdx}" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px;"></div>
+                <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #808080; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <label class="btn-win2k-file" for="cls_file_input_${rIdx}">📷 Đính kèm ảnh...</label>
+                        <input type="file" id="cls_file_input_${rIdx}" multiple accept="image/jpeg, image/png, image/jpg" onchange="handleMultipleRowImages(event, ${rIdx})" style="display: none;">
+                        <span id="cls_file_status_${rIdx}" class="file-status-label">Chưa chọn ảnh</span>
+                    </div>
+                    <div id="cls_preview_${rIdx}" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px;"></div>
                 </div>
             </td>
             <td style="padding: 6px; vertical-align: top;">
@@ -1070,10 +1122,23 @@
 
     function renderRowThumbnails(idx) {
         const container = document.getElementById(`cls_preview_${idx}`);
+        const statusLbl = document.getElementById(`cls_file_status_${idx}`);
         if (!container) return;
         container.innerHTML = "";
 
         const list = clsRowImages[idx] || [];
+        if (statusLbl) {
+            if (list.length > 0) {
+                statusLbl.innerText = `Đã đính kèm ${list.length} ảnh`;
+                statusLbl.style.color = '#0a246a';
+                statusLbl.style.fontWeight = 'bold';
+            } else {
+                statusLbl.innerText = 'Chưa chọn ảnh';
+                statusLbl.style.color = '#555555';
+                statusLbl.style.fontWeight = 'normal';
+            }
+        }
+
         list.forEach((b64, imgIdx) => {
             const wrap = document.createElement('div');
             wrap.style = "position: relative; display: inline-block; border: 1px solid #808080; background: #fff; padding: 2px;";
