@@ -255,10 +255,13 @@ class RobustUnicodePDF(FPDF):
         self.cell(0, 7, self.clean_text(title), fill=True, new_x="LMARGIN", new_y="NEXT")
         self.ln(1)
 
+    # 1. Cập nhật hàm in tiêu đề phụ: ép kiểu chữ đậm ("B")
     def add_subsec(self, title: str):
-        self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 10)
+        # Thiết lập font chữ in đậm và tăng nhẹ kích thước lên 10pt
+        self.set_font(self.font_family_name, "B", 10)
         self.cell(0, 6, self.clean_text(title), new_x="LMARGIN", new_y="NEXT")
 
+    # 2. Đảm bảo hàm in nội dung luôn trả về font chữ thường (Regular - "")
     def add_txt(self, text: str):
         self.set_font(self.font_family_name, "", 9.5)
         self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
