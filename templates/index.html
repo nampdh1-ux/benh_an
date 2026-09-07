@@ -271,6 +271,15 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 6px;
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <strong>💾 Bản nháp:</strong>
+                <button type="button" onclick="downloadDraftJSON()">📥 Lưu .json</button>
+                <button type="button" onclick="document.getElementById('input_draft_file').click()">📤 Nạp .json</button>
+                <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
+                <button type="button" onclick="clearAllDraft()">🗑️ Làm mới</button>
+                <!-- NÚT ĐĂNG XUẤT -->
+                <button type="button" onclick="window.location.href='/logout'" style="color: red;">🚪 Đăng xuất</button>
+            </div>
         }
 
         .cls-table-wrapper {
@@ -450,6 +459,7 @@
                 <button type="button" onclick="document.getElementById('input_draft_file').click()">📤 Nạp .json</button>
                 <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
                 <button type="button" onclick="clearAllDraft()">🗑️ Làm mới</button>
+                <button type="button" onclick="window.location.href='/logout'" style="color: #a00; font-weight: bold;">🚪 Đăng xuất</button>
             </div>
             <div style="font-weight: bold; color: #0a246a;" id="status-storage">
                 🟢 Trình duyệt: Đã đồng bộ
