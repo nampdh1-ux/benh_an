@@ -853,7 +853,6 @@
     }
 
     function getFormPayload() {
-        // 1. Xác định chuẩn xác loại bệnh án từ radio được checked
         const isHauPhau = document.getElementById('ba_hauphau').checked;
         const loaiBa = isHauPhau ? "Hậu phẫu" : "Nội khoa / Tiền phẫu";
 
@@ -862,7 +861,6 @@
             so_hang_cls: clsRowCount
         };
 
-        // 2. Gom tất cả input nhưng BỎ QUA các thẻ radio và file input
         const allInputs = document.querySelectorAll('input, select, textarea');
         allInputs.forEach(el => {
             if (el.id && el.type !== 'radio' && el.type !== 'file' && el.id !== 'loai_benh_an') {
@@ -870,7 +868,19 @@
             }
         });
 
-        // 3. Khóa cứng lại một lần nữa để đảm bảo không thể bị ghi đè
+        // Tính và gửi kèm BMI cho PDF
+        const w = parseFloat(document.getElementById('sh_can_nang').value) || 0;
+        const h = parseFloat(document.getElementById('sh_chieu_cao').value) || 0;
+        if (w > 0 && h > 0) {
+            const bmi = (w / Math.pow(h / 100, 2)).toFixed(1);
+            payload['sh_bmi'] = bmi;
+            let evalTxt = "Bình thường";
+            if (bmi < 18.5) evalTxt = "Gầy / Thiếu cân";
+            else if (bmi >= 23 && bmi <= 24.9) evalTxt = "Thừa cân";
+            else if (bmi >= 25) evalTxt = "Béo phì";
+            payload['sh_bmi_eval'] = evalTxt;
+        }
+
         payload['loai_benh_an'] = loaiBa;
         return payload;
     }
