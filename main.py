@@ -13,11 +13,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fpdf import FPDF
 from google import genai
+from google.genai import types
 from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
@@ -28,18 +29,11 @@ from pydantic import BaseModel
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
 templates = Jinja2Templates(directory="templates")
 
-# Cấu hình biến môi trường
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
-SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
-APP_PASSWORD = os.getenv("APP_PASSWORD", "123456")
-AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "clinical_secret_2026")
+# Cấu hình môi trường & AI
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+MODEL_DEFAULT = "gemini-3.1-flash-lite"
 
-# Bộ nhớ tạm mã OTP
-otp_storage: Dict[str, str] = {}
-
-# --- TẢI FONT UNICODE TIẾNG VIỆT TỪ GOOGLE FONTS ---
+# Font Unicode cho FPDF
 FONT_REGULAR = "Roboto-Regular.ttf"
 FONT_BOLD = "Roboto-Bold.ttf"
 
@@ -59,7 +53,6 @@ def download_fonts_if_missing():
 
 download_fonts_if_missing()
 
-# --- KHỞI TẠO CLIENT GENAI MỚI ---
 def get_ai_client():
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -100,12 +93,12 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
-# --- AI ENDPOINTS DÙNG SDK GOOGLE-GENAI CHUẨN ---
+# --- CÁC ENDPOINT AI ---
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
     client = get_ai_client()
     if not client:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trên Render!")
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
     benh_su_str = get_benh_su_text(payload)
     context = (
@@ -116,23 +109,10 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
         f"Khám toàn thân: {payload.get('kham_toan_than')}\n"
         f"Chẩn đoán sơ bộ: {payload.get('chan_doan_so_bo')}"
     )
-    prompt = f"""
-    Bạn là một bác sĩ lâm sàng thực thụ và giàu kinh nghiệm. Hãy nhìn vào toàn thể ca bệnh dưới đây, phân tích logic giữa bệnh cảnh, triệu chứng cơ năng, thực thể và chẩn đoán sơ bộ để đưa ra:
-                    
-    {context}
-    
-    Hãy đưa ra:
-        1. Danh sách CHẨN ĐOÁN PHÂN BIỆT: sắp xếp thứ tự từ khả năng cao nhất đến thấp hơn, từ bệnh lý cấp cứu nguy hiểm đến ít cấp cứu hơn.
-        2. BIỆN LUẬN CHẨN ĐOÁN SƠ BỘ: Lập luận chặt chẽ vì sao nghĩ đến chẩn đoán sơ bộ và vì sao cần phân biệt với các bệnh lý nêu trên.
-    Trả về ĐÚNG 2 thẻ:
-    [CHAN_DOAN_PHAN_BIET]
-    ...
-    [BIEN_LUAN_SO_BO]
-    ...
-    """
+    prompt = f"""Bạn là bác sĩ lâm sàng. Dựa vào ca bệnh:\n{context}\nHãy đưa ra:\n1. Danh sách Chẩn đoán phân biệt\n2. Biện luận chẩn đoán sơ bộ\nTrả về đúng 2 thẻ: [CHAN_DOAN_PHAN_BIET] ... [BIEN_LUAN_SO_BO] ..."""
     try:
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model=MODEL_DEFAULT,
             contents=prompt,
         )
         resp = response.text or ""
@@ -156,7 +136,7 @@ async def api_ai_treatment(payload: Dict[str, Any]):
     prompt = f"Bạn là bác sĩ điều trị. Xây dựng phác đồ cho ca bệnh ({context}). Trả về ĐÚNG 3 thẻ: [MUC_TIEU], [DIEU_TRI_CU_THE], [THEO_DOI]."
     try:
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model=MODEL_DEFAULT,
             contents=prompt,
         )
         txt = response.text or ""
@@ -180,7 +160,7 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
     prompt = f"Bạn là bác sĩ lâm sàng. Đưa ra TIÊN LƯỢNG và TƯ VẤN cho ca bệnh ({context}). Trả về 2 thẻ: [TIEN_LUONG] và [TU_VAN]."
     try:
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model=MODEL_DEFAULT,
             contents=prompt,
         )
         res_text = response.text or ""
@@ -204,7 +184,7 @@ async def api_ai_critique(payload: Dict[str, Any]):
     Trả về ĐÚNG định dạng JSON thuần: {{"nhan_xet_tong_the": "...", "danh_sach_cau_hoi": [{{"chu_de": "...", "cau_hoi": "...", "goi_y_tra_loi": "..."}}]}}"""
     try:
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model=MODEL_DEFAULT,
             contents=prompt,
         )
         res_pb = (response.text or "").strip()
@@ -215,132 +195,63 @@ async def api_ai_critique(payload: Dict[str, Any]):
     except Exception as e:
         return {"nhan_xet_tong_the": f"Lỗi phản biện: {str(e)}", "danh_sach_cau_hoi": []}
 
-from google.genai import types
-
-from google.genai import types
-from fastapi import Form
-
 @app.post("/api/ocr/batch")
 async def api_ocr_batch(
     files: List[UploadFile] = File(...),
-    context: str = Form("{}")
+    context: str = Form("")
 ):
     client = get_ai_client()
     if not client:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY trên Render!")
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
-    # Giải mã ngữ cảnh lâm sàng gửi kèm từ trình duyệt
-    try:
-        ctx_data = json.loads(context)
-    except Exception:
-        ctx_data = {}
+    clinical_ctx_str = "Chưa có thông tin ngữ cảnh lâm sàng."
+    if context:
+        try:
+            ctx_data = json.loads(context)
+            loai_ba = ctx_data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
+            if loai_ba == "Hậu phẫu":
+                clinical_ctx_str = f"Loại: HẬU PHẪU\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nTrước mổ: {ctx_data.get('bs_truoc_mo')}\nTrong mổ: {ctx_data.get('bs_trong_mo')}\nSau mổ: {ctx_data.get('bs_sau_mo')}\nNgày HP: {ctx_data.get('ngay_hau_phau')}\nVết mổ: {ctx_data.get('kham_vet_mo')}\nDẫn lưu: {ctx_data.get('kham_dan_luu')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
+            else:
+                clinical_ctx_str = f"Loại: NỘI KHOA\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nBệnh sử: {ctx_data.get('benh_su')}\nTiền sử: {ctx_data.get('ts_noi_khoa')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
+        except Exception:
+            clinical_ctx_str = str(context)
 
-    loai_ba = ctx_data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
-    is_hp = (loai_ba == "Hậu phẫu")
-
-    # Xây dựng khối tóm tắt ca bệnh cho AI đối chiếu
-    if is_hp:
-        clinical_summary = f"""
-        [HỒ SƠ BỆNH ÁN HẬU PHẪU]
-        - Bệnh nhân: {ctx_data.get('tuoi', '--')} tuổi, Giới tính: {ctx_data.get('gioi_tinh', '--')}
-        - Lý do vào viện / Chẩn đoán trước mổ: {ctx_data.get('ly_do_vao_vien', '')} | {ctx_data.get('bs_truoc_mo', '')}
-        - Diễn biến trong mổ (Phương pháp mổ, chẩn đoán sau mổ): 
-          {ctx_data.get('bs_trong_mo', '')}
-        - Thời điểm khám: {ctx_data.get('ngay_hau_phau', 'Hậu phẫu')}
-        - Tình trạng sau mổ: {ctx_data.get('bs_sau_mo', '')}
-        - Vết mổ: {ctx_data.get('kham_vet_mo', '')} | Dẫn lưu: {ctx_data.get('kham_dan_luu', '')}
-        - Chẩn đoán sơ bộ / Biến chứng nghi ngờ: {ctx_data.get('chan_doan_so_bo', '')}
-        """
-    else:
-        clinical_summary = f"""
-        [HỒ SƠ BỆNH ÁN NỘI KHOA / TIỀN PHẪU]
-        - Bệnh nhân: {ctx_data.get('tuoi', '--')} tuổi, Giới tính: {ctx_data.get('gioi_tinh', '--')}
-        - Lý do vào viện: {ctx_data.get('ly_do_vao_vien', '')}
-        - Bệnh sử tóm tắt: {ctx_data.get('benh_su', '')}
-        - Tiền sử: {ctx_data.get('ts_noi_khoa', '')}
-        - Khám lúc vào viện / Toàn thân: {ctx_data.get('kham_vao_vien', '')} | {ctx_data.get('kham_toan_than', '')}
-        - Chẩn đoán sơ bộ: {ctx_data.get('chan_doan_so_bo', '')}
-        - Chẩn đoán phân biệt: {ctx_data.get('chan_doan_phan_biet', '')}
-        """
-
-    ocr_prompt = f"""
-    Bạn là bác sĩ lâm sàng giàu kinh nghiệm. Dưới đây là thông tin bệnh án hiện tại:
-    {clinical_summary}
-
-    NHIỆM VỤ:
-    Hãy đọc kỹ hình ảnh phiếu cận lâm sàng đính kèm và trích xuất thông tin ĐỐI CHIẾU VỚI BỆNH CẢNH TRÊN:
-    1. "ket_qua": Liệt kê các chỉ số xét nghiệm, kết quả thăm dò (mỗi chỉ số một dòng, kèm đơn vị và khoảng tham chiếu nếu có).
-    2. "phien_giai": Biện luận lâm sàng các chỉ số bất thường GẮN LIỀN VỚI CA BỆNH ĐANG XÉT. 
-       - Nếu là Hậu phẫu: Đánh giá chỉ số có phù hợp với ngày hậu phẫu không? Có dấu hiệu nhiễm trùng vết mổ, mất máu trong ổ bụng, rối loạn điện giải hay suy cơ quan sau mổ không?
-       - Nếu là Nội khoa: Chỉ số này ủng hộ hay loại trừ chẩn đoán sơ bộ/phân biệt nào?
-    
-    YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG JSON thuần có 2 keys: "ket_qua" (chuỗi văn bản) và "phien_giai" (chuỗi văn bản).
-    """
-
+    ocr_prompt = f"""Bạn là bác sĩ lâm sàng. Đọc cận lâm sàng đính kèm dựa trên ngữ cảnh:\n{clinical_ctx_str}\nTrả về JSON có 2 key: 'ket_qua' (chỉ số đo được) và 'phien_giai' (biện luận theo bệnh cảnh)."""
     results = []
     for file in files:
         try:
             raw_bytes = await file.read()
-            if not raw_bytes:
-                continue
-
-            # Chuẩn hóa ảnh qua Pillow: Tự xoay EXIF và tối ưu dung lượng
-            try:
-                img = Image.open(io.BytesIO(raw_bytes))
-                try:
-                    import PIL.ImageOps as ImageOps
-                    img = ImageOps.exif_transpose(img)
-                except Exception:
-                    pass
-
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-                
-                max_size = 1600
-                if max(img.size) > max_size:
-                    img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-                
-                buf = io.BytesIO()
-                img.save(buf, format="JPEG", quality=85)
-                optimized_bytes = buf.getvalue()
-                mime_type = "image/jpeg"
-            except Exception:
-                optimized_bytes = raw_bytes
-                mime_type = file.content_type or "image/jpeg"
-
-            image_part = types.Part.from_bytes(
-                data=optimized_bytes,
-                mime_type=mime_type
-            )
-
-            # Sử dụng chuẩn model gemini-3.1-flash-lite
-            response = client.models.generate_content(
-                model="gemini-3.1-flash-lite",
-                contents=[image_part, ocr_prompt],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
-                )
-            )
+            if not raw_bytes: continue
             
+            img = Image.open(io.BytesIO(raw_bytes))
+            try:
+                import PIL.ImageOps as ImageOps
+                img = ImageOps.exif_transpose(img)
+            except Exception: pass
+            
+            if img.mode != 'RGB': img = img.convert('RGB')
+            if max(img.size) > 1600: img.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            
+            image_part = types.Part.from_bytes(data=buf.getvalue(), mime_type="image/jpeg")
+            response = client.models.generate_content(
+                model=MODEL_DEFAULT,
+                contents=[image_part, ocr_prompt],
+                config=types.GenerateContentConfig(response_mime_type="application/json")
+            )
             resp_text = (response.text or "").strip()
             if resp_text.startswith("```json"): resp_text = resp_text[7:]
             if resp_text.startswith("```"): resp_text = resp_text[3:]
             if resp_text.endswith("```"): resp_text = resp_text[:-3]
-            
             parsed = json.loads(resp_text.strip())
-            results.append({
-                "ket_qua": parsed.get("ket_qua", "Không nhận diện được chỉ số cụ thể."),
-                "phien_giai": parsed.get("phien_giai", "-")
-            })
+            results.append({"ket_qua": parsed.get("ket_qua", "Không đọc được chỉ số."), "phien_giai": parsed.get("phien_giai", "-")})
         except Exception as err:
-            results.append({
-                "ket_qua": f"Lỗi đọc ảnh: {str(err)}",
-                "phien_giai": "Vui lòng chụp lại rõ nét hơn."
-            })
-
+            results.append({"ket_qua": f"Lỗi xử lý: {str(err)}", "phien_giai": "-"})
     return {"results": results}
 
-# --- BỘ TẠO PDF TIẾNG VIỆT UNICODE ---
+# --- PDF ENGINE HỖ TRỢ NHIỀU ẢNH TRÊN MỖI DÒNG CLS ---
 class RobustUnicodePDF(FPDF):
     def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -359,9 +270,7 @@ class RobustUnicodePDF(FPDF):
 
     def clean_text(self, text: Any) -> str:
         s = str(text or "")
-        if self.use_unicode:
-            return s
-        return strip_accents(s)
+        return s if self.use_unicode else strip_accents(s)
 
     def header(self):
         if self.page_no() == 1:
@@ -387,11 +296,6 @@ class RobustUnicodePDF(FPDF):
         self.multi_cell(0, 5, self.clean_text(text) if str(text).strip() else self.clean_text("Chưa ghi nhận thông tin."))
         self.ln(2)
 
-    import base64
-
-# Trong class RobustUnicodePDF, cập nhật lại hàm render_table_cls:
-    import tempfile
-
     def render_table_cls(self, cls_rows):
         col_w = (self.w - self.l_margin - self.r_margin) / 2.0
         line_h = 5.0
@@ -403,34 +307,33 @@ class RobustUnicodePDF(FPDF):
         self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
         
         self.set_font(self.font_family_name, "", 9)
-        for kq, pg, img_b64 in cls_rows:
+        for kq, pg, img_list in cls_rows:
             txt_kq = format_bullet_points(kq) if kq else "-"
             txt_pg = format_bullet_points(pg) if pg else "-"
             
-            pil_img = None
-            img_render_h = 0
+            pil_images = []
+            single_img_h = 42.0
             
-            # Xử lý Base64 an toàn tuyệt đối
-            if img_b64 and len(str(img_b64).strip()) > 50:
-                try:
-                    clean_b64 = str(img_b64)
-                    if "," in clean_b64:
-                        clean_b64 = clean_b64.split(",", 1)[1]
-                    img_data = base64.b64decode(clean_b64)
-                    
-                    pil_img = Image.open(io.BytesIO(img_data))
-                    if pil_img.mode not in ("RGB", "L"):
-                        pil_img = pil_img.convert("RGB")
-                    img_render_h = 45.0  # Chiều cao khung ảnh
-                except Exception as err:
-                    txt_kq += f"\n[LỖI NẠP ẢNH TỪ TRÌNH DUYỆT: {str(err)}]"
-                    pil_img = None
+            if isinstance(img_list, list):
+                for img_b64 in img_list:
+                    if img_b64 and len(str(img_b64).strip()) > 50:
+                        try:
+                            clean_b64 = str(img_b64)
+                            if "," in clean_b64:
+                                clean_b64 = clean_b64.split(",", 1)[1]
+                            img_data = base64.b64decode(clean_b64)
+                            im = Image.open(io.BytesIO(img_data))
+                            if im.mode not in ("RGB", "L"):
+                                im = im.convert("RGB")
+                            pil_images.append(im)
+                        except Exception as err:
+                            txt_kq += f"\n[Lỗi ảnh: {str(err)}]"
 
-            # Tính toán layout chiều cao dòng
+            total_images_h = len(pil_images) * (single_img_h + 3)
             nb_l = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq), dry_run=True, output="LINES"))
             nb_r = len(self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg), dry_run=True, output="LINES"))
             
-            col_l_h = nb_l * line_h + (img_render_h + 4 if pil_img else 0)
+            col_l_h = nb_l * line_h + total_images_h
             col_r_h = nb_r * line_h
             row_h = max(max(col_l_h, col_r_h) + 6, 12)
             
@@ -447,26 +350,21 @@ class RobustUnicodePDF(FPDF):
             self.rect(curr_x, curr_y, col_w, row_h)
             self.rect(curr_x + col_w, curr_y, col_w, row_h)
 
-            # 1. In chữ Cột Trái
             self.set_xy(curr_x + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_kq))
             
-            # 2. In Hình Ảnh
-            if pil_img:
+            curr_img_y = self.get_y() + 2
+            for im in pil_images:
                 try:
-                    img_y = self.get_y() + 2
-                    self.image(pil_img, x=curr_x + 3, y=img_y, w=col_w - 6, h=img_render_h)
+                    self.image(im, x=curr_x + 3, y=curr_img_y, w=col_w - 6, h=single_img_h)
+                    curr_img_y += single_img_h + 3
                 except Exception as img_err:
-                    # Nếu FPDF lỗi, in dòng chữ báo lỗi ra PDF để ta nhìn thấy ngay
-                    self.set_xy(curr_x + 2, img_y)
-                    self.set_text_color(255, 0, 0)
-                    self.multi_cell(col_w - 4, line_h, self.clean_text(f"[LỖI IN ẢNH VÀO PDF: {str(img_err)}]"))
-                    self.set_text_color(0, 0, 0)
+                    self.set_xy(curr_x + 2, curr_img_y)
+                    self.multi_cell(col_w - 4, line_h, self.clean_text(f"[Lỗi vẽ ảnh: {str(img_err)}]"))
+                    curr_img_y += line_h * 2
 
-            # 3. In chữ Cột Phải
             self.set_xy(curr_x + col_w + 2, curr_y + 2)
             self.multi_cell(col_w - 4, line_h, self.clean_text(txt_pg))
-            
             self.set_xy(curr_x, curr_y + row_h)
         self.ln(3)
 
@@ -482,7 +380,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
         pdf = RobustUnicodePDF(loai_ba=loai_ba)
         pdf.add_page()
 
-        # I. HÀNH CHÍNH
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
         hc = (
             f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()}   |   Tuổi: {payload.get('tuoi')}   |   Giới tính: {payload.get('gioi_tinh')}\n"
@@ -493,11 +390,9 @@ async def api_export_pdf(payload: Dict[str, Any]):
         )
         pdf.add_txt(hc)
 
-        # II. LÝ DO VÀO VIỆN
         pdf.add_sec("II. LÝ DO VÀO VIỆN")
         pdf.add_txt(payload.get("ly_do_vao_vien", ""))
 
-        # III. BỆNH SỬ
         pdf.add_sec("III. BỆNH SỬ")
         if is_hau_phau:
             pdf.add_subsec("1. Tình trạng trước mổ:")
@@ -509,7 +404,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
         else:
             pdf.add_txt(payload.get("benh_su", ""))
 
-        # IV. TIỀN SỬ
         pdf.add_sec("IV. TIỀN SỬ")
         pdf.add_subsec("1. Tiền sử nội khoa:")
         pdf.add_txt(format_bullet_points(payload.get("ts_noi_khoa", "")))
@@ -520,7 +414,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
         pdf.add_subsec("4. Tiền sử gia đình:")
         pdf.add_txt(format_bullet_points(payload.get("ts_gia_dinh", "")))
 
-        # V. THĂM KHÁM LÂM SÀNG
         pdf.add_sec("V. THĂM KHÁM LÂM SÀNG")
         if not is_hau_phau:
             pdf.add_subsec("1. Thăm khám lúc vào viện:")
@@ -532,7 +425,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
             
         pdf.add_txt(format_bullet_points(payload.get("kham_toan_than", "")))
         
-        # Sinh hiệu & BMI
         mach = payload.get("sh_mach") or "--"
         nhiet = payload.get("sh_nhiet_do") or "--"
         ha = payload.get("sh_ha") or "--"
@@ -551,7 +443,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
         else:
             pdf.add_subsec("3. Thăm khám hiện tại - Các cơ quan:")
 
-        # 7 cơ quan
         organs = [
             ("Tuần hoàn", "kham_tuan_hoan"),
             ("Hô hấp", "kham_ho_hap"),
@@ -601,9 +492,12 @@ async def api_export_pdf(payload: Dict[str, Any]):
             for i in range(so_hang):
                 kq = payload.get(f"cls_kq_{i}", "").strip()
                 pg = payload.get(f"cls_pg_{i}", "").strip()
-                img_b64 = payload.get(f"cls_img_b64_{i}", "")
-                if kq or pg or img_b64:
-                    cls_rows.append((kq, pg, img_b64))
+                img_list = payload.get(f"cls_img_list_{i}", [])
+                if not img_list and payload.get(f"cls_img_b64_{i}"):
+                    img_list = [payload.get(f"cls_img_b64_{i}")]
+                
+                if kq or pg or img_list:
+                    cls_rows.append((kq, pg, img_list))
             if cls_rows:
                 pdf.render_table_cls(cls_rows)
             else:
@@ -616,7 +510,6 @@ async def api_export_pdf(payload: Dict[str, Any]):
                 pdf.add_sec(f"{num_blxd}. BIỆN LUẬN CHẨN ĐOÁN XÁC ĐỊNH")
                 pdf.add_txt(format_bullet_points(payload.get("bien_luan_xac_dinh", "")))
 
-        # PHÂN NHÁNH THỨ TỰ SỐ LA MÃ
         if not is_hau_phau:
             sec_tom_tat("VI")
             sec_chan_doan_so_bo("VII", "VIII", "IX")
