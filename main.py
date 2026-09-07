@@ -218,11 +218,12 @@ async def api_ocr_batch(files: List[UploadFile] = File(...)):
     return {"results": results}
 
 # --- BỘ TẠO PDF TIẾNG VIỆT AN TOÀN TUYỆT ĐỐI ---
+# --- BỘ TẠO PDF TIẾNG VIỆT AN TOÀN & ĐÚNG LOẠI BỆNH ÁN ---
 class RobustUnicodePDF(FPDF):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, loai_ba="Nội khoa / Tiền phẫu", *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.loai_ba = loai_ba
         self.use_unicode = False
-        # Ưu tiên font Roboto
         if os.path.exists(FONT_REGULAR) and os.path.exists(FONT_BOLD):
             try:
                 self.add_font("Roboto", "", FONT_REGULAR)
@@ -236,8 +237,6 @@ class RobustUnicodePDF(FPDF):
 
     def clean_text(self, text: Any) -> str:
         s = str(text or "")
-        # Nếu nạp được font Unicode -> Giữ nguyên tiếng Việt có dấu
-        # Nếu chưa nạp được font -> Tự động khử dấu để FPDF không bị Exception
         if self.use_unicode:
             return s
         return strip_accents(s)
@@ -245,7 +244,9 @@ class RobustUnicodePDF(FPDF):
     def header(self):
         if self.page_no() == 1:
             self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 15)
-            self.cell(0, 8, self.clean_text("BỆNH ÁN LÂM SÀNG"), align="C", new_x="LMARGIN", new_y="NEXT")
+            # Tiêu đề thay đổi linh hoạt theo loại bệnh án được chọn
+            tieu_de = "BỆNH ÁN HẬU PHẪU" if self.loai_ba == "Hậu phẫu" else "BỆNH ÁN LÂM SÀNG"
+            self.cell(0, 8, self.clean_text(tieu_de), align="C", new_x="LMARGIN", new_y="NEXT")
             self.set_font(self.font_family_name, "", 9)
             self.cell(0, 4, self.clean_text(f"Thời gian lập: {datetime.now().strftime('%d/%m/%Y %H:%M')}"), align="C", new_x="LMARGIN", new_y="NEXT")
             self.ln(4)
@@ -264,11 +265,11 @@ class RobustUnicodePDF(FPDF):
 @app.post("/api/export/pdf")
 async def api_export_pdf(payload: Dict[str, Any]):
     try:
-        # Đảm bảo font luôn sẵn sàng
         if not os.path.exists(FONT_REGULAR):
             download_fonts_if_missing()
 
-        pdf = RobustUnicodePDF()
+        loai_ba = str(payload.get("loai_benh_an", "Nội khoa / Tiền phẫu")).strip()
+        pdf = RobustUnicodePDF(loai_ba=loai_ba)
         pdf.add_page()
         
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
@@ -291,8 +292,14 @@ async def api_export_pdf(payload: Dict[str, Any]):
         pdf.add_txt(ts)
 
         pdf.add_sec("V. THĂM KHÁM LÂM SÀNG")
-        pdf.add_txt(format_bullet_points(payload.get("kham_toan_than", "")))
-        if payload.get("loai_benh_an") == "Hậu phẫu":
+        if loai_ba != "Hậu phẫu":
+            # Nội khoa / Tiền phẫu: In thăm khám lúc vào viện + toàn thân
+            if payload.get("kham_vao_vien"):
+                pdf.add_txt(f"- Khám lúc vào viện:\n{payload.get('kham_vao_vien')}")
+            pdf.add_txt(f"- Khám hiện tại (Toàn thân):\n{format_bullet_points(payload.get('kham_toan_than', ''))}")
+        else:
+            # Hậu phẫu: In ngày hậu phẫu, vết mổ, dẫn lưu
+            pdf.add_txt(f"- Khám hiện tại (Toàn thân):\n{format_bullet_points(payload.get('kham_toan_than', ''))}")
             pdf.add_txt(f"- Ngày hậu phẫu: {payload.get('ngay_hau_phau', '')}\n- Vết mổ: {payload.get('kham_vet_mo', '')}\n- Ống dẫn lưu: {payload.get('kham_dan_luu', '')}")
 
         pdf.add_sec("VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT")
