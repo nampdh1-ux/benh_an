@@ -242,10 +242,14 @@ async def api_ocr_batch(
         try:
             ctx_data = json.loads(context)
             loai_ba = ctx_data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
+            spo2_val = ctx_data.get('sh_spo2', '')
+            spo2_str = f" | SpO2: {spo2_val}%" if spo2_val else ""
+            vital_str = f"Mạch: {ctx_data.get('sh_mach', '--')} ck/p | HA: {ctx_data.get('sh_ha', '--')} mmHg | Thở: {ctx_data.get('sh_nhip_tho', '--')} l/p{spo2_str}"
+
             if loai_ba == "Hậu phẫu":
-                clinical_ctx_str = f"Loại: HẬU PHẪU\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nTrước mổ: {ctx_data.get('bs_truoc_mo')}\nTrong mổ: {ctx_data.get('bs_trong_mo')}\nSau mổ: {ctx_data.get('bs_sau_mo')}\nNgày HP: {ctx_data.get('ngay_hau_phau')}\nVết mổ: {ctx_data.get('kham_vet_mo')}\nDẫn lưu: {ctx_data.get('kham_dan_luu')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
+                clinical_ctx_str = f"Loại: HẬU PHẪU\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nTrước mổ: {ctx_data.get('bs_truoc_mo')}\nTrong mổ: {ctx_data.get('bs_trong_mo')}\nSau mổ: {ctx_data.get('bs_sau_mo')}\nNgày HP: {ctx_data.get('ngay_hau_phau')}\nSinh hiệu: {vital_str}\nVết mổ: {ctx_data.get('kham_vet_mo')}\nDẫn lưu: {ctx_data.get('kham_dan_luu')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
             else:
-                clinical_ctx_str = f"Loại: NỘI KHOA\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nBệnh sử: {ctx_data.get('benh_su')}\nTiền sử: {ctx_data.get('ts_noi_khoa')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
+                clinical_ctx_str = f"Loại: NỘI KHOA\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nBệnh sử: {ctx_data.get('benh_su')}\nTiền sử: {ctx_data.get('ts_noi_khoa')}\nSinh hiệu: {vital_str}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
         except Exception:
             clinical_ctx_str = str(context)
 
