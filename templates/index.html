@@ -1836,7 +1836,186 @@
                 addClsRow();
             }
         }
+        // --- HÀM TỰ ĐỘNG TẠO CÂU DẪN TÓM TẮT BỆNH ÁN (TÁI HIỆN Y NGUYÊN STREAMLIT) ---
+function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+}
+
+function generateIntroTomTatHauPhau() {
+    const gioiTinh = getVal("gioi_tinh") || "Nam";
+    const tuoi = getVal("tuoi");
+    const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
+
+    // 1. Trích xuất tiền sử (Nội khoa & Ngoại khoa)
+    let tsList = [];
+    ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
+        const val = getVal(key);
+        if (val) {
+            const lines = val.split("\n")
+                .map(l => l.trim().replace(/^[-*•\s]+/, ""))
+                .filter(l => l.length > 0);
+            if (lines.length > 0) {
+                tsList.push(lines.join(", "));
+            }
+        }
+    });
+    const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
+
+    // 2. Lý do vào viện
+    const lyDo = getVal("ly_do_vao_vien") || "...";
+    const bsTruocMo = getVal("bs_truoc_mo");
+    const bsTrongMo = getVal("bs_trong_mo");
+    const cdSoBo = getVal("chan_doan_so_bo");
+
+    // 3. Trích xuất Chẩn đoán trước mổ
+    let cdTruocMo = "...";
+    const regexCdtm = /(?:chẩn đoán trước mổ|cđ trước mổ)(?:\s*là)?[:\s\-]+([^.\n;]+)/i;
+    const mCdtm = bsTruocMo.match(regexCdtm);
+    if (mCdtm && mCdtm[1].trim()) {
+        cdTruocMo = mCdtm[1].trim();
+    } else if (bsTruocMo) {
+        const lines = bsTruocMo.split("\n").filter(l => l.trim().length > 0);
+        if (lines.length > 0) {
+            cdTruocMo = lines[lines.length - 1].trim().replace(/^[-*•\s]+/, "");
+        }
+    }
+
+    // 4. Trích xuất các trường trong mổ
+    let ppMo = "...";
+    let loaiMo = "cấp cứu/phiên";
+    let cdSauMo = "...";
+    let dienBienPhauThuat = "Quá trình mổ không có biến chứng.";
+
+    if (bsTrongMo) {
+        // Hình thức mổ
+        const mHt = bsTrongMo.match(/(?:hình thức mổ|mổ phiên\/mổ cấp cứu|mổ phiên hay mổ cấp cứu)[:\s\-]+([^\n]+)/i);
+        if (mHt) {
+            const txtHt = mHt[1].toLowerCase().trim();
+            if (txtHt.includes("cấp cứu") && !txtHt.includes("phiên")) {
+                loaiMo = "cấp cứu";
+            } else if (txtHt.includes("phiên") || txtHt.includes("chương trình")) {
+                loaiMo = "chương trình";
+            }
+        }
+
+        // Phương pháp mổ
+        const mPp = bsTrongMo.match(/(?:phương pháp mổ|phương pháp phẫu thuật|pt)[:\s\-]+([^\n]+)/i);
+        if (mPp && mPp[1].trim()) {
+            ppMo = mPp[1].trim();
+        }
+
+        // Quá trình mổ
+        const mQtm = bsTrongMo.match(/(?:quá trình mổ|diễn biến mổ)[:\s\-]+([^\n]+)/i);
+        if (mQtm && mQtm[1].trim()) {
+            let valQtm = mQtm[1].trim().replace(/\.+$/, "");
+            const lowerQtm = valQtm.toLowerCase();
+            if (lowerQtm.startsWith("không") || lowerQtm.startsWith("có") || lowerQtm.startsWith("thuận")) {
+                valQtm = valQtm.charAt(0).toLowerCase() + valQtm.slice(1);
+            }
+            dienBienPhauThuat = `Quá trình mổ ${valQtm}.`;
+        }
+
+        // Chẩn đoán sau mổ
+        const mSm = bsTrongMo.match(/(?:chẩn đoán sau mổ|cđ sau mổ)[:\s\-]+([^\n]+)/i);
+        if (mSm && mSm[1].trim()) {
+            cdSauMo = mSm[1].trim();
+        }
+    }
+
+    // Dự phòng chẩn đoán sau mổ từ chẩn đoán sơ bộ nếu chưa tìm thấy
+    if (cdSauMo === "..." && cdSoBo) {
+        let cdClean = cdSoBo.replace(/^hậu phẫu ngày[^-\:]*[-\:]\s*/i, "");
+        cdSauMo = cdClean.split("-")[0].trim() || cdSoBo;
+    }
+
+    // 5. Trích xuất Ngày hậu phẫu
+    const ngayHpVal = getVal("ngay_hau_phau");
+    let ngayHpStr = "ngày thứ ...";
+    const mHp = ngayHpVal.match(/(?:ngày\s*(?:thứ)?\s*)(\d+)/i);
+    if (mHp) {
+        ngayHpStr = `ngày thứ ${mHp[1]}`;
+    } else if (ngayHpVal) {
+        ngayHpStr = ngayHpVal;
+    }
+
+    // Ghép câu dẫn chính
+    const cauDanChinh = `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}, chẩn đoán trước mổ là ${cdTruocMo}, được mổ bằng phương pháp ${ppMo}, mổ ${loaiMo}, chẩn đoán sau mổ là ${cdSauMo}. ${dienBienPhauThuat} Hiện tại hậu phẫu ${ngayHpStr}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
+
+    // 6. Trích xuất Sinh hiệu tạo dòng 1
+    let shItems = [];
+    if (getVal("sh_mach")) shItems.push(`Mạch ${getVal("sh_mach")} lần/phút`);
+    if (getVal("sh_ha")) shItems.push(`HA ${getVal("sh_ha")} mmHg`);
+    if (getVal("sh_nhiet_do")) shItems.push(`Nhiệt độ ${getVal("sh_nhiet_do")} °C`);
+    if (getVal("sh_nhip_tho")) shItems.push(`Nhịp thở ${getVal("sh_nhip_tho")} lần/phút`);
+    const shStr = shItems.length > 0 ? shItems.join(", ") : "Mạch, HA, Nhiệt độ trong giới hạn bình thường";
+    const lineSh = `- Tỉnh, tiếp xúc tốt, Sinh hiệu: ${shStr}`;
+
+    // 7. Trích xuất Khám vết mổ tạo dòng 2
+    const rawVm = getVal("kham_vet_mo");
+    let vmClean = "khô, không sưng đỏ, chân chỉ sạch";
+    if (rawVm) {
+        const linesVm = rawVm.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+        if (linesVm.length > 0) vmClean = linesVm.join("; ");
+    }
+    const lineVm = `- Vết mổ: ${vmClean}`;
+
+    // 8. Trích xuất Khám dẫn lưu tạo dòng 3
+    const rawDl = getVal("kham_dan_luu");
+    let dlClean = "chân dẫn lưu sạch, không rỉ dịch bất thường";
+    if (rawDl) {
+        const linesDl = rawDl.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+        if (linesDl.length > 0) dlClean = linesDl.join("; ");
+    }
+    const lineDl = `- Dẫn lưu: ${dlClean}`;
+
+    return `${cauDanChinh}\n${lineSh}\n${lineVm}\n${lineDl}`;
+}
+
+// Câu dẫn cho bệnh án Nội khoa / Tiền phẫu
+function generateIntroTomTatNoiKhoa() {
+    const gioiTinh = getVal("gioi_tinh") || "Nam";
+    const tuoi = getVal("tuoi");
+    const tuoiStr = tuoi ? `${tuoi} tuổi` : "...";
+
+    let tsList = [];
+    ["ts_noi_khoa", "ts_ngoai_khoa"].forEach(key => {
+        const val = getVal(key);
+        if (val) {
+            const lines = val.split("\n").map(l => l.trim().replace(/^[-*•\s]+/, "")).filter(l => l.length > 0);
+            if (lines.length > 0) tsList.push(lines.join(", "));
+        }
+    });
+    const tienSuStr = tsList.length > 0 ? tsList.join("; ") : "chưa ghi nhận bất thường";
+    const lyDo = getVal("ly_do_vao_vien") || "...";
+
+    return `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
+}
+
+// Hàm kích hoạt khi bấm nút "⚡ Tạo câu dẫn"
+function generateIntroTomTat() {
+    const loaiBa = getVal("loai_benh_an");
+    const isHauPhau = (loaiBa === "Hậu phẫu");
+    
+    const cauDanMoi = isHauPhau ? generateIntroTomTatHauPhau() : generateIntroTomTatNoiKhoa();
+    const txtArea = document.getElementById("tom_tat");
+    const currentTt = txtArea.value.trim();
+
+    if (currentTt) {
+        const lines = currentTt.split("\n");
+        // Nếu người dùng đã gõ các gạch đầu dòng hội chứng phía dưới, giữ nguyên chúng
+        if (lines.length > 1 && (lines[1].trim().startsWith("-") || lines[1].trim().startsWith("*"))) {
+            txtArea.value = cauDanMoi + "\n" + lines.slice(1).join("\n");
+        } else {
+            txtArea.value = cauDanMoi + "\n" + currentTt;
+        }
+    } else {
+        txtArea.value = cauDanMoi;
+    }
+    txtArea.focus();
+}
         triggerAllTextareasExpand();
+        
     };
 </script>
 </body>
