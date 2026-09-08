@@ -280,9 +280,20 @@
         @media (max-width: 768px) {
             /* --- RESPONSIVE CHO THANH TIÊU ĐỀ: MÁY TÍNH & ĐIỆN THOẠI --- */
 /* Mặc định trên Máy tính: Ẩn nút dropdown Nháp của điện thoại */
+/* 1. Trên Máy tính: Bắt buộc ẩn hoàn toàn nút Nháp dropdown */
 .mobile-draft-wrapper {
-    display: none;
+    display: none !important;
     position: relative;
+}
+
+/* 2. Trên Điện thoại (<= 768px): Ẩn 3 nút rời, chỉ hiện nút Nháp */
+@media (max-width: 768px) {
+    .desktop-draft-btns {
+        display: none !important;
+    }
+    .mobile-draft-wrapper {
+        display: inline-block !important;
+    }
 }
 
 /* Khi xem trên Điện thoại (<= 768px): */
@@ -446,7 +457,7 @@ menu[role="tablist"] li[role="tab"] a {
         <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
 
         <!-- MENU DROPDOWN NHÁP (CHỈ HIỂN THỊ KHI Ở TRÊN ĐIỆN THOẠI) -->
-        <div class="mobile-draft-wrapper" style="margin-right: 4px;">
+        <div class="mobile-draft-wrapper" style="display: none; margin-right: 4px;">
             <button type="button" class="btn-header-toc" onclick="toggleMobileDraft(event)" style="display: inline-flex; align-items: center; gap: 4px;">
                 <img src="/static/icon/w98_document.png" alt="Nháp" style="width: 14px; height: 14px; image-rendering: pixelated;">
                 <span>Nháp ▾</span>
