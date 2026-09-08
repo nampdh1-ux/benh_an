@@ -390,6 +390,24 @@ menu[role="tablist"] li[role="tab"] a {
         </div>
 
         <div style="display: flex; align-items: center;">
+            <!-- TRẠNG THÁI ĐÃ LƯU TRÊN THANH TIÊU ĐỀ -->
+            <span id="status-storage" style="color: #ffff80; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 1px #000; margin-right: 6px;">
+                🟢 Đã đồng bộ
+            </span>
+
+            <!-- CÁC NÚT BẢN NHÁP CẠNH MỤC LỤC -->
+            <div style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
+                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" title="Lưu bản nháp về máy (.json)">
+                    📥 Lưu
+                </button>
+                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" title="Nạp bản nháp (.json)">
+                    📤 Nạp
+                </button>
+                <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
+                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" title="Làm mới form">
+                    🗑️ Làm mới
+                </button>
+            </div>
             <div class="header-toc-wrapper">
                 <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)">📑 Mục Lục ▾</button>
                 <div class="header-toc-menu" id="headerTocMenu">
@@ -417,19 +435,6 @@ menu[role="tablist"] li[role="tab"] a {
     </div>
 
     <div class="window-body">
-        <div class="draft-toolbar">
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <strong>💾 Bản nháp:</strong>
-                <button type="button" onclick="downloadDraftJSON()">📥 Lưu .json</button>
-                <button type="button" onclick="document.getElementById('input_draft_file').click()">📤 Nạp .json</button>
-                <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
-                <button type="button" onclick="clearAllDraft()">🗑️ Làm mới</button>
-            </div>
-            <div style="font-weight: bold; color: #0a246a;" id="status-storage">
-                🟢 Trình duyệt: Đã đồng bộ
-            </div>
-        </div>
-
         <div class="form-type-container">
             <strong style="color: #0a246a; font-size: 11px;">LỰA CHỌN MẪU BỆNH ÁN:</strong>
             <input type="hidden" id="current_loai_ba" value="Nội khoa / Tiền phẫu">
