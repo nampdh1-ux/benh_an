@@ -269,6 +269,55 @@
         }
 
         @media (max-width: 768px) {
+            /* 1. Tự động ẩn dòng chữ trạng thái lưu để nhường chỗ */
+            #status-storage {
+                display: none !important;
+            }
+
+            /* 2. Giới hạn tên tiêu đề, chống tràn dòng */
+            .title-bar-text-large {
+                max-width: 90px !important;
+                font-size: 11px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+
+            /* 3. Tối ưu cụm 3 nút: Ẩn chữ Lưu/Nạp/Làm mới, chỉ hiển thị icon */
+            .header-draft-group {
+                gap: 2px !important;
+                margin-right: 3px !important;
+            }
+            .header-draft-group .btn-label-text {
+                display: none !important; /* Ẩn chữ trên điện thoại */
+            }
+            .header-draft-group .btn-header-toc {
+                padding: 2px 4px !important;
+                min-width: 24px !important;
+                height: 22px !important;
+                justify-content: center;
+            }
+            .header-draft-group .btn-header-toc img {
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            /* 4. Thu gọn nút Mục Lục */
+            .header-toc-wrapper {
+                margin-right: 4px !important;
+            }
+            .header-toc-wrapper .btn-header-toc {
+                padding: 2px 4px !important;
+                font-size: 10.5px !important;
+                height: 22px !important;
+            }
+
+            /* 5. Thu nhỏ cụm 3 nút đóng/mở cửa sổ chuẩn Win2K */
+            .title-bar-controls {
+                transform: scale(0.85);
+                transform-origin: right center;
+            }
+        }
             body { padding: 0 !important; background-color: #ece9d8 !important; }
             .main-window { border: none !important; box-shadow: none !important; max-width: 100% !important; }
             .window-body { padding: 6px !important; }
@@ -396,19 +445,19 @@ menu[role="tablist"] li[role="tab"] a {
             </span>
 
             <!-- CÁC NÚT BẢN NHÁP CẠNH MỤC LỤC -->
-            <div style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
-                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" style="display: inline-flex; align-items: center; gap: 4px;">
+            <div class="header-draft-group" style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
+                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" title="Lưu bản nháp (.json)" style="display: inline-flex; align-items: center; gap: 4px;">
                     <img src="/static/icon/w98_document.png" alt="Lưu" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Lưu</span>
+                    <span class="btn-label-text">Lưu</span>
                 </button>
-                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" style="display: inline-flex; align-items: center; gap: 4px;">
+                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" title="Nạp bản nháp (.json)" style="display: inline-flex; align-items: center; gap: 4px;">
                     <img src="/static/icon/w98_download.png" alt="Nạp" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Nạp</span>
+                    <span class="btn-label-text">Nạp</span>
                 </button>
                 <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
-                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" style="display: inline-flex; align-items: center; gap: 4px;">
+                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" title="Làm mới form" style="display: inline-flex; align-items: center; gap: 4px;">
                     <img src="/static/icon/w98_recycle_bin_empty.png" alt="Xóa" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Làm mới</span>
+                    <span class="btn-label-text">Làm mới</span>
                 </button>
             </div>
             <div class="header-toc-wrapper">
