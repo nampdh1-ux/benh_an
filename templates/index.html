@@ -6,6 +6,15 @@
     <title>Bệnh Án Lâm Sàng & Hậu Phẫu - Win2K Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <style>
+        /* Mặc định trên Máy tính: Hiện tiêu đề dài, ẩn tiêu đề ngắn */
+.title-desktop { display: inline; }
+.title-mobile { display: none; }
+
+/* Khi trên Điện thoại (<= 768px): Ẩn tiêu đề dài, hiện chữ BỆNH ÁN */
+@media (max-width: 768px) {
+    .title-desktop { display: none !important; }
+    .title-mobile { display: inline !important; }
+}
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body {
