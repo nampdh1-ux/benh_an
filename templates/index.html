@@ -397,19 +397,25 @@ menu[role="tablist"] li[role="tab"] a {
 
             <!-- CÁC NÚT BẢN NHÁP CẠNH MỤC LỤC -->
             <div style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
-                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" title="Lưu bản nháp về máy (.json)">
-                    📥 Lưu
+                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <img src="/static/icon/w98_document.png" alt="Lưu" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                    <span>Lưu</span>
                 </button>
-                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" title="Nạp bản nháp (.json)">
-                    📤 Nạp
+                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <img src="/static/icon/w98_download.png" alt="Nạp" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                    <span>Nạp</span>
                 </button>
                 <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
-                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" title="Làm mới form">
-                    🗑️ Làm mới
+                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <img src="/static/icon/w98_recycle_bin.png" alt="Xóa" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                    <span>Làm mới</span>
                 </button>
             </div>
             <div class="header-toc-wrapper">
-                <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)">📑 Mục Lục ▾</button>
+                <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <img src="/static/icon/w98_file_lines.png" alt="Mục Lục" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                    <span>Mục Lục ▾</span>
+                </button>
                 <div class="header-toc-menu" id="headerTocMenu">
                     <div style="background: #0a246a; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 10.5px; margin-bottom: 3px;">
                         ĐIỀU HƯỚNG NHANH
@@ -800,7 +806,10 @@ menu[role="tablist"] li[role="tab"] a {
                         <div class="sub-section-header">2. Cận lâm sàng đã có (Tích hợp OCR)</div>
                         <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-weight: bold;">📷 Tải ảnh xét nghiệm:</label>
-                            <label class="btn-win2k-file" for="ocr_files">📁 Chọn tệp...</label>
+                            <label class="btn-win2k-file" for="ocr_files" style="display: inline-flex; align-items: center; gap: 4px;">
+                                <img src="/static/icon/w98_scanner_.png" alt="Tệp" style="width: 14px; height: 14px; image-rendering: pixelated;">
+                                <span>Chọn tệp...</span>
+                            </label>
                             <input type="file" id="ocr_files" multiple accept="image/*" style="display: none;" onchange="updateOcrFileLabel(this)">
                             <span id="ocr_file_count" class="file-status-label">Chưa chọn tệp nào</span>
                             <button type="button" class="btn-ai" id="btn-ai-ocr" onclick="runBatchOCR()">Phân Tích & Điền Bảng</button>
@@ -1315,7 +1324,10 @@ menu[role="tablist"] li[role="tab"] a {
                 <textarea id="cls_kq_${rIdx}" rows="4" placeholder="Chỉ số xét nghiệm..." oninput="autoSave()" style="width: 100%; box-sizing: border-box;">${kq}</textarea>
                 <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #808080; display: flex; flex-direction: column; gap: 4px;">
                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <label class="btn-win2k-file" for="cls_file_input_${rIdx}">📷 Đính kèm ảnh...</label>
+                        <label class="btn-win2k-file" for="cls_file_input_${rIdx}" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <img src="/static/icon/w98_scanner_camera.png" alt="Ảnh" style="width: 14px; height: 14px; image-rendering: pixelated;">
+                            <span>Đính kèm ảnh...</span>
+                        </label>
                         <input type="file" id="cls_file_input_${rIdx}" multiple accept="image/jpeg, image/png, image/jpg" onchange="handleMultipleRowImages(event, ${rIdx})" style="display: none;">
                         <span id="cls_file_status_${rIdx}" class="file-status-label">Chưa chọn ảnh</span>
                     </div>
