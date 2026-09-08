@@ -12,7 +12,7 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any, Dict, List
-
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -27,6 +27,7 @@ from pptx.util import Inches, Pt
 from pydantic import BaseModel
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Cấu hình môi trường & AI
