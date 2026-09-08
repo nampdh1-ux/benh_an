@@ -330,6 +330,55 @@
             font-style: italic;
             margin-left: 6px;
         }
+        /* HIỆU ỨNG TAB CHUẨN WINDOWS 2000 */
+menu[role="tablist"] {
+    margin: 0 0 -2px 0 !important;
+    padding: 0 4px !important;
+    display: flex;
+    gap: 2px;
+    position: relative;
+    z-index: 10;
+}
+
+menu[role="tablist"] li[role="tab"] {
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.05s ease, background-color 0.1s ease;
+    position: relative;
+}
+
+/* 1. Khi rê chuột vào tab chưa chọn (Hover) */
+menu[role="tablist"] li[role="tab"]:not(.active):hover {
+    background-color: #f5f3e9 !important;
+}
+
+/* 2. Khi ấn chuột xuống (Click / Active) -> Tạo độ lún 1px */
+menu[role="tablist"] li[role="tab"]:active {
+    transform: translateY(1px);
+}
+
+/* 3. Tab đang được chọn (Active Tab) -> Nổi cao lên và che viền dưới */
+menu[role="tablist"] li[role="tab"].active {
+    margin-top: -2px !important;
+    padding-bottom: 2px !important;
+    font-weight: bold !important;
+    background: #ece9d8 !important;
+    border-bottom: none !important;
+}
+
+menu[role="tablist"] li[role="tab"] a {
+    text-decoration: none !important;
+    color: #000000 !important;
+    display: block;
+    outline: none !important;
+}
+
+/* Đảm bảo khung nội dung tab bên dưới khớp viền hoàn hảo */
+.tab-content.active {
+    position: relative;
+    z-index: 5;
+    border-top: 2px solid #ffffff !important;
+}
     </style>
 </head>
 <body>
