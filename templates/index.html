@@ -293,7 +293,8 @@
         textarea {
             overflow-y: hidden !important;
             resize: none !important;
-            transition: height 0.08s ease-out;
+            min-height: 60px; 
+            line-height: 1.4;
         }
 
         .btn-win2k-file {
@@ -889,8 +890,15 @@
 
     function autoExpandTextarea(el) {
         if (!el || el.tagName.toLowerCase() !== 'textarea') return;
+        if (el.offsetParent === null) return;
+
         el.style.height = 'auto';
-        el.style.height = (el.scrollHeight + 4) + 'px';
+        
+        const rowCount = parseInt(el.getAttribute('rows')) || 3;
+        const minH = rowCount * 20; 
+        
+        const newH = Math.max(el.scrollHeight + 4, minH);
+        el.style.height = newH + 'px';
     }
 
     document.addEventListener('input', function (e) {
@@ -961,7 +969,7 @@
         document.getElementById('wrapper-bs-noikhoa').style.display = isHauPhau ? 'none' : 'block';
         document.getElementById('wrapper-bs-hauphau').style.display = isHauPhau ? 'block' : 'none';
         document.getElementById('title-ly-do-benh-su').innerText = isHauPhau ? 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ HẬU PHẪU' : 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ';
-        
+        triggerAllTextareasExpand();
         document.getElementById('wrapper-kham-vao-vien').style.display = isHauPhau ? 'none' : 'block';
         document.getElementById('wrapper-ngay-hau-phau').style.display = isHauPhau ? 'block' : 'none';
         document.getElementById('wrapper-vet-mo-dan-luu').style.display = isHauPhau ? 'block' : 'none';
