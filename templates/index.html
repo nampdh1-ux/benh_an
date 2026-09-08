@@ -269,6 +269,26 @@
         }
 
         @media (max-width: 768px) {
+            /* --- RESPONSIVE CHO THANH TIÊU ĐỀ: MÁY TÍNH & ĐIỆN THOẠI --- */
+/* Mặc định trên Máy tính: Ẩn nút dropdown Nháp của điện thoại */
+.mobile-draft-wrapper {
+    display: none;
+    position: relative;
+}
+
+/* Khi xem trên Điện thoại (<= 768px): */
+@media (max-width: 768px) {
+    /* 1. Ẩn cụm 3 nút rời và ẩn chữ "Đã lưu" để chống tràn tiêu đề */
+    .desktop-draft-btns,
+    #status-storage {
+        display: none !important;
+    }
+
+    /* 2. Hiện nút dropdown Nháp thu gọn */
+    .mobile-draft-wrapper {
+        display: inline-block !important;
+    }
+}
             body { padding: 0 !important; background-color: #ece9d8 !important; }
             .main-window { border: none !important; box-shadow: none !important; max-width: 100% !important; }
             .window-body { padding: 6px !important; }
@@ -385,41 +405,67 @@ menu[role="tablist"] li[role="tab"] a {
 
 <div class="window main-window">
     <div class="title-bar">
-        <div class="title-bar-text-large">
-            <span></span> HỆ THỐNG BỆNH ÁN LÂM SÀNG
+    <div class="title-bar-text-large">
+        <span></span> HỆ THỐNG BỆNH ÁN LÂM SÀNG
+    </div>
+
+    <div style="display: flex; align-items: center;">
+        <!-- TRẠNG THÁI ĐÃ LƯU (TỰ ẨN TRÊN ĐIỆN THOẠI) -->
+        <span id="status-storage" style="color: #ffff80; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 1px #000; margin-right: 6px;">
+            🟢 Đã đồng bộ
+        </span>
+
+        <!-- CÁC NÚT BẢN NHÁP CẠNH MỤC LỤC CHO MÁY TÍNH (TỰ ẨN TRÊN ĐIỆN THOẠI) -->
+        <div class="desktop-draft-btns" style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
+            <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" style="display: inline-flex; align-items: center; gap: 4px;" title="Lưu bản nháp về máy (.json)">
+                <img src="/static/icon/w98_document.png" alt="Lưu" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                <span>Lưu</span>
+            </button>
+            <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" style="display: inline-flex; align-items: center; gap: 4px;" title="Nạp bản nháp (.json)">
+                <img src="/static/icon/w98_download.png" alt="Nạp" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                <span>Nạp</span>
+            </button>
+            <button type="button" class="btn-header-toc" onclick="clearAllDraft()" style="display: inline-flex; align-items: center; gap: 4px;" title="Làm mới form">
+                <img src="/static/icon/w98_recycle_bin_empty.png" alt="Xóa" style="width: 16px; height: 16px; image-rendering: pixelated;">
+                <span>Làm mới</span>
+            </button>
         </div>
 
-        <div style="display: flex; align-items: center;">
-            <!-- TRẠNG THÁI ĐÃ LƯU TRÊN THANH TIÊU ĐỀ -->
-            <span id="status-storage" style="color: #ffff80; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 1px #000; margin-right: 6px;">
-                🟢 Đã đồng bộ
-            </span>
+        <!-- THẺ CHỌN FILE DÙNG CHUNG -->
+        <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
 
-            <!-- CÁC NÚT BẢN NHÁP CẠNH MỤC LỤC -->
-            <div style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
-                <button type="button" class="btn-header-toc" onclick="downloadDraftJSON()" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <img src="/static/icon/w98_document.png" alt="Lưu" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Lưu</span>
-                </button>
-                <button type="button" class="btn-header-toc" onclick="document.getElementById('input_draft_file').click()" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <img src="/static/icon/w98_download.png" alt="Nạp" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Nạp</span>
-                </button>
-                <input type="file" id="input_draft_file" accept=".json" style="display: none;" onchange="uploadDraftJSON(event)">
-                <button type="button" class="btn-header-toc" onclick="clearAllDraft()" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <img src="/static/icon/w98_recycle_bin_empty.png" alt="Xóa" style="width: 16px; height: 16px; image-rendering: pixelated;">
-                    <span>Làm mới</span>
-                </button>
+        <!-- MENU DROPDOWN NHÁP (CHỈ HIỂN THỊ KHI Ở TRÊN ĐIỆN THOẠI) -->
+        <div class="mobile-draft-wrapper" style="margin-right: 4px;">
+            <button type="button" class="btn-header-toc" onclick="toggleMobileDraft(event)" style="display: inline-flex; align-items: center; gap: 4px;">
+                <img src="/static/icon/w98_document.png" alt="Nháp" style="width: 14px; height: 14px; image-rendering: pixelated;">
+                <span>Nháp ▾</span>
+            </button>
+            <div class="header-toc-menu" id="mobileDraftMenu" style="width: 140px; right: 0;">
+                <div style="background: #0a246a; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 10.5px; margin-bottom: 3px;">
+                    QUẢN LÝ NHÁP
+                </div>
+                <a class="toc-link-item" href="javascript:void(0)" onclick="downloadDraftJSON(); closeMobileDraft();" style="display: flex; align-items: center; gap: 6px;">
+                    <img src="/static/icon/w98_document.png" style="width: 14px; height: 14px; image-rendering: pixelated;"> Lưu .json
+                </a>
+                <a class="toc-link-item" href="javascript:void(0)" onclick="document.getElementById('input_draft_file').click(); closeMobileDraft();" style="display: flex; align-items: center; gap: 6px;">
+                    <img src="/static/icon/w98_download.png" style="width: 14px; height: 14px; image-rendering: pixelated;"> Nạp .json
+                </a>
+                <a class="toc-link-item" href="javascript:void(0)" onclick="clearAllDraft(); closeMobileDraft();" style="display: flex; align-items: center; gap: 6px; color: #a00;">
+                    <img src="/static/icon/w98_recycle_bin_empty.png" style="width: 14px; height: 14px; image-rendering: pixelated;"> Làm mới
+                </a>
             </div>
-            <div class="header-toc-wrapper">
-                <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <img src="/static/icon/w98_file_lines.png" alt="Mục Lục" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
-                    <span>Mục Lục ▾</span>
-                </button>
-                <div class="header-toc-menu" id="headerTocMenu">
-                    <div style="background: #0a246a; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 10.5px; margin-bottom: 3px;">
-                        ĐIỀU HƯỚNG NHANH
-                    </div>
+        </div>
+
+        <!-- KHỐI MỤC LỤC NGUYÊN BẢN CỦA BẠN -->
+        <div class="header-toc-wrapper">
+            <button type="button" class="btn-header-toc" onclick="toggleHeaderToc(event)" style="display: inline-flex; align-items: center; gap: 4px;">
+                <img src="/static/icon/w98_file_lines.png" alt="Mục Lục" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                <span>Mục Lục ▾</span>
+            </button>
+            <div class="header-toc-menu" id="headerTocMenu">
+                <div style="background: #0a246a; color: #fff; padding: 4px 6px; font-weight: bold; font-size: 10.5px; margin-bottom: 3px;">
+                    ĐIỀU HƯỚNG NHANH
+                </div>
                     <a class="toc-link-item" href="#sec-hanh-chinh" onclick="closeHeaderToc()">I. Hành chính</a>
                     <a class="toc-link-item" href="#sec-ly-do-benh-su" onclick="closeHeaderToc()">II & III. Lý do & Bệnh sử</a>
                     <a class="toc-link-item" href="#sec-tien-su" onclick="closeHeaderToc()">IV. Tiền sử</a>
@@ -955,7 +1001,25 @@ menu[role="tablist"] li[role="tab"] a {
         const menu = document.getElementById('headerTocMenu');
         if (menu) menu.classList.toggle('show');
     }
+    // ĐIỀU KHIỂN DROPDOWN BẢN NHÁP TRÊN ĐIỆN THOẠI
+function toggleMobileDraft(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('mobileDraftMenu');
+    if (menu) menu.classList.toggle('show');
+    closeHeaderToc(); // Đóng menu mục lục nếu đang mở
+}
 
+function closeMobileDraft() {
+    const menu = document.getElementById('mobileDraftMenu');
+    if (menu) menu.classList.remove('show');
+}
+
+// Tự động đóng menu nháp khi chạm/bấm ra vùng ngoài
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.mobile-draft-wrapper')) {
+        closeMobileDraft();
+    }
+});
     function closeHeaderToc() {
         const menu = document.getElementById('headerTocMenu');
         if (menu) menu.classList.remove('show');
