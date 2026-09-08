@@ -763,7 +763,10 @@ menu[role="tablist"] li[role="tab"] a {
                     <div class="expander-body">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
                             <label style="font-weight: bold;">Chẩn đoán sơ bộ & phân biệt:</label>
-                            <button type="button" class="btn-ai" id="btn-ai-cd" onclick="callAICD()"> Làm phép Chẩn đoán</button>
+                            <button type="button" class="btn-ai" id="btn-ai-cd" onclick="callAICD()" style="display: inline-flex; align-items: center; gap: 4px;">
+                                <img src="/static/icon/w98_file_blue_grad_paint.png" alt="AI" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                                <span>Làm phép Chẩn đoán</span>
+                            </button>
                         </div>
                         <div class="form-grid-2">
                             <div class="form-group">
@@ -807,12 +810,15 @@ menu[role="tablist"] li[role="tab"] a {
                         <div style="background: #ffffff; border: 2px inset #808080; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-weight: bold;">📷 Tải ảnh xét nghiệm:</label>
                             <label class="btn-win2k-file" for="ocr_files" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <img src="/static/icon/w98_scanner_.png" alt="Tệp" style="width: 14px; height: 14px; image-rendering: pixelated;">
+                                <img src="/static/icon/w98_scanner_camera.png" alt="Tệp" style="width: 14px; height: 14px; image-rendering: pixelated;">
                                 <span>Chọn tệp...</span>
                             </label>
                             <input type="file" id="ocr_files" multiple accept="image/*" style="display: none;" onchange="updateOcrFileLabel(this)">
                             <span id="ocr_file_count" class="file-status-label">Chưa chọn tệp nào</span>
-                            <button type="button" class="btn-ai" id="btn-ai-ocr" onclick="runBatchOCR()">Phân Tích & Điền Bảng</button>
+                            <button type="button" class="btn-ai" id="btn-ai-ocr" onclick="runBatchOCR()" style="display: inline-flex; align-items: center; gap: 4px;">
+                                <img src="/static/icon/w98_file_blue_grad_paint.png" alt="OCR" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                                <span>Phân Tích & Điền Bảng</span>
+                            </button>
                             <span id="ocr-status" style="font-weight: bold; color: #0a246a;"></span>
                         </div>
 
@@ -857,8 +863,15 @@ menu[role="tablist"] li[role="tab"] a {
                 <summary id="title-dieu-tri">X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN</summary>
                 <div class="expander-body">
                     <div style="margin-bottom: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="btn-ai" id="btn-ai-dt" onclick="callAITreatment()">Làm phép Điều trị</button>
-                        <button type="button" class="btn-ai" id="btn-ai-tl" onclick="callAIPrognosis()">Làm phép Tiên lượng & Tư vấn</button>
+                        <button type="button" class="btn-ai" id="btn-ai-dt" onclick="callAITreatment()" style="display: inline-flex; align-items: center; gap: 4px;">
+    <img src="/static/icon/w98_file_blue_grad_paint.png" alt="Điều trị" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+    <span>Làm phép Điều trị</span>
+</button>
+
+<button type="button" class="btn-ai" id="btn-ai-tl" onclick="callAIPrognosis()" style="display: inline-flex; align-items: center; gap: 4px;">
+    <img src="/static/icon/w98_file_blue_grad_paint.png" alt="Tiên lượng" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+    <span>Làm phép Tiên lượng & Tư vấn</span>
+</button>
                     </div>
                     <div class="form-grid-3">
                         <div class="form-group">
@@ -922,7 +935,10 @@ menu[role="tablist"] li[role="tab"] a {
                         <option value="Nghiêm khắc & Thách thức">Nghiêm khắc & Thách thức</option>
                         <option value="Thực chiến giao ban">Thực chiến giao ban</option>
                     </select>
-                    <button type="button" class="btn-ai" id="btn-ai-critique" onclick="callAICritique()">⚡ Giảng viên nhận xét & Đặt câu hỏi</button>
+                    <button type="button" class="btn-ai" id="btn-ai-critique" onclick="callAICritique()" style="display: inline-flex; align-items: center; gap: 4px;">
+    <img src="/static/icon/w98_file_blue_grad_paint.png" alt="Hội đồng" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+    <span>Giảng viên nhận xét & Đặt câu hỏi</span>
+</button>
                 </div>
                 <div id="critique-result" style="background: #ffffff; border: 2px inset #808080; padding: 12px; min-height: 250px;">
                     <em>Chưa có dữ liệu phản biện. Bấm nút trên để bắt đầu giao ban...</em>
