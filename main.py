@@ -720,12 +720,16 @@ async def export_docx(data: dict):
 
     doc.add_paragraph() # Khoảng trống
 
+    section_number = 0
+
     def add_section_heading(text):
+        nonlocal section_number
+        section_number += 1
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(8)
         p.paragraph_format.space_after = Pt(4)
         p.paragraph_format.keep_with_next = True
-        run = p.add_run(text)
+        run = p.add_run(f"{section_number}. {text}")
         run.font.name = "Times New Roman"
         run.font.size = Pt(13)
         run.bold = True
@@ -758,9 +762,12 @@ async def export_docx(data: dict):
     add_field("Người làm bệnh án", data.get("sinh_vien"))
     add_field("Địa chỉ", data.get("dia_chi"))
 
-    # II & III. LÝ DO & BỆNH SỬ
-    add_section_heading("II & III. LÝ DO VÀO VIỆN VÀ BỆNH SỬ")
+    # 2. LÝ DO VÀO VIỆN
+    add_section_heading("LÝ DO VÀO VIỆN")
     add_field("Lý do vào viện", data.get("ly_do_vao_vien"))
+
+    # 3. BỆNH SỬ
+    add_section_heading("BỆNH SỬ")
     if loai_ba == "Hậu phẫu":
         add_field("Tình trạng trước mổ", data.get("bs_truoc_mo"))
         add_field("Diễn biến trong mổ", data.get("bs_trong_mo"))
