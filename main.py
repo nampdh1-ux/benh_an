@@ -577,9 +577,9 @@ async def api_export_pdf(payload: Dict[str, Any]):
             pdf.add_sec("XVI. TƯ VẤN")
             pdf.add_txt(format_bullet_points(payload.get("tu_van", "")))
         else:
-            sec_chan_doan_so_bo("VI", "VII", "VIII")
-            sec_can_lam_sang("IX", "X")
-            sec_tom_tat("XI")
+            sec_tom_tat("VI")
+            sec_chan_doan_so_bo("VII", "VIII", "IX")
+            sec_can_lam_sang("X", "XI")
             sec_chan_doan_xac_dinh("XII", "XIII")
             pdf.add_sec("XIV. ĐIỀU TRỊ HẬU PHẪU")
             pdf.add_subsec("1. Mục tiêu điều trị:")

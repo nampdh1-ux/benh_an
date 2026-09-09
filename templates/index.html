@@ -531,11 +531,11 @@ menu[role="tablist"] li[role="tab"] a {
                     <a class="toc-link-item" href="#sec-ly-do-benh-su" onclick="closeHeaderToc()">II & III. Lý do & Bệnh sử</a>
                     <a class="toc-link-item" href="#sec-tien-su" onclick="closeHeaderToc()">IV. Tiền sử</a>
                     <a class="toc-link-item" href="#sec-kham-lam-sang" onclick="closeHeaderToc()">V. Thăm khám lâm sàng</a>
-                    <a class="toc-link-item" href="#sec-tom-tat" onclick="closeHeaderToc()">Tóm tắt bệnh án</a>
-                    <a class="toc-link-item" href="#sec-chan-doan-so-bo" onclick="closeHeaderToc()">Chẩn đoán sơ bộ & PB</a>
-                    <a class="toc-link-item" href="#sec-can-lam-sang" onclick="closeHeaderToc()">Cận lâm sàng & OCR</a>
-                    <a class="toc-link-item" href="#sec-chan-doan-xac-dinh" onclick="closeHeaderToc()">Chẩn đoán xác định</a>
-                    <a class="toc-link-item" href="#sec-dieu-tri" onclick="closeHeaderToc()">Điều trị & Tiên lượng</a>
+                    <a class="toc-link-item" href="#sec-tom-tat" onclick="closeHeaderToc()">VI. Tóm tắt bệnh án</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-so-bo" onclick="closeHeaderToc()">VII. Chẩn đoán sơ bộ & PB</a>
+                    <a class="toc-link-item" href="#sec-can-lam-sang" onclick="closeHeaderToc()">VIII. Cận lâm sàng & OCR</a>
+                    <a class="toc-link-item" href="#sec-chan-doan-xac-dinh" onclick="closeHeaderToc()">IX. Chẩn đoán xác định</a>
+                    <a class="toc-link-item" href="#sec-dieu-tri" onclick="closeHeaderToc()">X. Điều trị & Tiên lượng</a>
                 </div>
             </div>
 
@@ -1190,16 +1190,16 @@ document.addEventListener('click', function(e) {
         const expCdxd = document.getElementById('expander-cdxd');
 
         if (isHauPhau) {
-            // HẬU PHẪU: CĐ Sơ bộ (VI) -> Cận lâm sàng (VII) -> Tóm tắt (VIII) -> CĐ Xác định (IX)
+            flow.appendChild(expTt);
+            // HẬU PHẪU: Tóm tắt (VI) -> CĐ Sơ bộ (VII) -> Cận lâm sàng (VIII) -> CĐ Xác định (IX)
             flow.appendChild(expCdsb);
             flow.appendChild(expCls);
-            flow.appendChild(expTt);
             flow.appendChild(expCdxd);
 
-            document.getElementById('title-cdsb').innerText = 'VI. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT';
-            document.getElementById('title-cls').innerText = 'VII. CẬN LÂM SÀNG';
-            document.getElementById('title-tt').innerText = 'VIII. TÓM TẮT BỆNH ÁN';
-            document.getElementById('label_so_tt').innerText = 'VIII';
+            document.getElementById('title-tt').innerText = 'VI. TÓM TẮT BỆNH ÁN';
+            document.getElementById('label_so_tt').innerText = 'VI';
+            document.getElementById('title-cdsb').innerText = 'VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT';
+            document.getElementById('title-cls').innerText = 'VIII. CẬN LÂM SÀNG';
             document.getElementById('title-cdxd').innerText = 'IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN';
             document.getElementById('title-dieu-tri').innerText = 'X. ĐIỀU TRỊ HẬU PHẪU, TIÊN LƯỢNG & TƯ VẤN';
             document.getElementById('status-bar-type').innerText = 'Mẫu: Hậu phẫu';
@@ -1629,12 +1629,13 @@ document.addEventListener('click', function(e) {
 
         if (stage === 'cdpb') return ctx;
 
-        ctx += `VI. CHẨN ĐOÁN SƠ BỘ: ${val('chan_doan_so_bo')}\n`;
-        ctx += `VII. ĐỀ XUẤT CẬN LÂM SÀNG:\n- CĐ xác định: ${val('cls_dx_xac_dinh')}\n- Điều trị: ${val('cls_dx_dieu_tri')}\n- Khác: ${val('cls_dx_khac')}\n\n`;
+        ctx += `VI. TÓM TẮT BỆNH ÁN: ${val('tom_tat')}\n`;
+        ctx += `VII. CHẨN ĐOÁN SƠ BỘ: ${val('chan_doan_so_bo')}\n`;
+        ctx += `VIII. ĐỀ XUẤT CẬN LÂM SÀNG:\n- CĐ xác định: ${val('cls_dx_xac_dinh')}\n- Điều trị: ${val('cls_dx_dieu_tri')}\n- Khác: ${val('cls_dx_khac')}\n\n`;
 
         if (stage === 'ocr') return ctx;
 
-        ctx += `VIII. KẾT QUẢ CẬN LÂM SÀNG ĐÃ CÓ:\n`;
+        ctx += `IX. KẾT QUẢ CẬN LÂM SÀNG ĐÃ CÓ:\n`;
         for (let i = 0; i < clsRowCount; i++) {
             const kq = val(`cls_kq_${i}`);
             const pg = val(`cls_pg_${i}`);
@@ -1642,8 +1643,7 @@ document.addEventListener('click', function(e) {
                 ctx += `[Hàng ${i + 1}]: Kết quả: ${kq} || Biện giải: ${pg}\n`;
             }
         }
-        ctx += `\nIX. TÓM TẮT BỆNH ÁN: ${val('tom_tat')}\n`;
-        ctx += `X. CHẨN ĐOÁN XÁC ĐỊNH: ${val('chan_doan_xac_dinh')}\n`;
+        ctx += `\nX. CHẨN ĐOÁN XÁC ĐỊNH: ${val('chan_doan_xac_dinh')}\n`;
         ctx += `XI. BIỆN LUẬN CHẨN ĐOÁN XÁC ĐỊNH: ${val('bien_luan_xac_dinh')}\n\n`;
 
         if (stage === 'treatment') return ctx;
