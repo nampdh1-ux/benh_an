@@ -6,3 +6,4 @@ google-genai
 fpdf2
 python-pptx
 pillow
+python-docx
