@@ -366,7 +366,7 @@ b {
             .cls-table { min-width: 480px !important; }
             .draft-toolbar { flex-direction: column; align-items: flex-start; gap: 6px; }
             .draft-toolbar > div { width: 100%; justify-content: space-between; }
-            #pdf-preview-frame { height: 400px !important; }
+            #docx-preview-frame { height: 400px !important; }
         }
 
         textarea {
@@ -1018,16 +1018,15 @@ menu[role="tablist"] li[role="tab"] a {
         <div class="window tab-content" id="tab-xuat-file">
             <fieldset>
                 <legend>XEM TRƯỚC VÀ KẾT XUẤT</legend>
-                <p>Bấm <strong>Xem trước văn bản PDF</strong> để kiểm tra tài liệu trực tiếp trên màn hình, sau đó bấm Tải về:</p>
+                <p>Bấm xem trước để kiểm tra bệnh án trực tiếp trên màn hình, sau đó bấm tải về:</p>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-                    <button type="button" id="btn-preview-pdf" onclick="previewPDF()" style="font-weight: bold;">👁️ Xem trước văn bản PDF</button>
-                    <button type="button" id="btn-download-pdf" onclick="downloadExport('pdf')" style="font-weight: bold;">📥 Tải về tập tin PDF</button>
+                    <button type="button" id="btn-preview-docx" onclick="previewDOCX()" style="font-weight: bold;">👁️ Xem trước DOCX</button>
                     <button type="button" id="btn-download-docx" onclick="downloadExport('docx')" style="font-weight: bold;">📝 Tải về Microsoft Word (.docx)</button>
                 </div>
                 <div id="preview-status" style="font-weight: bold; color: #0a246a; margin-bottom: 6px;"></div>
             </fieldset>
             <div style="margin-top: 10px;">
-                <iframe id="pdf-preview-frame" style="width: 100%; height: 650px; border: 2px inset #808080; background: #ffffff;"></iframe>
+                <iframe id="docx-preview-frame" title="Xem trước bệnh án DOCX" style="width: 100%; height: 650px; border: 2px inset #808080; background: #ffffff;"></iframe>
             </div>
         </div>
 
@@ -1863,39 +1862,33 @@ document.addEventListener('click', function(e) {
         }
     }
 
-    let currentPdfBlobUrl = null;
-
-    async function previewPDF() {
-        const btn = document.getElementById('btn-preview-pdf');
+    async function previewDOCX() {
+        const btn = document.getElementById('btn-preview-docx');
         const st = document.getElementById('preview-status');
         btn.disabled = true;
-        btn.innerText = "⏳ Đang kết xuất PDF...";
-        st.innerText = "Hệ thống đang nạp tài liệu và hình ảnh...";
+        btn.innerText = "⏳ Đang dựng bản xem trước...";
+        st.innerText = "Hệ thống đang dàn trang bệnh án DOCX...";
 
         try {
             const payload = getFormPayload();
-            const res = await fetch('/api/export/pdf', {
+            const res = await fetch('/api/preview/docx', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
             if (!res.ok) {
-                const errJson = await res.json().catch(() => ({ detail: 'Lỗi tạo PDF' }));
+                const errJson = await res.json().catch(() => ({ detail: 'Lỗi tạo bản xem trước DOCX' }));
                 throw new Error(errJson.detail);
             }
-            const blob = await res.blob();
-            if (currentPdfBlobUrl) {
-                URL.revokeObjectURL(currentPdfBlobUrl);
-            }
-            currentPdfBlobUrl = URL.createObjectURL(blob);
-            document.getElementById('pdf-preview-frame').src = currentPdfBlobUrl;
-            st.innerText = "✅ Đã tải xong bản xem trước PDF kèm hình ảnh!";
+            const previewHtml = await res.text();
+            document.getElementById('docx-preview-frame').srcdoc = previewHtml;
+            st.innerText = "✅ Đã tải xong bản xem trước DOCX kèm hình ảnh!";
         } catch (e) {
-            alert('Lỗi tạo bản xem trước: ' + e.message);
-            st.innerText = "❌ Lỗi tạo bản xem trước.";
+            alert('Lỗi tạo bản xem trước DOCX: ' + e.message);
+            st.innerText = "❌ Lỗi tạo bản xem trước DOCX.";
         } finally {
             btn.disabled = false;
-            btn.innerText = "👁️ Xem trước văn bản PDF";
+            btn.innerText = "👁️ Xem trước DOCX";
         }
     }
 

@@ -7,6 +7,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from fastapi.responses import StreamingResponse
 import base64
 import hashlib
+import html
 import io
 import json
 import os
@@ -598,9 +599,100 @@ async def api_export_pdf(payload: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi kết xuất PDF: {str(e)}")
 
+@app.post("/api/preview/docx", response_class=HTMLResponse)
+async def preview_docx(data: dict):
+    is_hau_phau = data.get("loai_benh_an") == "Hậu phẫu"
+
+    def text(value: Any) -> str:
+        return html.escape(str(value or ""))
+
+    def field(label: str, value: Any) -> str:
+        value_text = text(value)
+        if not value_text.strip():
+            return ""
+        return f'<p><strong>{text(label)}:</strong> {value_text}</p>'
+
+    def section(number: str, title: str, content: str) -> str:
+        return f'<section><h2>{text(number)}. {text(title)}</h2>{content}</section>'
+
+    content = section("I", "PHẦN HÀNH CHÍNH", "".join([
+        field("Họ và tên", data.get("ho_ten")), field("Tuổi", data.get("tuoi")),
+        field("Giới tính", data.get("gioi_tinh")), field("Dân tộc", data.get("dan_tok")),
+        field("Nghề nghiệp", data.get("nghe_nghiep")), field("Khoa / Phòng điều trị", data.get("khoa_phong")),
+        field("Ngày vào viện", data.get("ngay_vao_vien")), field("Ngày làm bệnh án", data.get("ngay_lam_benh_an")),
+        field("Người làm bệnh án", data.get("sinh_vien")), field("Địa chỉ", data.get("dia_chi"))
+    ]))
+    content += section("II & III", "LÝ DO VÀO VIỆN VÀ BỆNH SỬ", "".join([
+        field("Lý do vào viện", data.get("ly_do_vao_vien")),
+        field("Tình trạng trước mổ", data.get("bs_truoc_mo")) if is_hau_phau else field("Bệnh sử", data.get("benh_su")),
+        field("Diễn biến trong mổ", data.get("bs_trong_mo")) if is_hau_phau else "",
+        field("Diễn biến sau mổ", data.get("bs_sau_mo")) if is_hau_phau else ""
+    ]))
+    content += section("IV", "TIỀN SỬ", "".join([
+        field("1. Tiền sử nội khoa", data.get("ts_noi_khoa")),
+        field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa")),
+        field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song")),
+        field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
+    ]))
+    content += section("V", "THĂM KHÁM LÂM SÀNG", "".join([
+        field("Thời điểm khám", data.get("ngay_hau_phau")) if is_hau_phau else field("Thăm khám lúc vào viện", data.get("kham_vao_vien")),
+        field("Vết mổ", data.get("kham_vet_mo")) if is_hau_phau else "",
+        field("Dẫn lưu", data.get("kham_dan_luu")) if is_hau_phau else "",
+        field("Khám toàn thân", data.get("kham_toan_than")),
+        field("Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"),
+        field("Tuần hoàn", data.get("kham_tuan_hoan")), field("Hô hấp", data.get("kham_ho_hap")),
+        field("Tiêu hóa", data.get("kham_tieu_hoa")), field("Thần kinh", data.get("kham_than_kinh")),
+        field("Thận - Tiết niệu", data.get("kham_tiet_nieu")), field("Cơ xương khớp", data.get("kham_co_xuong_khop")),
+        field("Cơ quan khác", data.get("kham_co_quan_khac"))
+    ]))
+    content += section("VI", "TÓM TẮT BỆNH ÁN", field("Nội dung tóm tắt", data.get("tom_tat")))
+    content += section("VII", "CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT", "".join([
+        field("Chẩn đoán sơ bộ", data.get("chan_doan_so_bo")), field("Chẩn đoán phân biệt", data.get("chan_doan_phan_biet")), field("Biện luận sơ bộ", data.get("bien_luan"))
+    ]))
+    rows = []
+    try:
+        row_count = int(data.get("so_hang_cls", 0))
+    except (TypeError, ValueError):
+        row_count = 0
+    for index in range(row_count):
+        kq = data.get(f"cls_kq_{index}", "")
+        pg = data.get(f"cls_pg_{index}", "")
+        images = data.get(f"cls_img_list_{index}", []) or []
+        if isinstance(images, str):
+            images = [images]
+        image_html = "".join(f'<img src="{text(image)}" alt="Ảnh cận lâm sàng">' for image in images if image)
+        if kq or pg or image_html:
+            rows.append(f"<tr><td>{text(kq)}{image_html}</td><td>{text(pg)}</td></tr>")
+    table = '<table><thead><tr><th>KẾT QUẢ XÉT NGHIỆM & HÌNH ẢNH</th><th>PHIÊN GIẢI / BIỆN GIẢI</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table>' if rows else "<p>Chưa ghi nhận kết quả cận lâm sàng.</p>"
+    content += section("VIII", "CẬN LÂM SÀNG", "".join([
+        field("1. CLS chẩn đoán", data.get("cls_dx_xac_dinh")), field("2. CLS điều trị", data.get("cls_dx_dieu_tri")), field("3. CLS khác", data.get("cls_dx_khac")),
+        '<h3>Cận lâm sàng đã có</h3>', table
+    ]))
+    content += section("IX", "CHẨN ĐOÁN XÁC ĐỊNH", field("Chẩn đoán xác định", data.get("chan_doan_xac_dinh")) + field("Biện luận xác định", data.get("bien_luan_xac_dinh")))
+    content += section("X", "ĐIỀU TRỊ & TIÊN LƯỢNG", "".join([
+        field("1. Mục tiêu điều trị", data.get("dt_muc_tieu")), field("2. Điều trị cụ thể", data.get("dt_cu_the")),
+        field("3. Theo dõi", data.get("dt_theo_doi")), field("Tiên lượng", data.get("tien_luong")), field("Tư vấn", data.get("tu_van"))
+    ]))
+    return f'''<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>
+        @page {{ size: A4; margin: 18mm; }}
+        * {{ box-sizing: border-box; }} body {{ margin: 0; background: #e7e7e7; color: #222; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.35; }}
+        main {{ width: 210mm; max-width: 100%; min-height: 297mm; margin: 18px auto; padding: 18mm; background: #fff; box-shadow: 0 1px 8px #999; }}
+        h1 {{ margin: 0 0 4px; color: #0a246a; text-align: center; font-size: 19pt; }} .subtitle {{ text-align: center; margin: 0 0 18px; font-style: italic; }}
+        section {{ margin: 0 0 14px; break-inside: avoid; }} h2 {{ margin: 0 0 6px; padding: 5px 8px; color: #0a246a; background: #e1ebf5; border-bottom: 1px solid #9aaabd; font-size: 14pt; }}
+        p {{ margin: 4px 0; white-space: pre-wrap; }} strong {{ color: #111; }} table {{ width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }} th, td {{ border: 1px solid #777; padding: 6px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }} th {{ background: #e6ebf5; font-size: 10pt; }} td {{ width: 50%; }} td img {{ display: block; max-width: 100%; max-height: 150px; margin: 6px 0; object-fit: contain; }}
+        @media print {{ body {{ background: #fff; }} main {{ width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }} }}
+    </style></head><body><main><h1>BỆNH ÁN LÂM SÀNG</h1><p class="subtitle">Loại hình: {text(data.get("loai_benh_an", "Nội khoa / Tiền phẫu"))}</p>{content}</main></body></html>'''
+
+
 @app.post("/api/export/docx")
 async def export_docx(data: dict):
     doc = Document()
+
+    normal_style = doc.styles["Normal"]
+    normal_style.font.name = "Times New Roman"
+    normal_style.font.size = Pt(12)
+    normal_style.paragraph_format.space_after = Pt(4)
+    normal_style.paragraph_format.line_spacing = 1.15
 
     # Cấu hình lề trang chuẩn văn bản y tế (1 inch ~ 2.54 cm)
     for section in doc.sections:
@@ -630,6 +722,9 @@ async def export_docx(data: dict):
 
     def add_section_heading(text):
         p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(8)
+        p.paragraph_format.space_after = Pt(4)
+        p.paragraph_format.keep_with_next = True
         run = p.add_run(text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(13)
@@ -640,6 +735,7 @@ async def export_docx(data: dict):
         if val and str(val).strip():
             p = doc.add_paragraph()
             p.paragraph_format.line_spacing = 1.15
+            p.paragraph_format.space_after = Pt(4)
             r_lbl = p.add_run(f"{label}: ")
             r_lbl.font.name = "Times New Roman"
             r_lbl.font.size = Pt(12)
@@ -739,6 +835,7 @@ async def export_docx(data: dict):
             if kq or pg or img_list:
                 row_cells = table.add_row().cells
                 p0 = row_cells[0].paragraphs[0]
+                p0.paragraph_format.line_spacing = 1.1
                 p0.add_run(kq)
                 
                 # Chèn ảnh đính kèm (nếu có)
@@ -751,7 +848,9 @@ async def export_docx(data: dict):
                     except Exception:
                         pass
 
-                row_cells[1].paragraphs[0].add_run(pg)
+                p1 = row_cells[1].paragraphs[0]
+                p1.paragraph_format.line_spacing = 1.1
+                p1.add_run(pg)
 
     # IX. CHẨN ĐOÁN XÁC ĐỊNH & ĐIỀU TRỊ
     add_section_heading("IX. CHẨN ĐOÁN XÁC ĐỊNH")
