@@ -1,3 +1,10 @@
+import io
+import re
+import base64
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from fastapi.responses import StreamingResponse
 import base64
 import hashlib
 import io
@@ -591,32 +598,180 @@ async def api_export_pdf(payload: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi kết xuất PDF: {str(e)}")
 
-@app.post("/api/export/pptx")
-async def api_export_pptx(payload: Dict[str, Any]):
-    try:
-        prs = Presentation()
-        prs.slide_width = Inches(13.333)
-        prs.slide_height = Inches(7.5)
-        blank = prs.slide_layouts[6]
-        
-        slide = prs.slides.add_slide(blank)
-        box = slide.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.5))
-        tf = box.text_frame
-        p1 = tf.paragraphs[0]
-        p1.text = "BỆNH ÁN LÂM SÀNG"
-        p1.font.size = Pt(36)
-        p1.font.bold = True
-        p1.font.color.rgb = RGBColor(13, 71, 161)
-        p1.alignment = PP_ALIGN.CENTER
-        
-        p2 = tf.add_paragraph()
-        p2.text = f"Bệnh nhân: {str(payload.get('ho_ten', '')).upper()} | {payload.get('tuoi')} tuổi"
-        p2.font.size = Pt(20)
-        p2.alignment = PP_ALIGN.CENTER
+@app.post("/api/export/docx")
+async def export_docx(data: dict):
+    doc = Document()
 
-        pptx_io = io.BytesIO()
-        prs.save(pptx_io)
-        pptx_io.seek(0)
-        return Response(content=pptx_io.getvalue(), media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers={"Content-Disposition": "attachment; filename=benhan.pptx"})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi tạo PPTX: {str(e)}")
+    # Cấu hình lề trang chuẩn văn bản y tế (1 inch ~ 2.54 cm)
+    for section in doc.sections:
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+
+    # Tiêu đề bệnh án
+    title_p = doc.add_paragraph()
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title_p.add_run("BỆNH ÁN LÂM SÀNG")
+    title_run.font.name = "Times New Roman"
+    title_run.font.size = Pt(16)
+    title_run.bold = True
+    title_run.font.color.rgb = RGBColor(10, 36, 106) # Xanh Win2K
+
+    sub_title = doc.add_paragraph()
+    sub_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    loai_ba = data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
+    r_sub = sub_title.add_run(f"Loại hình: {loai_ba}")
+    r_sub.font.name = "Times New Roman"
+    r_sub.font.size = Pt(12)
+    r_sub.italic = True
+
+    doc.add_paragraph() # Khoảng trống
+
+    def add_section_heading(text):
+        p = doc.add_paragraph()
+        run = p.add_run(text)
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(13)
+        run.bold = True
+        run.font.color.rgb = RGBColor(10, 36, 106)
+
+    def add_field(label, val):
+        if val and str(val).strip():
+            p = doc.add_paragraph()
+            p.paragraph_format.line_spacing = 1.15
+            r_lbl = p.add_run(f"{label}: ")
+            r_lbl.font.name = "Times New Roman"
+            r_lbl.font.size = Pt(12)
+            r_lbl.bold = True
+            
+            r_val = p.add_run(str(val))
+            r_val.font.name = "Times New Roman"
+            r_val.font.size = Pt(12)
+
+    # I. HÀNH CHÍNH
+    add_section_heading("I. PHẦN HÀNH CHÍNH")
+    add_field("Họ và tên", data.get("ho_ten"))
+    add_field("Tuổi", data.get("tuoi"))
+    add_field("Giới tính", data.get("gioi_tinh"))
+    add_field("Dân tộc", data.get("dan_tok"))
+    add_field("Nghề nghiệp", data.get("nghe_nghiep"))
+    add_field("Khoa / Phòng điều trị", data.get("khoa_phong"))
+    add_field("Ngày vào viện", data.get("ngay_vao_vien"))
+    add_field("Ngày làm bệnh án", data.get("ngay_lam_benh_an"))
+    add_field("Người làm bệnh án", data.get("sinh_vien"))
+    add_field("Địa chỉ", data.get("dia_chi"))
+
+    # II & III. LÝ DO & BỆNH SỬ
+    add_section_heading("II & III. LÝ DO VÀO VIỆN VÀ BỆNH SỬ")
+    add_field("Lý do vào viện", data.get("ly_do_vao_vien"))
+    if loai_ba == "Hậu phẫu":
+        add_field("Tình trạng trước mổ", data.get("bs_truoc_mo"))
+        add_field("Diễn biến trong mổ", data.get("bs_trong_mo"))
+        add_field("Diễn biến sau mổ", data.get("bs_sau_mo"))
+    else:
+        add_field("Bệnh sử", data.get("benh_su"))
+
+    # IV. TIỀN SỬ
+    add_section_heading("IV. TIỀN SỬ")
+    add_field("1. Tiền sử nội khoa", data.get("ts_noi_khoa"))
+    add_field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa"))
+    add_field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song"))
+    add_field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
+
+    # V. THĂM KHÁM LÂM SÀNG
+    add_section_heading("V. THĂM KHÁM LÂM SÀNG")
+    if loai_ba == "Hậu phẫu":
+        add_field("Thời điểm khám", data.get("ngay_hau_phau"))
+        add_field("Vết mổ", data.get("kham_vet_mo"))
+        add_field("Dẫn lưu", data.get("kham_dan_luu"))
+    else:
+        add_field("Thăm khám lúc vào viện", data.get("kham_vao_vien"))
+    
+    add_field("Khám toàn thân", data.get("kham_toan_than"))
+    sh_str = f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"
+    add_field("Dấu hiệu sinh tồn", sh_str)
+    
+    add_field("Tuần hoàn", data.get("kham_tuan_hoan"))
+    add_field("Hô hấp", data.get("kham_ho_hap"))
+    add_field("Tiêu hóa", data.get("kham_tieu_hoa"))
+    add_field("Thần kinh", data.get("kham_than_kinh"))
+    add_field("Thận - Tiết niệu", data.get("kham_tiet_nieu"))
+    add_field("Cơ xương khớp", data.get("kham_co_xuong_khop"))
+    add_field("Cơ quan khác", data.get("kham_co_quan_khac"))
+
+    # VI. TÓM TẮT BỆNH ÁN
+    add_section_heading("VI. TÓM TẮT BỆNH ÁN")
+    add_field("Nội dung tóm tắt", data.get("tom_tat"))
+
+    # VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT
+    add_section_heading("VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT")
+    add_field("Chẩn đoán sơ bộ", data.get("chan_doan_so_bo"))
+    add_field("Chẩn đoán phân biệt", data.get("chan_doan_phan_biet"))
+    add_field("Biện luận sơ bộ", data.get("bien_luan"))
+
+    # VIII. CẬN LÂM SÀNG
+    add_section_heading("VIII. CẬN LÂM SÀNG")
+    add_field("1. CLS chẩn đoán", data.get("cls_dx_xac_dinh"))
+    add_field("2. CLS điều trị", data.get("cls_dx_dieu_tri"))
+    add_field("3. CLS khác", data.get("cls_dx_khac"))
+
+    # Bảng kết quả cận lâm sàng
+    so_hang = int(data.get("so_hang_cls", 0))
+    if so_hang > 0:
+        table = doc.add_table(rows=1, cols=2)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'KẾT QUẢ XÉT NGHIỆM & HÌNH ẢNH'
+        hdr_cells[1].text = 'PHIÊN GIẢI / BIỆN GIẢI'
+        for cell in hdr_cells:
+            for p in cell.paragraphs:
+                for r in p.runs:
+                    r.font.name = "Times New Roman"
+                    r.font.size = Pt(11)
+                    r.bold = True
+
+        for i in range(so_hang):
+            kq = data.get(f"cls_kq_{i}", "")
+            pg = data.get(f"cls_pg_{i}", "")
+            img_list = data.get(f"cls_img_list_{i}", [])
+
+            if kq or pg or img_list:
+                row_cells = table.add_row().cells
+                p0 = row_cells[0].paragraphs[0]
+                p0.add_run(kq)
+                
+                # Chèn ảnh đính kèm (nếu có)
+                for b64 in img_list:
+                    try:
+                        if "," in b64:
+                            b64 = b64.split(",")[1]
+                        img_bytes = io.BytesIO(base64.b64decode(b64))
+                        row_cells[0].add_paragraph().add_run().add_picture(img_bytes, width=Inches(2.2))
+                    except Exception:
+                        pass
+
+                row_cells[1].paragraphs[0].add_run(pg)
+
+    # IX. CHẨN ĐOÁN XÁC ĐỊNH & ĐIỀU TRỊ
+    add_section_heading("IX. CHẨN ĐOÁN XÁC ĐỊNH")
+    add_field("Chẩn đoán xác định", data.get("chan_doan_xac_dinh"))
+    add_field("Biện luận xác định", data.get("bien_luan_xac_dinh"))
+
+    add_section_heading("X. ĐIỀU TRỊ & TIÊN LƯỢNG")
+    add_field("1. Mục tiêu điều trị", data.get("dt_muc_tieu"))
+    add_field("2. Điều trị cụ thể", data.get("dt_cu_the"))
+    add_field("3. Theo dõi", data.get("dt_theo_doi"))
+    add_field("Tiên lượng", data.get("tien_luong"))
+    add_field("Tư vấn", data.get("tu_van"))
+
+    target_stream = io.BytesIO()
+    doc.save(target_stream)
+    target_stream.seek(0)
+
+    filename = f"Benh_An_{(data.get('ho_ten') or 'Ho_So').replace(' ', '_')}.docx"
+    return StreamingResponse(
+        target_stream,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
