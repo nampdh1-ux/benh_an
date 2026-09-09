@@ -720,16 +720,12 @@ async def export_docx(data: dict):
 
     doc.add_paragraph() # Khoảng trống
 
-    section_number = 0
-
     def add_section_heading(text):
-        nonlocal section_number
-        section_number += 1
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(8)
         p.paragraph_format.space_after = Pt(4)
         p.paragraph_format.keep_with_next = True
-        run = p.add_run(f"{section_number}. {text}")
+        run = p.add_run(text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(13)
         run.bold = True
@@ -749,72 +745,74 @@ async def export_docx(data: dict):
             r_val.font.name = "Times New Roman"
             r_val.font.size = Pt(12)
 
-    # I. HÀNH CHÍNH
-    add_section_heading("I. PHẦN HÀNH CHÍNH")
-    add_field("Họ và tên", data.get("ho_ten"))
-    add_field("Tuổi", data.get("tuoi"))
-    add_field("Giới tính", data.get("gioi_tinh"))
-    add_field("Dân tộc", data.get("dan_tok"))
-    add_field("Nghề nghiệp", data.get("nghe_nghiep"))
-    add_field("Khoa / Phòng điều trị", data.get("khoa_phong"))
-    add_field("Ngày vào viện", data.get("ngay_vao_vien"))
-    add_field("Ngày làm bệnh án", data.get("ngay_lam_benh_an"))
-    add_field("Người làm bệnh án", data.get("sinh_vien"))
-    add_field("Địa chỉ", data.get("dia_chi"))
+    # 1. HÀNH CHÍNH
+    add_section_heading("1. PHẦN HÀNH CHÍNH")
+    add_field("1. Họ và tên", data.get("ho_ten"))
+    add_field("2. Tuổi", data.get("tuoi"))
+    add_field("3. Giới tính", data.get("gioi_tinh"))
+    add_field("4. Dân tộc", data.get("dan_tok"))
+    add_field("5. Nghề nghiệp", data.get("nghe_nghiep"))
+    add_field("6. Khoa / Phòng điều trị", data.get("khoa_phong"))
+    add_field("7. Ngày vào viện", data.get("ngay_vao_vien"))
+    add_field("8. Ngày làm bệnh án", data.get("ngay_lam_benh_an"))
+    add_field("9. Người làm bệnh án", data.get("sinh_vien"))
+    add_field("10. Địa chỉ", data.get("dia_chi"))
 
     # 2. LÝ DO VÀO VIỆN
-    add_section_heading("LÝ DO VÀO VIỆN")
-    add_field("Lý do vào viện", data.get("ly_do_vao_vien"))
+    add_section_heading("2. LÝ DO VÀO VIỆN")
+    add_field("1. Lý do vào viện", data.get("ly_do_vao_vien"))
 
     # 3. BỆNH SỬ
-    add_section_heading("BỆNH SỬ")
+    add_section_heading("3. BỆNH SỬ")
     if loai_ba == "Hậu phẫu":
-        add_field("Tình trạng trước mổ", data.get("bs_truoc_mo"))
-        add_field("Diễn biến trong mổ", data.get("bs_trong_mo"))
-        add_field("Diễn biến sau mổ", data.get("bs_sau_mo"))
+        add_field("1. Tình trạng trước mổ", data.get("bs_truoc_mo"))
+        add_field("2. Diễn biến trong mổ", data.get("bs_trong_mo"))
+        add_field("3. Diễn biến sau mổ", data.get("bs_sau_mo"))
     else:
-        add_field("Bệnh sử", data.get("benh_su"))
+        add_field("1. Bệnh sử", data.get("benh_su"))
 
-    # IV. TIỀN SỬ
-    add_section_heading("IV. TIỀN SỬ")
+    # 4. TIỀN SỬ
+    add_section_heading("4. TIỀN SỬ")
     add_field("1. Tiền sử nội khoa", data.get("ts_noi_khoa"))
     add_field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa"))
     add_field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song"))
     add_field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
 
-    # V. THĂM KHÁM LÂM SÀNG
-    add_section_heading("V. THĂM KHÁM LÂM SÀNG")
+    # 5. THĂM KHÁM LÂM SÀNG
+    add_section_heading("5. THĂM KHÁM LÂM SÀNG")
     if loai_ba == "Hậu phẫu":
-        add_field("Thời điểm khám", data.get("ngay_hau_phau"))
-        add_field("Vết mổ", data.get("kham_vet_mo"))
-        add_field("Dẫn lưu", data.get("kham_dan_luu"))
+        add_field("1. Thời điểm khám", data.get("ngay_hau_phau"))
+        add_field("2. Vết mổ", data.get("kham_vet_mo"))
+        add_field("3. Dẫn lưu", data.get("kham_dan_luu"))
+        exam_offset = 3
     else:
-        add_field("Thăm khám lúc vào viện", data.get("kham_vao_vien"))
+        add_field("1. Thăm khám lúc vào viện", data.get("kham_vao_vien"))
+        exam_offset = 1
     
-    add_field("Khám toàn thân", data.get("kham_toan_than"))
+    add_field(f"{exam_offset + 1}. Khám toàn thân", data.get("kham_toan_than"))
     sh_str = f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"
-    add_field("Dấu hiệu sinh tồn", sh_str)
+    add_field(f"{exam_offset + 2}. Dấu hiệu sinh tồn", sh_str)
     
-    add_field("Tuần hoàn", data.get("kham_tuan_hoan"))
-    add_field("Hô hấp", data.get("kham_ho_hap"))
-    add_field("Tiêu hóa", data.get("kham_tieu_hoa"))
-    add_field("Thần kinh", data.get("kham_than_kinh"))
-    add_field("Thận - Tiết niệu", data.get("kham_tiet_nieu"))
-    add_field("Cơ xương khớp", data.get("kham_co_xuong_khop"))
-    add_field("Cơ quan khác", data.get("kham_co_quan_khac"))
+    for number, (label, key) in enumerate([
+        ("Tuần hoàn", "kham_tuan_hoan"), ("Hô hấp", "kham_ho_hap"),
+        ("Tiêu hóa", "kham_tieu_hoa"), ("Thần kinh", "kham_than_kinh"),
+        ("Thận - Tiết niệu", "kham_tiet_nieu"), ("Cơ xương khớp", "kham_co_xuong_khop"),
+        ("Cơ quan khác", "kham_co_quan_khac")
+    ], start=exam_offset + 3):
+        add_field(f"{number}. {label}", data.get(key))
 
-    # VI. TÓM TẮT BỆNH ÁN
-    add_section_heading("VI. TÓM TẮT BỆNH ÁN")
-    add_field("Nội dung tóm tắt", data.get("tom_tat"))
+    # 6. TÓM TẮT BỆNH ÁN
+    add_section_heading("6. TÓM TẮT BỆNH ÁN")
+    add_field("1. Nội dung tóm tắt", data.get("tom_tat"))
 
-    # VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT
-    add_section_heading("VII. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT")
-    add_field("Chẩn đoán sơ bộ", data.get("chan_doan_so_bo"))
-    add_field("Chẩn đoán phân biệt", data.get("chan_doan_phan_biet"))
-    add_field("Biện luận sơ bộ", data.get("bien_luan"))
+    # 7. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT
+    add_section_heading("7. CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT")
+    add_field("1. Chẩn đoán sơ bộ", data.get("chan_doan_so_bo"))
+    add_field("2. Chẩn đoán phân biệt", data.get("chan_doan_phan_biet"))
+    add_field("3. Biện luận sơ bộ", data.get("bien_luan"))
 
-    # VIII. CẬN LÂM SÀNG
-    add_section_heading("VIII. CẬN LÂM SÀNG")
+    # 8. CẬN LÂM SÀNG
+    add_section_heading("8. CẬN LÂM SÀNG")
     add_field("1. CLS chẩn đoán", data.get("cls_dx_xac_dinh"))
     add_field("2. CLS điều trị", data.get("cls_dx_dieu_tri"))
     add_field("3. CLS khác", data.get("cls_dx_khac"))
@@ -859,17 +857,17 @@ async def export_docx(data: dict):
                 p1.paragraph_format.line_spacing = 1.1
                 p1.add_run(pg)
 
-    # IX. CHẨN ĐOÁN XÁC ĐỊNH & ĐIỀU TRỊ
-    add_section_heading("IX. CHẨN ĐOÁN XÁC ĐỊNH")
-    add_field("Chẩn đoán xác định", data.get("chan_doan_xac_dinh"))
-    add_field("Biện luận xác định", data.get("bien_luan_xac_dinh"))
+    # 9. CHẨN ĐOÁN XÁC ĐỊNH
+    add_section_heading("9. CHẨN ĐOÁN XÁC ĐỊNH")
+    add_field("1. Chẩn đoán xác định", data.get("chan_doan_xac_dinh"))
+    add_field("2. Biện luận xác định", data.get("bien_luan_xac_dinh"))
 
-    add_section_heading("X. ĐIỀU TRỊ & TIÊN LƯỢNG")
+    add_section_heading("10. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN")
     add_field("1. Mục tiêu điều trị", data.get("dt_muc_tieu"))
     add_field("2. Điều trị cụ thể", data.get("dt_cu_the"))
     add_field("3. Theo dõi", data.get("dt_theo_doi"))
-    add_field("Tiên lượng", data.get("tien_luong"))
-    add_field("Tư vấn", data.get("tu_van"))
+    add_field("4. Tiên lượng", data.get("tien_luong"))
+    add_field("5. Tư vấn", data.get("tu_van"))
 
     target_stream = io.BytesIO()
     doc.save(target_stream)
