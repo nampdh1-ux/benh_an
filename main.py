@@ -616,17 +616,17 @@ async def preview_docx(data: dict):
         return f'<section><h2>{text(number)}. {text(title)}</h2>{content}</section>'
 
     content = section("I", "PHẦN HÀNH CHÍNH", "".join([
-        field("Họ và tên", data.get("ho_ten")), field("Tuổi", data.get("tuoi")),
-        field("Giới tính", data.get("gioi_tinh")), field("Dân tộc", data.get("dan_tok")),
-        field("Nghề nghiệp", data.get("nghe_nghiep")), field("Khoa / Phòng điều trị", data.get("khoa_phong")),
-        field("Ngày vào viện", data.get("ngay_vao_vien")), field("Ngày làm bệnh án", data.get("ngay_lam_benh_an")),
-        field("Người làm bệnh án", data.get("sinh_vien")), field("Địa chỉ", data.get("dia_chi"))
+        field("1. Họ và tên", data.get("ho_ten")), field("2. Tuổi", data.get("tuoi")),
+        field("3. Giới tính", data.get("gioi_tinh")), field("4. Dân tộc", data.get("dan_tok")),
+        field("5. Nghề nghiệp", data.get("nghe_nghiep")), field("6. Khoa / Phòng điều trị", data.get("khoa_phong")),
+        field("7. Ngày vào viện", data.get("ngay_vao_vien")), field("8. Ngày làm bệnh án", data.get("ngay_lam_benh_an")),
+        field("9. Người làm bệnh án", data.get("sinh_vien")), field("10. Địa chỉ", data.get("dia_chi"))
     ]))
     content += section("II & III", "LÝ DO VÀO VIỆN VÀ BỆNH SỬ", "".join([
-        field("Lý do vào viện", data.get("ly_do_vao_vien")),
-        field("Tình trạng trước mổ", data.get("bs_truoc_mo")) if is_hau_phau else field("Bệnh sử", data.get("benh_su")),
-        field("Diễn biến trong mổ", data.get("bs_trong_mo")) if is_hau_phau else "",
-        field("Diễn biến sau mổ", data.get("bs_sau_mo")) if is_hau_phau else ""
+        field("1. Lý do vào viện", data.get("ly_do_vao_vien")),
+        field("2. Tình trạng trước mổ", data.get("bs_truoc_mo")) if is_hau_phau else field("2. Bệnh sử", data.get("benh_su")),
+        field("3. Diễn biến trong mổ", data.get("bs_trong_mo")) if is_hau_phau else "",
+        field("4. Diễn biến sau mổ", data.get("bs_sau_mo")) if is_hau_phau else ""
     ]))
     content += section("IV", "TIỀN SỬ", "".join([
         field("1. Tiền sử nội khoa", data.get("ts_noi_khoa")),
@@ -635,19 +635,19 @@ async def preview_docx(data: dict):
         field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
     ]))
     content += section("V", "THĂM KHÁM LÂM SÀNG", "".join([
-        field("Thời điểm khám", data.get("ngay_hau_phau")) if is_hau_phau else field("Thăm khám lúc vào viện", data.get("kham_vao_vien")),
-        field("Vết mổ", data.get("kham_vet_mo")) if is_hau_phau else "",
-        field("Dẫn lưu", data.get("kham_dan_luu")) if is_hau_phau else "",
-        field("Khám toàn thân", data.get("kham_toan_than")),
-        field("Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"),
-        field("Tuần hoàn", data.get("kham_tuan_hoan")), field("Hô hấp", data.get("kham_ho_hap")),
-        field("Tiêu hóa", data.get("kham_tieu_hoa")), field("Thần kinh", data.get("kham_than_kinh")),
-        field("Thận - Tiết niệu", data.get("kham_tiet_nieu")), field("Cơ xương khớp", data.get("kham_co_xuong_khop")),
-        field("Cơ quan khác", data.get("kham_co_quan_khac"))
+        field("1. Thời điểm khám", data.get("ngay_hau_phau")) if is_hau_phau else field("1. Thăm khám lúc vào viện", data.get("kham_vao_vien")),
+        field("2. Vết mổ", data.get("kham_vet_mo")) if is_hau_phau else "",
+        field("3. Dẫn lưu", data.get("kham_dan_luu")) if is_hau_phau else "",
+        field("4. Khám toàn thân", data.get("kham_toan_than")) if is_hau_phau else field("2. Khám toàn thân", data.get("kham_toan_than")),
+        field("5. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%") if is_hau_phau else field("3. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"),
+        field("6. Tuần hoàn", data.get("kham_tuan_hoan")) if is_hau_phau else field("4. Tuần hoàn", data.get("kham_tuan_hoan")), field("7. Hô hấp", data.get("kham_ho_hap")) if is_hau_phau else field("5. Hô hấp", data.get("kham_ho_hap")),
+        field("8. Tiêu hóa", data.get("kham_tieu_hoa")) if is_hau_phau else field("6. Tiêu hóa", data.get("kham_tieu_hoa")), field("9. Thần kinh", data.get("kham_than_kinh")) if is_hau_phau else field("7. Thần kinh", data.get("kham_than_kinh")),
+        field("10. Thận - Tiết niệu", data.get("kham_tiet_nieu")) if is_hau_phau else field("8. Thận - Tiết niệu", data.get("kham_tiet_nieu")), field("11. Cơ xương khớp", data.get("kham_co_xuong_khop")) if is_hau_phau else field("9. Cơ xương khớp", data.get("kham_co_xuong_khop")),
+        field("12. Cơ quan khác", data.get("kham_co_quan_khac")) if is_hau_phau else field("10. Cơ quan khác", data.get("kham_co_quan_khac"))
     ]))
-    content += section("VI", "TÓM TẮT BỆNH ÁN", field("Nội dung tóm tắt", data.get("tom_tat")))
+    content += section("VI", "TÓM TẮT BỆNH ÁN", field("1. Nội dung tóm tắt", data.get("tom_tat")))
     content += section("VII", "CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT", "".join([
-        field("Chẩn đoán sơ bộ", data.get("chan_doan_so_bo")), field("Chẩn đoán phân biệt", data.get("chan_doan_phan_biet")), field("Biện luận sơ bộ", data.get("bien_luan"))
+        field("1. Chẩn đoán sơ bộ", data.get("chan_doan_so_bo")), field("2. Chẩn đoán phân biệt", data.get("chan_doan_phan_biet")), field("3. Biện luận sơ bộ", data.get("bien_luan"))
     ]))
     rows = []
     try:
@@ -668,10 +668,10 @@ async def preview_docx(data: dict):
         field("1. CLS chẩn đoán", data.get("cls_dx_xac_dinh")), field("2. CLS điều trị", data.get("cls_dx_dieu_tri")), field("3. CLS khác", data.get("cls_dx_khac")),
         '<h3>Cận lâm sàng đã có</h3>', table
     ]))
-    content += section("IX", "CHẨN ĐOÁN XÁC ĐỊNH", field("Chẩn đoán xác định", data.get("chan_doan_xac_dinh")) + field("Biện luận xác định", data.get("bien_luan_xac_dinh")))
+    content += section("IX", "CHẨN ĐOÁN XÁC ĐỊNH", field("1. Chẩn đoán xác định", data.get("chan_doan_xac_dinh")) + field("2. Biện luận xác định", data.get("bien_luan_xac_dinh")))
     content += section("X", "ĐIỀU TRỊ & TIÊN LƯỢNG", "".join([
         field("1. Mục tiêu điều trị", data.get("dt_muc_tieu")), field("2. Điều trị cụ thể", data.get("dt_cu_the")),
-        field("3. Theo dõi", data.get("dt_theo_doi")), field("Tiên lượng", data.get("tien_luong")), field("Tư vấn", data.get("tu_van"))
+        field("3. Theo dõi", data.get("dt_theo_doi")), field("4. Tiên lượng", data.get("tien_luong")), field("5. Tư vấn", data.get("tu_van"))
     ]))
     return f'''<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>
         @page {{ size: A4; margin: 18mm; }}
@@ -818,7 +818,10 @@ async def export_docx(data: dict):
     add_field("3. CLS khác", data.get("cls_dx_khac"))
 
     # Bảng kết quả cận lâm sàng
-    so_hang = int(data.get("so_hang_cls", 0))
+    try:
+        so_hang = max(0, int(data.get("so_hang_cls", 0) or 0))
+    except (TypeError, ValueError):
+        so_hang = 0
     if so_hang > 0:
         table = doc.add_table(rows=1, cols=2)
         table.style = 'Table Grid'
@@ -835,13 +838,15 @@ async def export_docx(data: dict):
         for i in range(so_hang):
             kq = data.get(f"cls_kq_{i}", "")
             pg = data.get(f"cls_pg_{i}", "")
-            img_list = data.get(f"cls_img_list_{i}", [])
+            img_list = data.get(f"cls_img_list_{i}", []) or []
+            if isinstance(img_list, str):
+                img_list = [img_list]
 
             if kq or pg or img_list:
                 row_cells = table.add_row().cells
                 p0 = row_cells[0].paragraphs[0]
                 p0.paragraph_format.line_spacing = 1.1
-                p0.add_run(kq)
+                p0.add_run(str(kq or ""))
                 
                 # Chèn ảnh đính kèm (nếu có)
                 for b64 in img_list:
@@ -855,7 +860,7 @@ async def export_docx(data: dict):
 
                 p1 = row_cells[1].paragraphs[0]
                 p1.paragraph_format.line_spacing = 1.1
-                p1.add_run(pg)
+                p1.add_run(str(pg or ""))
 
     # 9. CHẨN ĐOÁN XÁC ĐỊNH
     add_section_heading("9. CHẨN ĐOÁN XÁC ĐỊNH")
@@ -873,7 +878,8 @@ async def export_docx(data: dict):
     doc.save(target_stream)
     target_stream.seek(0)
 
-    filename = f"Benh_An_{(data.get('ho_ten') or 'Ho_So').replace(' ', '_')}.docx"
+    ten_benh_nhan = str(data.get("ho_ten") or "Ho_So").strip().replace(" ", "_")
+    filename = f"Benh_An_{ten_benh_nhan}.docx"
     return StreamingResponse(
         target_stream,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",

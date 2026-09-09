@@ -1942,7 +1942,10 @@ document.addEventListener('click', function(e) {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) throw new Error('Lỗi máy chủ kết xuất file');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || `Lỗi máy chủ kết xuất file (${res.status})`);
+            }
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
