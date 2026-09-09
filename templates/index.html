@@ -1022,7 +1022,7 @@ menu[role="tablist"] li[role="tab"] a {
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
                     <button type="button" id="btn-preview-pdf" onclick="previewPDF()" style="font-weight: bold;">👁️ Xem trước văn bản PDF</button>
                     <button type="button" id="btn-download-pdf" onclick="downloadExport('pdf')" style="font-weight: bold;">📥 Tải về tập tin PDF</button>
-                    <button type="button" id="btn-download-pptx" onclick="downloadExport('pptx')" style="font-weight: bold;">📊 Tải về PowerPoint (.pptx)</button>
+                    <button type="button" id="btn-download-docx" onclick="downloadExport('docx')" style="font-weight: bold;">📝 Tải về Microsoft Word (.docx)</button>
                 </div>
                 <div id="preview-status" style="font-weight: bold; color: #0a246a; margin-bottom: 6px;"></div>
             </fieldset>
@@ -1900,7 +1900,7 @@ document.addEventListener('click', function(e) {
     }
 
     async function downloadExport(type) {
-        const btn = document.getElementById(type === 'pdf' ? 'btn-download-pdf' : 'btn-download-pptx');
+        const btn = document.getElementById(type === 'pdf' ? 'btn-download-pdf' : 'btn-download-docx');
         const originText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "⏳ Đang tải...";
