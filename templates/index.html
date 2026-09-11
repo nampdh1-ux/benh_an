@@ -236,6 +236,7 @@ b {
             flex-wrap: wrap;
         }
         .form-type-buttons { display: flex; gap: 6px; flex: 1; }
+        .form-type-mobile-select { display: none; }
         .form-type-buttons .btn-toggle {
             flex: 1;
             text-align: center;
@@ -363,6 +364,23 @@ b {
             .header-toc-menu { width: 200px !important; right: 0 !important; }
             .form-type-container { flex-direction: column !important; align-items: stretch !important; gap: 5px !important; }
             .form-type-buttons { width: 100% !important; }
+            .form-type-buttons { display: none !important; }
+            .form-type-mobile-select {
+                display: block !important;
+                width: 100% !important;
+                min-height: 30px;
+                padding: 4px 6px;
+                font-family: 'Tahoma', sans-serif;
+                font-size: 12px;
+                font-weight: bold;
+                color: #0a246a;
+                background: #ece9d8;
+                border-top: 2px solid #404040;
+                border-left: 2px solid #404040;
+                border-right: 2px solid #ffffff;
+                border-bottom: 2px solid #ffffff;
+                box-shadow: inset 1px 1px 0 #000000;
+            }
             .cls-table { min-width: 480px !important; }
             .draft-toolbar { flex-direction: column; align-items: flex-start; gap: 6px; }
             .draft-toolbar > div { width: 100%; justify-content: space-between; }
@@ -562,6 +580,11 @@ menu[role="tablist"] li[role="tab"] a {
                     ⚪ Nhi khoa
                 </button>
             </div>
+            <select id="form-type-mobile-select" class="form-type-mobile-select" aria-label="Lựa chọn mẫu bệnh án" onchange="setFormType(this.value)">
+                <option value="Nội khoa / Tiền phẫu">Nội khoa / Tiền phẫu</option>
+                <option value="Hậu phẫu">Hậu phẫu</option>
+                <option value="Nhi khoa">Nhi khoa</option>
+            </select>
         </div>
 
         <menu role="tablist">
@@ -1202,6 +1225,8 @@ document.addEventListener('click', function(e) {
     // ĐIỀU CHỈNH THỨ TỰ CÁC KHỐI CHUẨN XÁC THEO LOẠI BỆNH ÁN
     function setFormType(type) {
         document.getElementById('current_loai_ba').value = type;
+        const mobileTypeSelect = document.getElementById('form-type-mobile-select');
+        if (mobileTypeSelect) mobileTypeSelect.value = type;
         const isHauPhau = (type === "Hậu phẫu");
         const isNhi = (type === "Nhi khoa");
 
