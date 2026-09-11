@@ -743,6 +743,8 @@ menu[role="tablist"] li[role="tab"] a {
                                 <div class="quick-select-wrapper">
                                     <button type="button" onclick="toggleDropdown('menu-toan-than')"><img src="/static/icon/w98_help_book_big.png" alt="" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">Chọn nhanh ▾</button>
                                     <div class="quick-select-menu" id="menu-toan-than">
+                                        <div id="quick-toan-than-items"></div>
+                                        <!--
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Bệnh nhân tỉnh táo, tiếp xúc tốt, Glasgow 15 điểm')">🟢 Tỉnh táo, GCS 15đ</div>
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Da niêm mạc hồng hào')">🟢 Da niêm mạc hồng hào</div>
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Không phù, không xuất huyết dưới da')">🟢 Không phù, không xuất huyết</div>
@@ -751,6 +753,7 @@ menu[role="tablist"] li[role="tab"] a {
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Sốt nhẹ, gai rét')">🟠 Sốt nhẹ, gai rét</div>
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Bệnh nhân li bì, tiếp xúc chậm')">🔴 Li bì, tiếp xúc chậm</div>
                                         <div class="quick-select-item" onclick="appendSymptom('kham_toan_than', 'Phù mềm, ấn lõm hai chi dưới')">🔴 Phù mềm hai chi dưới</div>
+                                        -->
                                     </div>
                                 </div>
                             </div>
@@ -1316,6 +1319,60 @@ document.addEventListener('click', function(e) {
         return 'học đường & vị thành niên';
     }
 
+    const QUICK_GENERAL_EXAM_BY_AGE = {
+        "sơ sinh": [
+            ["🟢", "Trẻ tỉnh, khóc to, hồng hào không tím, không vàng da bệnh lý."],
+            ["🟢", "Chi ấm, CRT < 2s; thóp trước phẳng, đường khớp sọ không chồng."],
+            ["🟢", "Không phù, không xuất huyết dưới da; tứ chi co gấp sinh lý."],
+            ["🟠", "Vàng da lan rộng hoặc vàng da xuất hiện sớm."],
+            ["🔴", "Li bì, khó đánh thức, khóc yếu hoặc tím tái."],
+            ["🔴", "Thở rên, phập phồng cánh mũi, rút lõm lồng ngực hoặc bỏ bú."]
+        ],
+        "nhũ nhi": [
+            ["🟢", "Trẻ tỉnh, tiếp xúc tốt, hóng chuyện, nhận biết người quen."],
+            ["🟢", "Da niêm mạc hồng, CRT < 2s, thóp trước phẳng mềm, hạch ngoại vi không sờ thấy."],
+            ["🟢", "Không phù, không xuất huyết; vận động và tương tác phù hợp tháng tuổi."],
+            ["🟠", "Da nhợt, môi khô, mắt trũng hoặc số lần tiểu giảm."],
+            ["🔴", "Li bì, kích thích nhiều, co giật hoặc thóp phồng."],
+            ["🔴", "Rút lõm lồng ngực, tím khi bú, bỏ bú hoặc nôn mọi thứ."]
+        ],
+        "trẻ nhỏ": [
+            ["🟢", "Trẻ tỉnh táo, nhanh nhẹn, tiếp xúc tốt, hợp tác thăm khám."],
+            ["🟢", "Da niêm mạc hồng, tuyến giáp không to, hạch ngoại vi không sưng đau."],
+            ["🟢", "Cân nặng, chiều cao phát triển theo biểu đồ; không phù, không xuất huyết dưới da."],
+            ["🟠", "Da niêm mạc nhợt, sốt, mệt hoặc giảm hoạt động so với thường ngày."],
+            ["🔴", "Li bì, khó đánh thức, co giật, cổ cứng hoặc ban xuất huyết."],
+            ["🔴", "Khó thở, tím tái, rút lõm hõm ức hoặc không uống được."]
+        ],
+        "học đường & vị thành niên": [
+            ["🟢", "Trẻ tỉnh táo, tiếp xúc tốt, định hướng không gian và thời gian chính xác."],
+            ["🟢", "Thể trạng cân đối, da niêm mạc hồng hào, không phù, không xuất huyết dưới da."],
+            ["🟢", "Tuyến giáp không to, hạch ngoại biên không sờ chạm; phát triển dậy thì phù hợp tuổi."],
+            ["🟠", "Da niêm mạc nhợt, sụt cân, mệt kéo dài hoặc giảm khả năng gắng sức."],
+            ["🔴", "Rối loạn ý thức, co giật, dấu màng não hoặc ban xuất huyết."],
+            ["🔴", "Khó thở, tím tái, đau ngực khi gắng sức hoặc ngất."]
+        ]
+    };
+
+    const QUICK_GENERAL_EXAM_ADULT = [
+        ["🟢", "Bệnh nhân tỉnh táo, tiếp xúc tốt, Glasgow 15 điểm."],
+        ["🟢", "Da niêm mạc hồng hào."],
+        ["🟢", "Không phù, không xuất huyết dưới da."],
+        ["🟢", "Tuyến giáp không to, hạch ngoại vi không sờ thấy."],
+        ["🟠", "Da niêm mạc nhợt, nghi ngờ thiếu máu."],
+        ["🟠", "Sốt nhẹ, gai rét."],
+        ["🔴", "Bệnh nhân li bì, tiếp xúc chậm."],
+        ["🔴", "Phù mềm, ấn lõm hai chi dưới."]
+    ];
+
+    function updateQuickGeneralExamMenu() {
+        const container = document.getElementById('quick-toan-than-items');
+        if (!container) return;
+        const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
+        const options = isNhi ? QUICK_GENERAL_EXAM_BY_AGE[getPediatricAgeProfile()] : QUICK_GENERAL_EXAM_ADULT;
+        container.innerHTML = options.map(([icon, text]) => `<div class="quick-select-item" onclick="appendSymptom('kham_toan_than', ${JSON.stringify(text)})">${icon} ${text}</div>`).join('');
+    }
+
     function handleAgeChange() {
         const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
         const ageInput = document.getElementById('tuoi');
@@ -1331,6 +1388,7 @@ document.addEventListener('click', function(e) {
             fillNormalPediatricHistory();
             fillNormalOrgans();
         }
+        updateQuickGeneralExamMenu();
         autoSave();
     }
 
