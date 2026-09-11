@@ -2032,8 +2032,8 @@ document.addEventListener('click', function(e) {
             try {
                 const data = JSON.parse(e.target.result);
                 restoreDataToForm(data);
-                alert('✅ Đã nạp bản nháp thành công!');
                 autoSave();
+                document.getElementById('win2k-draft-loaded-dialog').classList.add('show');
             } catch (err) {
                 alert('❌ File JSON không hợp lệ!');
             }
@@ -2047,6 +2047,10 @@ document.addEventListener('click', function(e) {
 
     function closeConfirmWin2k() {
         document.getElementById('win2k-confirm-dialog').classList.remove('show');
+    }
+
+    function closeDraftLoadedWin2k() {
+        document.getElementById('win2k-draft-loaded-dialog').classList.remove('show');
     }
 
     function acceptClearDraft() {
@@ -2131,6 +2135,25 @@ document.addEventListener('click', function(e) {
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
                 <button type="button" style="min-width: 65px; font-weight: bold;" onclick="acceptClearDraft()">OK</button>
                 <button type="button" style="min-width: 65px;" onclick="closeConfirmWin2k()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="win2k-draft-loaded-dialog" class="win2k-modal-overlay">
+    <div class="window win2k-dialog-box">
+        <div class="title-bar">
+            <div class="title-bar-text">Nạp bản nháp</div>
+            <div class="title-bar-controls">
+                <button aria-label="Close" onclick="closeDraftLoadedWin2k()"></button>
+            </div>
+        </div>
+        <div class="window-body" style="padding: 12px;">
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+                <img src="/static/icon/w98_check.png" alt="" style="width: 28px; height: 28px; image-rendering: pixelated;">
+                <p style="margin: 0; font-size: 12px;">Đã nạp bản nháp thành công!</p>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" style="min-width: 65px; font-weight: bold;" onclick="closeDraftLoadedWin2k()">OK</button>
             </div>
         </div>
     </div>
