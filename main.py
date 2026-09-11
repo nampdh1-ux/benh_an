@@ -29,10 +29,6 @@ from fpdf import FPDF
 from google import genai
 from google.genai import types
 from PIL import Image
-from pptx import Presentation
-from pptx.dml.color import RGBColor as PptxRGBColor
-from pptx.enum.text import PP_ALIGN
-from pptx.util import Inches as PptxInches, Pt as PptxPt
 from pydantic import BaseModel
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
