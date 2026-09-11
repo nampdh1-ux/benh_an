@@ -37,6 +37,8 @@ templates = Jinja2Templates(directory="templates")
 
 # Cấu hình môi trường & AI
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+KEY_ATTENDING = os.getenv("KEY_ATTENDING", "").strip()
+KEY_OCR = os.getenv("KEY_OCR", "").strip()
 MODEL_DEFAULT = "gemini-3.1-flash-lite"
 
 # Font Unicode cho FPDF
@@ -59,8 +61,8 @@ def download_fonts_if_missing():
 
 download_fonts_if_missing()
 
-def get_ai_client():
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+def get_ai_client(key_name: str = "GEMINI_API_KEY"):
+    api_key = os.getenv(key_name, "").strip() or GEMINI_API_KEY
     if not api_key:
         return None
     try:
@@ -119,7 +121,7 @@ async def index(request: Request):
 # --- CÁC ENDPOINT AI ---
 @app.post("/api/ai/cdpb")
 async def api_ai_cdpb(payload: Dict[str, Any]):
-    client = get_ai_client()
+    client = get_ai_client("GEMINI_API_KEY")
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
@@ -160,7 +162,7 @@ YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
 
 @app.post("/api/ai/treatment")
 async def api_ai_treatment(payload: Dict[str, Any]):
-    client = get_ai_client()
+    client = get_ai_client("GEMINI_API_KEY")
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
@@ -200,7 +202,7 @@ YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 3 thẻ:
 
 @app.post("/api/ai/prognosis")
 async def api_ai_prognosis(payload: Dict[str, Any]):
-    client = get_ai_client()
+    client = get_ai_client("GEMINI_API_KEY")
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
@@ -235,9 +237,9 @@ YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
 
 @app.post("/api/ai/critique")
 async def api_ai_critique(payload: Dict[str, Any]):
-    client = get_ai_client()
+    client = get_ai_client("KEY_ATTENDING")
     if not client:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cấu hình KEY_ATTENDING hoặc GEMINI_API_KEY!")
     phong_cach = payload.get("phong_cach", "Học thuật & Hướng dẫn")
     context = f"Bệnh sử: {get_benh_su_text(payload)}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
     prompt = f"""Bạn là Giảng viên lâm sàng. Nhận xét ca bệnh ({context}) theo phong cách {phong_cach}.
@@ -260,9 +262,9 @@ async def api_ocr_batch(
     files: List[UploadFile] = File(...),
     context: str = Form("")
 ):
-    client = get_ai_client()
+    client = get_ai_client("KEY_OCR")
     if not client:
-        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+        raise HTTPException(status_code=500, detail="Chưa cấu hình KEY_OCR hoặc GEMINI_API_KEY!")
     
     clinical_ctx_str = "Chưa có thông tin ngữ cảnh lâm sàng."
     if context:
@@ -368,7 +370,7 @@ class RobustUnicodePDF(FPDF):
         if self.get_y() > 230:
             self.add_page()
         self.cell(col_w, 7, self.clean_text("KẾT QUẢ CẬN LÂM SÀNG & HÌNH ẢNH"), border=1, align="C", fill=True)
-        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI / BIỆN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.cell(col_w, 7, self.clean_text("PHIÊN GIẢI KẾT QUẢ"), border=1, align="C", fill=True, new_x="LMARGIN", new_y="NEXT")
         
         self.set_font(self.font_family_name, "", 9)
         for kq, pg, img_list in cls_rows:
