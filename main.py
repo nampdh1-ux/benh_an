@@ -132,31 +132,61 @@ Bạn là một bác sĩ chuyên khoa thực thụ. Dưới đây là toàn bộ
 {context}
 ==================================================
 
-Dựa trên nguyên lý biện luận lâm sàng (Clinical Reasoning):
-1. Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên đúng hoặc mức độ nguy cấp, dạng
+    Dựa trên nguyên lý biện luận lâm sàng (Clinical Reasoning), hãy thực hiện chức năng làm phép chẩn đoán phân biệt:
+    Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên hoặc mức độ nguy cấp, dạng
     1. A
     2. B
     3. C
-    ... Không giải thích hay câu từ gì thêm
-2. Viết đoạn Biện luận chẩn đoán sơ bộ: Phân tích logic tại sao hướng tới chẩn đoán sơ bộ (dấu hiệu chỉ điểm, yếu tố nguy cơ) và tại sao chưa thể loại trừ các chẩn đoán phân biệt, vào thẳng vấn đề, dưới dạng xuống dòng đơn giản.
+    ... Chỉ trả về danh sách, không giải thích hay câu từ gì thêm.
 
-YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 2 thẻ:
+YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 1 thẻ:
 [CHAN_DOAN_PHAN_BIET]
 ...
+"""
+    try:
+        response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
+        resp = response.text or ""
+        cdpb = resp.replace("[CHAN_DOAN_PHAN_BIET]", "").strip()
+        return {"chan_doan_phan_biet": cdpb}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi AI: {str(e)}")
+
+@app.post("/api/ai/cdsb-reasoning")
+async def api_ai_cdsb_reasoning(payload: Dict[str, Any]):
+    client = get_ai_client("GEMINI_API_KEY")
+    if not client:
+        raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
+
+    context = payload.get("full_context", "")
+    chan_doan_so_bo = payload.get("chan_doan_so_bo", "")
+    chan_doan_phan_biet = payload.get("chan_doan_phan_biet", "")
+    prompt = f"""
+Bạn là bác sĩ chuyên khoa đang thực hiện biện luận chẩn đoán.
+Dưới đây là các thông tin lâm sàng được thu thập:
+==================================================
+{context}
+==================================================
+
+Chẩn đoán sơ bộ trong hồ sơ:
+{chan_doan_so_bo}
+
+Các chẩn đoán phân biệt trong hồ sơ:
+{chan_doan_phan_biet}
+
+Hãy viết phần Biện luận chẩn đoán sơ bộ cho đúng ô biện luận, dựa trên toàn bộ thông tin lâm sàng phía trên:
+1. Giải thích vì sao nghĩ nhiều nhất đến chẩn đoán sơ bộ: nêu các triệu chứng, dấu hiệu, kết quả khám, yếu tố nguy cơ và dữ kiện ủng hộ liên quan trực tiếp.
+2. Với từng chẩn đoán phân biệt trong ô chẩn đoán phân biệt, giải thích vì sao hiện tại ít nghĩ đến hơn hoặc chưa được ưu tiên, dựa trên các dữ kiện chưa phù hợp, dấu hiệu còn thiếu hoặc kết quả chưa ủng hộ. Không được khẳng định loại trừ tuyệt đối nếu dữ liệu chưa đủ.
+3. Viết ngắn gọn, mạch lạc, đi thẳng vào lập luận lâm sàng, xuống dòng đơn giản; không thêm lời dẫn, không đề xuất chẩn đoán mới ngoài các chẩn đoán đã cung cấp.
+
+YÊU CẦU ĐỊNH DẠNG: Trả về ĐÚNG 1 thẻ:
 [BIEN_LUAN_SO_BO]
 ...
 """
     try:
         response = client.models.generate_content(model=MODEL_DEFAULT, contents=prompt)
         resp = response.text or ""
-        cdpb, bl = "", ""
-        if "[CHAN_DOAN_PHAN_BIET]" in resp and "[BIEN_LUAN_SO_BO]" in resp:
-            parts = resp.split("[BIEN_LUAN_SO_BO]")
-            cdpb = parts[0].replace("[CHAN_DOAN_PHAN_BIET]", "").strip()
-            bl = parts[1].strip()
-        else:
-            cdpb = resp.strip()
-        return {"chan_doan_phan_biet": cdpb, "bien_luan": bl}
+        bien_luan = resp.replace("[BIEN_LUAN_SO_BO]", "").strip()
+        return {"bien_luan": bien_luan}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi AI: {str(e)}")
 

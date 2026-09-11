@@ -876,10 +876,16 @@ menu[role="tablist"] li[role="tab"] a {
                     <div class="expander-body">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
                             <label style="font-weight: bold;">Chẩn đoán sơ bộ & phân biệt:</label>
-                            <button type="button" class="btn-ai" id="btn-ai-cd" onclick="callAICD()" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <img src="/static/icon/w98_file_blue_grad_paint.png" alt="AI" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
-                                <span>Làm phép Chẩn đoán</span>
-                            </button>
+                            <div style="display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                <button type="button" class="btn-ai" id="btn-ai-cdpb" onclick="callAICD()" style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <img src="/static/icon/w98_file_blue_grad_paint.png" alt="AI" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                                    <span>Làm phép CĐ phân biệt</span>
+                                </button>
+                                <button type="button" class="btn-ai" id="btn-ai-bl-cdsb" onclick="callAICDReasoning()" style="display: inline-flex; align-items: center; gap: 4px;">
+                                    <img src="/static/icon/w98_file_blue_grad_paint.png" alt="AI" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle;">
+                                    <span>Biện luận CĐ sơ bộ</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-grid-2">
                             <div class="form-group">
@@ -1693,10 +1699,10 @@ document.addEventListener('click', function(e) {
     }
 
     async function callAICD() {
-        const btn = document.getElementById('btn-ai-cd');
+        const btn = document.getElementById('btn-ai-cdpb');
         const originText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = "⏳ Đang suy luận...";
+        btn.innerText = "⏳ Đang làm phép...";
         try {
             const payload = getFormPayload();
             payload.full_context = buildProgressiveContext('cdpb');
@@ -1708,6 +1714,31 @@ document.addEventListener('click', function(e) {
             if (!res.ok) throw new Error((await res.json()).detail || 'Lỗi AI');
             const d = await res.json();
             if (d.chan_doan_phan_biet) document.getElementById('chan_doan_phan_biet').value = d.chan_doan_phan_biet;
+            autoSave();
+            triggerAllTextareasExpand();
+        } catch (e) {
+            alert('Lỗi AI: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originText;
+        }
+    }
+
+    async function callAICDReasoning() {
+        const btn = document.getElementById('btn-ai-bl-cdsb');
+        const originText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "⏳ Đang biện luận...";
+        try {
+            const payload = getFormPayload();
+            payload.full_context = `${buildProgressiveContext('cdpb')}\nVI. CHẨN ĐOÁN SƠ BỘ: ${payload.chan_doan_so_bo || ''}\nVII. CHẨN ĐOÁN PHÂN BIỆT: ${payload.chan_doan_phan_biet || ''}`;
+            const res = await fetch('/api/ai/cdsb-reasoning', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Lỗi AI');
+            const d = await res.json();
             if (d.bien_luan) document.getElementById('bien_luan').value = d.bien_luan;
             autoSave();
             triggerAllTextareasExpand();
