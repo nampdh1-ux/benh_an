@@ -114,6 +114,30 @@ def get_prioritized_organs(payload: Dict[str, Any]):
         ]
     return organs
 
+def is_pediatric(payload: Dict[str, Any]) -> bool:
+    return str(payload.get("loai_benh_an", "")).strip() == "Nhi khoa"
+
+def format_age(payload: Dict[str, Any]) -> str:
+    value = str(payload.get("tuoi", "")).strip()
+    if not value:
+        return "chưa rõ tuổi"
+    if not is_pediatric(payload):
+        return f"{value} tuổi"
+    units = {"ngay": "ngày tuổi", "thang": "tháng tuổi", "nam": "năm tuổi"}
+    return f"{value} {units.get(payload.get('tuoi_don_vi', 'nam'), 'năm tuổi')}"
+
+def pediatric_history_fields(payload: Dict[str, Any]):
+    return [
+        ("1. Tiền sử bệnh lý", "ts_benh_ly"),
+        ("2. Tiền sử dinh dưỡng", "ts_dinh_duong"),
+        ("3. Tiền sử sản khoa", "ts_san_khoa"),
+        ("4. Tiền sử tiêm chủng", "ts_tiem_chung"),
+        ("5. Tiền sử phát triển tâm thần vận động", "ts_pt_tam_than_van_dong"),
+        ("6. Tiền sử dịch tễ", "ts_dich_te"),
+        ("7. Tiền sử dị ứng", "ts_di_ung"),
+        ("8. Tiền sử gia đình", "ts_gia_dinh_nhi"),
+    ]
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
@@ -126,11 +150,13 @@ async def api_ai_cdpb(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
     context = payload.get("full_context", "")
+    patient_note = "Đây là bệnh nhi; ưu tiên đặc điểm theo lứa tuổi, dinh dưỡng, tiêm chủng và phát triển tâm thần vận động." if is_pediatric(payload) else ""
     prompt = f"""
 Bạn là một bác sĩ chuyên khoa thực thụ. Dưới đây là toàn bộ dữ liệu lâm sàng thu thập được từ đầu đến thời điểm thăm khám hiện tại:
 ==================================================
 {context}
 ==================================================
+{patient_note}
 
     Dựa trên nguyên lý biện luận lâm sàng (Clinical Reasoning), hãy thực hiện chức năng làm phép chẩn đoán phân biệt:
     Đưa ra danh sách các Chẩn đoán phân biệt (Differential Diagnoses), sắp xếp theo thứ tự ưu tiên hoặc mức độ nguy cấp, dạng
@@ -158,6 +184,7 @@ async def api_ai_cdsb_reasoning(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
 
     context = payload.get("full_context", "")
+    patient_note = "Đây là bệnh nhi; lập luận phải đối chiếu với tuổi theo ngày/tháng/năm và các mốc phát triển, dinh dưỡng, tiêm chủng." if is_pediatric(payload) else ""
     chan_doan_so_bo = payload.get("chan_doan_so_bo", "")
     chan_doan_phan_biet = payload.get("chan_doan_phan_biet", "")
     prompt = f"""
@@ -166,6 +193,7 @@ Dưới đây là các thông tin lâm sàng được thu thập:
 ==================================================
 {context}
 ==================================================
+{patient_note}
 
 Chẩn đoán sơ bộ trong hồ sơ:
 {chan_doan_so_bo}
@@ -197,11 +225,13 @@ async def api_ai_treatment(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
     context = payload.get("full_context", "")
+    patient_note = "Đây là bệnh nhi; kế hoạch điều trị phải cân nhắc liều theo cân nặng, bù dịch, dinh dưỡng và theo dõi dấu hiệu nặng theo lứa tuổi." if is_pediatric(payload) else ""
     prompt = f"""
 Bạn là bác sĩ điều trị. Dưới đây là toàn bộ hồ sơ bệnh nhân tính đến khi đã có Chẩn đoán xác định và Cận lâm sàng:
 ==================================================
 {context}
 ==================================================
+{patient_note}
 
 Hãy xây dựng kế hoạch điều trị toàn diện theo y học thực chứng:
 1. Mục tiêu điều trị.
@@ -237,11 +267,13 @@ async def api_ai_prognosis(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail="Chưa cấu hình GEMINI_API_KEY!")
     
     context = payload.get("full_context", "")
+    patient_note = "Đây là bệnh nhi; tiên lượng và tư vấn cần phù hợp tuổi, dinh dưỡng, phát triển và người chăm sóc." if is_pediatric(payload) else ""
     prompt = f"""
 Bạn là bác sĩ lâm sàng. Dưới đây là toàn bộ diễn biến ca bệnh và phương án điều trị đã thiết lập:
 ==================================================
 {context}
 ==================================================
+{patient_note}
 
 Hãy phân tích:
 1. Tiên lượng: Gồm tiên lượng gần (biến chứng cấp, khả năng hồi phục trong đợt điều trị) và tiên lượng xa (tái phát, di chứng, chức năng cơ quan).
@@ -271,7 +303,10 @@ async def api_ai_critique(payload: Dict[str, Any]):
     if not client:
         raise HTTPException(status_code=500, detail="Chưa cấu hình KEY_ATTENDING hoặc GEMINI_API_KEY!")
     phong_cach = payload.get("phong_cach", "Học thuật & Hướng dẫn")
-    context = f"Bệnh sử: {get_benh_su_text(payload)}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
+    if is_pediatric(payload):
+        context = f"Bệnh nhi {format_age(payload)}\nBệnh sử: {get_benh_su_text(payload)}\nTiền sử bệnh lý: {payload.get('ts_benh_ly')}\nTiền sử dinh dưỡng: {payload.get('ts_dinh_duong')}\nTiền sử phát triển: {payload.get('ts_pt_tam_than_van_dong')}\nTiền sử tiêm chủng: {payload.get('ts_tiem_chung')}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
+    else:
+        context = f"Bệnh sử: {get_benh_su_text(payload)}\nChẩn đoán SB: {payload.get('chan_doan_so_bo')}\nChẩn đoán XĐ: {payload.get('chan_doan_xac_dinh')}"
     prompt = f"""Bạn là Giảng viên lâm sàng. Nhận xét ca bệnh ({context}) theo phong cách {phong_cach}.
     Trả về ĐÚNG định dạng JSON thuần: {{"nhan_xet_tong_the": "...", "danh_sach_cau_hoi": [{{"chu_de": "...", "cau_hoi": "...", "goi_y_tra_loi": "..."}}]}}"""
     try:
@@ -305,7 +340,10 @@ async def api_ocr_batch(
             spo2_str = f" | SpO2: {spo2_val}%" if spo2_val else ""
             vital_str = f"Mạch: {ctx_data.get('sh_mach', '--')} ck/p | HA: {ctx_data.get('sh_ha', '--')} mmHg | Thở: {ctx_data.get('sh_nhip_tho', '--')} l/p{spo2_str}"
 
-            if loai_ba == "Hậu phẫu":
+            if loai_ba == "Nhi khoa":
+                age_str = format_age(ctx_data)
+                clinical_ctx_str = f"Loại: NHI KHOA\nBệnh nhi: {ctx_data.get('ho_ten')} ({age_str}, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nBệnh sử: {ctx_data.get('benh_su')}\nTiền sử bệnh lý: {ctx_data.get('ts_benh_ly')}\nTiền sử dinh dưỡng: {ctx_data.get('ts_dinh_duong')}\nTiền sử sản khoa: {ctx_data.get('ts_san_khoa')}\nTiền sử tiêm chủng: {ctx_data.get('ts_tiem_chung')}\nTiền sử phát triển: {ctx_data.get('ts_pt_tam_than_van_dong')}\nTiền sử dịch tễ: {ctx_data.get('ts_dich_te')}\nTiền sử dị ứng: {ctx_data.get('ts_di_ung')}\nSinh hiệu: {vital_str}\nKhám dinh dưỡng và phát triển: {ctx_data.get('kham_dinh_duong_phat_trien')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
+            elif loai_ba == "Hậu phẫu":
                 clinical_ctx_str = f"Loại: HẬU PHẪU\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nTrước mổ: {ctx_data.get('bs_truoc_mo')}\nTrong mổ: {ctx_data.get('bs_trong_mo')}\nSau mổ: {ctx_data.get('bs_sau_mo')}\nNgày HP: {ctx_data.get('ngay_hau_phau')}\nSinh hiệu: {vital_str}\nVết mổ: {ctx_data.get('kham_vet_mo')}\nDẫn lưu: {ctx_data.get('kham_dan_luu')}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
             else:
                 clinical_ctx_str = f"Loại: NỘI KHOA\nBệnh nhân: {ctx_data.get('ho_ten')} ({ctx_data.get('tuoi')}t, {ctx_data.get('gioi_tinh')})\nLý do: {ctx_data.get('ly_do_vao_vien')}\nBệnh sử: {ctx_data.get('benh_su')}\nTiền sử: {ctx_data.get('ts_noi_khoa')}\nSinh hiệu: {vital_str}\nCĐ Sơ bộ: {ctx_data.get('chan_doan_so_bo')}"
@@ -371,7 +409,7 @@ class RobustUnicodePDF(FPDF):
     def header(self):
         if self.page_no() == 1:
             self.set_font(self.font_family_name, "B" if not self.use_unicode else "", 15)
-            tieu_de = "BỆNH ÁN HẬU PHẪU" if self.loai_ba == "Hậu phẫu" else "BỆNH ÁN LÂM SÀNG"
+            tieu_de = "BỆNH ÁN HẬU PHẪU" if self.loai_ba == "Hậu phẫu" else ("BỆNH ÁN NHI KHOA" if self.loai_ba == "Nhi khoa" else "BỆNH ÁN LÂM SÀNG")
             self.cell(0, 8, self.clean_text(tieu_de), align="C", new_x="LMARGIN", new_y="NEXT")
             self.set_font(self.font_family_name, "", 9)
             self.cell(0, 4, self.clean_text(f"Thời gian lập: {datetime.now().strftime('%d/%m/%Y %H:%M')}"), align="C", new_x="LMARGIN", new_y="NEXT")
@@ -472,13 +510,14 @@ async def api_export_pdf(payload: Dict[str, Any]):
 
         loai_ba = str(payload.get("loai_benh_an", "Nội khoa / Tiền phẫu")).strip()
         is_hau_phau = (loai_ba == "Hậu phẫu")
+        is_nhi = (loai_ba == "Nhi khoa")
         
         pdf = RobustUnicodePDF(loai_ba=loai_ba)
         pdf.add_page()
 
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
         hc = (
-            f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()}   |   Tuổi: {payload.get('tuoi')}   |   Giới tính: {payload.get('gioi_tinh')}\n"
+            f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()}   |   Tuổi: {format_age(payload)}   |   Giới tính: {payload.get('gioi_tinh')}\n"
             f"- Dân tộc: {payload.get('dan_tok')}   |   Nghề nghiệp: {payload.get('nghe_nghiep')}\n"
             f"- Khoa phòng: {payload.get('khoa_phong')}   |   Địa chỉ: {payload.get('dia_chi', '')}\n"
             f"- Ngày giờ vào viện: {payload.get('ngay_vao_vien')}   |   Ngày làm BA: {payload.get('ngay_lam_benh_an', '')}\n"
@@ -501,14 +540,19 @@ async def api_export_pdf(payload: Dict[str, Any]):
             pdf.add_txt(payload.get("benh_su", ""))
 
         pdf.add_sec("IV. TIỀN SỬ")
-        pdf.add_subsec("1. Tiền sử nội khoa:")
-        pdf.add_txt(format_bullet_points(payload.get("ts_noi_khoa", "")))
-        pdf.add_subsec("2. Tiền sử ngoại khoa & Dị ứng:")
-        pdf.add_txt(format_bullet_points(payload.get("ts_ngoai_khoa", "")))
-        pdf.add_subsec("3. Tiền sử bản thân (Lối sống & Thói quen):")
-        pdf.add_txt(format_bullet_points(payload.get("ts_loi_song", "")))
-        pdf.add_subsec("4. Tiền sử gia đình:")
-        pdf.add_txt(format_bullet_points(payload.get("ts_gia_dinh", "")))
+        if is_nhi:
+            for label, key in pediatric_history_fields(payload):
+                pdf.add_subsec(f"{label}:")
+                pdf.add_txt(format_bullet_points(payload.get(key, "")))
+        else:
+            pdf.add_subsec("1. Tiền sử nội khoa:")
+            pdf.add_txt(format_bullet_points(payload.get("ts_noi_khoa", "")))
+            pdf.add_subsec("2. Tiền sử ngoại khoa & Dị ứng:")
+            pdf.add_txt(format_bullet_points(payload.get("ts_ngoai_khoa", "")))
+            pdf.add_subsec("3. Tiền sử bản thân (Lối sống & Thói quen):")
+            pdf.add_txt(format_bullet_points(payload.get("ts_loi_song", "")))
+            pdf.add_subsec("4. Tiền sử gia đình:")
+            pdf.add_txt(format_bullet_points(payload.get("ts_gia_dinh", "")))
 
         pdf.add_sec("V. THĂM KHÁM LÂM SÀNG")
         if not is_hau_phau:
@@ -532,6 +576,9 @@ async def api_export_pdf(payload: Dict[str, Any]):
         eval_bmi = payload.get("sh_bmi_eval") or "--"
         sh_line = f"Sinh hiệu: Mạch: {mach} ck/phút | HA: {ha} mmHg | Nhiệt độ: {nhiet} °C | Nhịp thở: {nt} l/phút | SpO2: {spo2}%\nThể trạng: Chiều cao: {cc} cm | Cân nặng: {cn} kg | BMI: {bmi} kg/m² ({eval_bmi})"
         pdf.add_txt(sh_line)
+        if is_nhi:
+            pdf.add_subsec("3. Dinh dưỡng & phát triển:")
+            pdf.add_txt(format_bullet_points(payload.get("kham_dinh_duong_phat_trien", "")))
 
         if is_hau_phau:
             pdf.add_subsec("b. Vết mổ & Dẫn lưu:")
@@ -635,6 +682,7 @@ async def api_export_pdf(payload: Dict[str, Any]):
 @app.post("/api/preview/docx", response_class=HTMLResponse)
 async def preview_docx(data: dict):
     is_hau_phau = data.get("loai_benh_an") == "Hậu phẫu"
+    is_nhi = data.get("loai_benh_an") == "Nhi khoa"
 
     def text(value: Any) -> str:
         return html.escape(str(value or ""))
@@ -649,7 +697,7 @@ async def preview_docx(data: dict):
         return f'<section><h2>{text(number)}. {text(title)}</h2>{content}</section>'
 
     content = section("I", "PHẦN HÀNH CHÍNH", "".join([
-        field("1. Họ và tên", data.get("ho_ten")), field("2. Tuổi", data.get("tuoi")),
+        field("1. Họ và tên", data.get("ho_ten")), field("2. Tuổi", format_age(data)),
         field("3. Giới tính", data.get("gioi_tinh")), field("4. Dân tộc", data.get("dan_tok")),
         field("5. Nghề nghiệp", data.get("nghe_nghiep")), field("6. Khoa / Phòng điều trị", data.get("khoa_phong")),
         field("7. Ngày vào viện", data.get("ngay_vao_vien")), field("8. Ngày làm bệnh án", data.get("ngay_lam_benh_an")),
@@ -661,12 +709,16 @@ async def preview_docx(data: dict):
         field("3. Diễn biến trong mổ", data.get("bs_trong_mo")) if is_hau_phau else "",
         field("4. Diễn biến sau mổ", data.get("bs_sau_mo")) if is_hau_phau else ""
     ]))
-    content += section("IV", "TIỀN SỬ", "".join([
-        field("1. Tiền sử nội khoa", data.get("ts_noi_khoa")),
-        field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa")),
-        field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song")),
-        field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
-    ]))
+    if is_nhi:
+        history_content = "".join(field(label, data.get(key)) for label, key in pediatric_history_fields(data))
+    else:
+        history_content = "".join([
+            field("1. Tiền sử nội khoa", data.get("ts_noi_khoa")),
+            field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa")),
+            field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song")),
+            field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
+        ])
+    content += section("IV", "TIỀN SỬ NHI KHOA" if is_nhi else "TIỀN SỬ", history_content)
     preview_organs = get_prioritized_organs(data)
     preview_exam_offset = 3 if is_hau_phau else 1
     content += section("V", "THĂM KHÁM LÂM SÀNG", "".join([
@@ -675,6 +727,7 @@ async def preview_docx(data: dict):
         field("3. Dẫn lưu", data.get("kham_dan_luu")) if is_hau_phau else "",
         field("4. Khám toàn thân", data.get("kham_toan_than")) if is_hau_phau else field("2. Khám toàn thân", data.get("kham_toan_than")),
         field("5. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%") if is_hau_phau else field("3. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"),
+        field("4. Dinh dưỡng & phát triển", data.get("kham_dinh_duong_phat_trien")) if is_nhi else "",
         *[field(f"{preview_exam_offset + 3 + index}. {label}", data.get(key)) for index, (label, key) in enumerate(preview_organs)]
     ]))
     content += section("VI", "TÓM TẮT BỆNH ÁN", field("1. Nội dung tóm tắt", data.get("tom_tat")))
@@ -705,6 +758,7 @@ async def preview_docx(data: dict):
         field("1. Mục tiêu điều trị", data.get("dt_muc_tieu")), field("2. Điều trị cụ thể", data.get("dt_cu_the")),
         field("3. Theo dõi", data.get("dt_theo_doi")), field("4. Tiên lượng", data.get("tien_luong")), field("5. Tư vấn", data.get("tu_van"))
     ]))
+    preview_title = "BỆNH ÁN NHI KHOA" if is_nhi else ("BỆNH ÁN HẬU PHẪU" if is_hau_phau else "BỆNH ÁN LÂM SÀNG")
     return f'''<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>
         @page {{ size: A4; margin: 18mm; }}
         * {{ box-sizing: border-box; }} body {{ margin: 0; background: #e7e7e7; color: #222; font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.35; }}
@@ -713,7 +767,7 @@ async def preview_docx(data: dict):
         section {{ margin: 0 0 14px; break-inside: avoid; }} h2 {{ margin: 0 0 6px; padding: 5px 8px; color: #0a246a; background: #e1ebf5; border-bottom: 1px solid #9aaabd; font-size: 14pt; }}
         p {{ margin: 4px 0; white-space: pre-wrap; }} strong {{ color: #111; }} table {{ width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }} th, td {{ border: 1px solid #777; padding: 6px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }} th {{ background: #e6ebf5; font-size: 10pt; }} td {{ width: 50%; }} td img {{ display: block; max-width: 100%; max-height: 150px; margin: 6px 0; object-fit: contain; }}
         @media print {{ body {{ background: #fff; }} main {{ width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }} }}
-    </style></head><body><main><h1>BỆNH ÁN LÂM SÀNG</h1><p class="subtitle">Loại hình: {text(data.get("loai_benh_an", "Nội khoa / Tiền phẫu"))}</p>{content}</main></body></html>'''
+    </style></head><body><main><h1>{preview_title}</h1><p class="subtitle">Loại hình: {text(data.get("loai_benh_an", "Nội khoa / Tiền phẫu"))}</p>{content}</main></body></html>'''
 
 
 @app.post("/api/export/docx")
@@ -736,7 +790,7 @@ async def export_docx(data: dict):
     # Tiêu đề bệnh án
     title_p = doc.add_paragraph()
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_run = title_p.add_run("BỆNH ÁN LÂM SÀNG")
+    title_run = title_p.add_run("BỆNH ÁN NHI KHOA" if data.get("loai_benh_an") == "Nhi khoa" else "BỆNH ÁN LÂM SÀNG")
     title_run.font.name = "Times New Roman"
     title_run.font.size = DocxPt(16)
     title_run.bold = True
@@ -745,6 +799,7 @@ async def export_docx(data: dict):
     sub_title = doc.add_paragraph()
     sub_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     loai_ba = data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
+    is_nhi = loai_ba == "Nhi khoa"
     r_sub = sub_title.add_run(f"Loại hình: {loai_ba}")
     r_sub.font.name = "Times New Roman"
     r_sub.font.size = DocxPt(12)
@@ -780,7 +835,7 @@ async def export_docx(data: dict):
     # 1. HÀNH CHÍNH
     add_section_heading("1. PHẦN HÀNH CHÍNH")
     add_field("1. Họ và tên", data.get("ho_ten"))
-    add_field("2. Tuổi", data.get("tuoi"))
+    add_field("2. Tuổi", format_age(data))
     add_field("3. Giới tính", data.get("gioi_tinh"))
     add_field("4. Dân tộc", data.get("dan_tok"))
     add_field("5. Nghề nghiệp", data.get("nghe_nghiep"))
@@ -804,11 +859,15 @@ async def export_docx(data: dict):
         add_field("1. Bệnh sử", data.get("benh_su"))
 
     # 4. TIỀN SỬ
-    add_section_heading("4. TIỀN SỬ")
-    add_field("1. Tiền sử nội khoa", data.get("ts_noi_khoa"))
-    add_field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa"))
-    add_field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song"))
-    add_field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
+    add_section_heading("4. TIỀN SỬ NHI KHOA" if is_nhi else "4. TIỀN SỬ")
+    if is_nhi:
+        for label, key in pediatric_history_fields(data):
+            add_field(label, data.get(key))
+    else:
+        add_field("1. Tiền sử nội khoa", data.get("ts_noi_khoa"))
+        add_field("2. Tiền sử ngoại khoa & Dị ứng", data.get("ts_ngoai_khoa"))
+        add_field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song"))
+        add_field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
 
     # 5. THĂM KHÁM LÂM SÀNG
     add_section_heading("5. THĂM KHÁM LÂM SÀNG")
@@ -824,6 +883,8 @@ async def export_docx(data: dict):
     add_field(f"{exam_offset + 1}. Khám toàn thân", data.get("kham_toan_than"))
     sh_str = f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"
     add_field(f"{exam_offset + 2}. Dấu hiệu sinh tồn", sh_str)
+    if is_nhi:
+        add_field(f"{exam_offset + 3}. Dinh dưỡng & phát triển", data.get("kham_dinh_duong_phat_trien"))
     
     organs = get_prioritized_organs(data)
 

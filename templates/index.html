@@ -558,6 +558,9 @@ menu[role="tablist"] li[role="tab"] a {
                 <button type="button" id="btn_type_hauphau" class="btn-toggle" onclick="setFormType('Hậu phẫu')">
                     ⚪ Hậu phẫu
                 </button>
+                <button type="button" id="btn_type_nhi" class="btn-toggle" onclick="setFormType('Nhi khoa')">
+                    ⚪ Nhi khoa
+                </button>
             </div>
         </div>
 
@@ -582,7 +585,15 @@ menu[role="tablist"] li[role="tab"] a {
                         </div>
                         <div class="form-group">
                             <label>Tuổi:</label>
-                            <input type="number" id="tuoi" value="45" min="0" max="120" oninput="autoSave()">
+                            <div style="display: flex; gap: 4px;">
+                                <input type="number" id="tuoi" value="45" min="0" max="120" oninput="handleAgeChange()">
+                                <select id="tuoi_don_vi" onchange="handleAgeChange()" style="width: 100px; display: none;">
+                                    <option value="nam">năm tuổi</option>
+                                    <option value="thang">tháng tuổi</option>
+                                    <option value="ngay">ngày tuổi</option>
+                                </select>
+                            </div>
+                            <small id="tuoi-hint" style="display: none; color: #555;">Tuổi nhi khoa có thể nhập theo ngày, tháng hoặc năm.</small>
                         </div>
                         <div class="form-group">
                             <label>Giới tính:</label>
@@ -670,6 +681,7 @@ menu[role="tablist"] li[role="tab"] a {
             <details class="win2k-expander" open>
                 <summary>IV. TIỀN SỬ</summary>
                 <div class="expander-body">
+                    <div id="wrapper-ts-nguoi-lon">
                     <div class="form-grid-2">
                         <div class="form-group">
                             <label>1. Tiền sử nội khoa:</label>
@@ -680,6 +692,19 @@ menu[role="tablist"] li[role="tab"] a {
                             <textarea id="ts_ngoai_khoa" rows="3" placeholder="Sẹo mổ cũ, dị ứng thuốc..." oninput="autoSave()"></textarea>
                         </div>
                     </div>
+                    <div id="wrapper-ts-nhi" style="display: none;">
+                        <div class="form-grid-2">
+                            <div class="form-group"><label>1. Tiền sử bệnh lý:</label><textarea id="ts_benh_ly" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>2. Tiền sử dinh dưỡng:</label><textarea id="ts_dinh_duong" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>3. Tiền sử sản khoa:</label><textarea id="ts_san_khoa" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>4. Tiền sử tiêm chủng:</label><textarea id="ts_tiem_chung" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>5. Tiền sử phát triển tâm thần vận động:</label><textarea id="ts_pt_tam_than_van_dong" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>6. Tiền sử dịch tễ:</label><textarea id="ts_dich_te" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>7. Tiền sử dị ứng:</label><textarea id="ts_di_ung" rows="3" oninput="autoSave()"></textarea></div>
+                            <div class="form-group"><label>8. Tiền sử gia đình:</label><textarea id="ts_gia_dinh_nhi" rows="3" oninput="autoSave()"></textarea></div>
+                        </div>
+                        <button type="button" onclick="fillNormalPediatricHistory()"><img src="/static/icon/w98_help_book_big.png" alt="" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">Điền tiền sử nhi khoa bình thường</button>
+                    </div>
                     <div class="form-grid-2">
                         <div class="form-group">
                             <label>3. Tiền sử bản thân (Lối sống):</label>
@@ -689,6 +714,7 @@ menu[role="tablist"] li[role="tab"] a {
                             <label>4. Tiền sử gia đình:</label>
                             <textarea id="ts_gia_dinh" rows="3" placeholder="Bệnh tim mạch, ung thư trong gia đình..." oninput="autoSave()"></textarea>
                         </div>
+                    </div>
                     </div>
                 </div>
             </details>
@@ -810,6 +836,10 @@ menu[role="tablist"] li[role="tab"] a {
                     </div>
 
                     <div class="sub-section-header">Thăm khám các cơ quan</div>
+                    <div id="wrapper-kham-nhi" class="form-group" style="display: none;">
+                        <label>Khám dinh dưỡng & phát triển:</label>
+                        <textarea id="kham_dinh_duong_phat_trien" rows="3" oninput="autoSave()"></textarea>
+                    </div>
                     <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <label style="font-weight: bold;">Cơ quan ưu tiên:</label>
                         <select id="uu_tien_co_quan" style="width: auto;" onchange="reorderOrgans()">
@@ -1169,9 +1199,11 @@ document.addEventListener('click', function(e) {
     function setFormType(type) {
         document.getElementById('current_loai_ba').value = type;
         const isHauPhau = (type === "Hậu phẫu");
+        const isNhi = (type === "Nhi khoa");
 
         const btnNk = document.getElementById('btn_type_noikhoa');
         const btnHp = document.getElementById('btn_type_hauphau');
+        const btnNhi = document.getElementById('btn_type_nhi');
         const checkIcon = `<img src="/static/icon/w98_check.png" alt="✓" style="width: 12px; height: 12px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">`;
 
         if (isHauPhau) {
@@ -1179,16 +1211,33 @@ document.addEventListener('click', function(e) {
             btnHp.innerHTML = `${checkIcon}Hậu phẫu`;
             btnNk.classList.remove('active');
             btnNk.innerHTML = `⚪ Nội khoa / Tiền phẫu`;
+            btnNhi.classList.remove('active');
+            btnNhi.innerHTML = `⚪ Nhi khoa`;
+        } else if (isNhi) {
+            btnNhi.classList.add('active');
+            btnNhi.innerHTML = `${checkIcon}Nhi khoa`;
+            btnNk.classList.remove('active');
+            btnNk.innerHTML = `⚪ Nội khoa / Tiền phẫu`;
+            btnHp.classList.remove('active');
+            btnHp.innerHTML = `⚪ Hậu phẫu`;
         } else {
             btnNk.classList.add('active');
             btnNk.innerHTML = `${checkIcon}Nội khoa / Tiền phẫu`;
             btnHp.classList.remove('active');
             btnHp.innerHTML = `⚪ Hậu phẫu`;
+            btnNhi.classList.remove('active');
+            btnNhi.innerHTML = `⚪ Nhi khoa`;
         }
 
         document.getElementById('wrapper-bs-noikhoa').style.display = isHauPhau ? 'none' : 'block';
         document.getElementById('wrapper-bs-hauphau').style.display = isHauPhau ? 'block' : 'none';
         document.getElementById('title-ly-do-benh-su').innerText = isHauPhau ? 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ HẬU PHẪU' : 'II VÀ III. LÝ DO VÀO VIỆN & BỆNH SỬ';
+        document.getElementById('wrapper-ts-nguoi-lon').style.display = isNhi ? 'none' : 'block';
+        document.getElementById('wrapper-ts-nhi').style.display = isNhi ? 'block' : 'none';
+        document.getElementById('tuoi_don_vi').style.display = isNhi ? 'block' : 'none';
+        document.getElementById('tuoi-hint').style.display = isNhi ? 'block' : 'none';
+        document.getElementById('tuoi').max = isNhi ? '240' : '120';
+        document.getElementById('wrapper-kham-nhi').style.display = isNhi ? 'block' : 'none';
         triggerAllTextareasExpand();
         document.getElementById('wrapper-kham-vao-vien').style.display = isHauPhau ? 'none' : 'block';
         document.getElementById('wrapper-ngay-hau-phau').style.display = isHauPhau ? 'block' : 'none';
@@ -1230,8 +1279,9 @@ document.addEventListener('click', function(e) {
             document.getElementById('title-cls').innerText = 'VIII. CẬN LÂM SÀNG';
             document.getElementById('title-cdxd').innerText = 'IX. CHẨN ĐOÁN XÁC ĐỊNH & BIỆN LUẬN';
             document.getElementById('title-dieu-tri').innerText = 'X. ĐIỀU TRỊ, TIÊN LƯỢNG & TƯ VẤN';
-            document.getElementById('status-bar-type').innerText = 'Mẫu: Nội khoa / Tiền phẫu';
+            document.getElementById('status-bar-type').innerText = isNhi ? 'Mẫu: Nhi khoa' : 'Mẫu: Nội khoa / Tiền phẫu';
         }
+        handleAgeChange();
         autoSave();
     }
 
@@ -1244,6 +1294,64 @@ document.addEventListener('click', function(e) {
         }
     }
 
+    function getPediatricAgeText() {
+        const value = document.getElementById('tuoi').value;
+        const unit = document.getElementById('tuoi_don_vi').value;
+        if (!value) return "chưa rõ tuổi";
+        return `${value} ${unit === 'ngay' ? 'ngày' : unit === 'thang' ? 'tháng' : 'năm'} tuổi`;
+    }
+
+    function getPediatricAgeProfile() {
+        const value = Number(document.getElementById('tuoi').value) || 0;
+        const unit = document.getElementById('tuoi_don_vi').value;
+        if (unit === 'ngay' || (unit === 'thang' && value < 1)) return 'sơ sinh';
+        if (unit === 'thang' || (unit === 'nam' && value < 2)) return 'nhũ nhi';
+        if (unit === 'nam' && value < 6) return 'trẻ nhỏ';
+        return 'trẻ lớn';
+    }
+
+    function handleAgeChange() {
+        const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
+        const ageInput = document.getElementById('tuoi');
+        if (isNhi) {
+            const unit = document.getElementById('tuoi_don_vi').value;
+            ageInput.max = unit === 'ngay' ? '3650' : (unit === 'thang' ? '240' : '18');
+            ageInput.placeholder = '0';
+        } else {
+            ageInput.max = '120';
+            ageInput.placeholder = '45';
+        }
+        autoSave();
+    }
+
+    const NORMAL_PEDIATRIC_HISTORY = {
+        ts_benh_ly: "Chưa ghi nhận bệnh lý đáng chú ý.",
+        ts_dinh_duong: "Ăn uống phù hợp lứa tuổi, tăng trưởng và dinh dưỡng trước đây bình thường.",
+        ts_san_khoa: "Thai đủ tháng, sinh thường, không ghi nhận biến cố sản khoa đáng chú ý.",
+        ts_tiem_chung: "Đã tiêm chủng đầy đủ theo chương trình tiêm chủng mở rộng phù hợp lứa tuổi.",
+        ts_pt_tam_than_van_dong: "Phát triển tâm thần vận động phù hợp lứa tuổi.",
+        ts_dich_te: "Chưa ghi nhận tiếp xúc nguồn lây hoặc yếu tố dịch tễ đặc biệt.",
+        ts_di_ung: "Chưa ghi nhận dị ứng thuốc, thức ăn hoặc dị nguyên khác.",
+        ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý di truyền hoặc bệnh lý đặc biệt trong gia đình."
+    };
+
+    function fillNormalPediatricHistory() {
+        const ageText = getPediatricAgeText();
+        const ageProfile = getPediatricAgeProfile();
+        const nutritionText = ageProfile === 'sơ sinh' || ageProfile === 'nhũ nhi'
+            ? `Dinh dưỡng phù hợp ${ageProfile}, bú mẹ hoặc sữa phù hợp lứa tuổi, chưa ghi nhận khó khăn nuôi dưỡng.`
+            : `Ăn uống phù hợp lứa tuổi, tăng trưởng và dinh dưỡng trước đây bình thường.`;
+        const developmentText = `Phát triển tâm thần vận động phù hợp lứa tuổi (${ageProfile}, ${ageText}).`;
+        for (const [key, value] of Object.entries(NORMAL_PEDIATRIC_HISTORY)) {
+            const el = document.getElementById(key);
+            if (el && !el.value.trim()) {
+                el.value = key === 'ts_dinh_duong' ? nutritionText : (key === 'ts_pt_tam_than_van_dong' ? developmentText : value);
+            }
+        }
+        autoSave();
+        triggerAllTextareasExpand();
+    }
+
     const NORMAL_FINDINGS = {
         kham_tuan_hoan: "- Mỏm tim khoang liên sườn V đường giữa đòn trái, diện đập 1-2 cm.\n- Nhịp tim đều, T1 T2 rõ, không tiếng thổi bệnh lý.\n- Mạch ngoại vi bắt rõ, đều hai bên.",
         kham_ho_hap: "- Lồng ngực cân đối, di động đều theo nhịp thở.\n- Rung thanh đều hai bên phế trường. Gõ trong.\n- Rì rào phế nang êm dịu hai bên, không rales.",
@@ -1252,6 +1360,26 @@ document.addEventListener('click', function(e) {
         kham_tiet_nieu: "- Hố thắt lưng hai bên cân đối, không sưng đỏ.\n- Chạm thận (-), Bập bềnh thận (-), Rung thận (-).\n- Điểm đau niệu quản trên và giữa (-). Cầu bàng quang (-).",
         kham_co_xuong_khop: "- Các khớp không sưng nóng đỏ đau, không biến dạng.\n- Tầm vận động chủ động và thụ động trong giới hạn bình thường.",
         kham_co_quan_khac: "- Mắt, Tai - Mũi - Họng, Răng - Hàm - Mặt: Chưa ghi nhận bất thường."
+    };
+
+    const NORMAL_PEDIATRIC_FINDINGS = {
+        kham_tuan_hoan: "- Tim đều, T1 T2 rõ, không nghe tiếng thổi bệnh lý.",
+        kham_ho_hap: "- Lồng ngực cân đối, di động đều; rì rào phế nang rõ hai bên, không ran.",
+        kham_tieu_hoa: "- Bụng mềm, không chướng, không điểm đau; gan lách không to.",
+        kham_than_kinh: "- Tỉnh, tiếp xúc phù hợp lứa tuổi; không dấu thần kinh khu trú.",
+        kham_tiet_nieu: "- Không phù, không đau hông lưng; tiểu tiện chưa ghi nhận bất thường.",
+        kham_co_xuong_khop: "- Vận động các chi phù hợp lứa tuổi, không sưng đau hoặc hạn chế vận động.",
+        kham_co_quan_khac: "- Tai mũi họng, da và hạch ngoại vi chưa ghi nhận bất thường."
+    };
+
+    const DETAILED_PEDIATRIC_FINDINGS = {
+        kham_tuan_hoan: "- Nhịp tim đều, T1 T2 rõ, không tiếng thổi; mạch ngoại vi rõ và đối xứng, không tím, không phù.",
+        kham_ho_hap: "- Nhịp thở phù hợp lứa tuổi, không co kéo; gõ trong, rì rào phế nang rõ, không ran.",
+        kham_tieu_hoa: "- Bụng mềm, nhu động ruột phù hợp, không phản ứng thành bụng; gan lách không to, không khối bất thường.",
+        kham_than_kinh: "- Tri giác và tương tác phù hợp lứa tuổi; trương lực, sức cơ, phản xạ và vận động phù hợp, không dấu khu trú.",
+        kham_tiet_nieu: "- Không phù, không mất nước; hố thắt lưng không đau, không sờ thấy thận hoặc cầu bàng quang.",
+        kham_co_xuong_khop: "- Tư thế và vận động phù hợp lứa tuổi; khớp không sưng nóng đỏ đau, không biến dạng.",
+        kham_co_quan_khac: "- Niêm mạc miệng ẩm; tai mũi họng, da, hạch ngoại vi và tuyến giáp chưa ghi nhận bất thường."
     };
 
     const DETAILED_FINDINGS = {
@@ -1275,15 +1403,17 @@ document.addEventListener('click', function(e) {
         const field = document.getElementById(organKey);
         if (!field || field.value.trim()) return;
 
-        field.value = templateMode === 'chuyen_sau'
-            ? DETAILED_FINDINGS[organKey]
-            : NORMAL_FINDINGS[organKey];
+        const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
+        const normalFindings = isNhi ? NORMAL_PEDIATRIC_FINDINGS : NORMAL_FINDINGS;
+        const detailedFindings = isNhi ? DETAILED_PEDIATRIC_FINDINGS : DETAILED_FINDINGS;
+        field.value = templateMode === 'chuyen_sau' ? detailedFindings[organKey] : normalFindings[organKey];
         autoSave();
         triggerAllTextareasExpand();
     }
 
     function fillNormalOrgans() {
-        for (const [key, val] of Object.entries(NORMAL_FINDINGS)) {
+        const findings = document.getElementById('current_loai_ba').value === 'Nhi khoa' ? NORMAL_PEDIATRIC_FINDINGS : NORMAL_FINDINGS;
+        for (const [key, val] of Object.entries(findings)) {
             const el = document.getElementById(key);
             if (el && !el.value.trim()) el.value = val;
         }
@@ -1458,12 +1588,19 @@ document.addEventListener('click', function(e) {
         return `Bệnh nhân ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử ${tienSuStr} vào viện vì ${lyDo}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
     }
 
+    function generateIntroTomTatNhiKhoa() {
+        const gioiTinh = getVal("gioi_tinh") || "Nam";
+        const tuoiStr = getPediatricAgeText();
+        const lyDo = getVal("ly_do_vao_vien") || "...";
+        return `Bệnh nhi ${gioiTinh.toLowerCase()} ${tuoiStr}, tiền sử nhi khoa chưa ghi nhận bất thường đáng chú ý, vào viện vì ${lyDo}. Qua thăm khám và hỏi bệnh phát hiện các hội chứng và triệu chứng sau:`;
+    }
+
     // NÚT TẠO CÂU DẪN
     function generateIntroTomTat() {
         const loaiBa = document.getElementById("current_loai_ba").value;
         const isHauPhau = (loaiBa === "Hậu phẫu");
         
-        const cauDanMoi = isHauPhau ? generateIntroTomTatHauPhau() : generateIntroTomTatNoiKhoa();
+        const cauDanMoi = isHauPhau ? generateIntroTomTatHauPhau() : (loaiBa === 'Nhi khoa' ? generateIntroTomTatNhiKhoa() : generateIntroTomTatNoiKhoa());
         const txtArea = document.getElementById("tom_tat");
         const currentTt = txtArea.value.trim();
 
@@ -1638,12 +1775,14 @@ document.addEventListener('click', function(e) {
     }
     
     function buildProgressiveContext(stage) {
-        const isHauPhau = (document.getElementById('current_loai_ba').value === "Hậu phẫu");
+        const loaiBa = document.getElementById('current_loai_ba').value;
+        const isHauPhau = (loaiBa === "Hậu phẫu");
+        const isNhi = (loaiBa === "Nhi khoa");
         const val = (id) => (document.getElementById(id) ? document.getElementById(id).value.trim() : "");
         
-        let ctx = `=== HỒ SƠ LÂM SÀNG (${isHauPhau ? "BỆNH ÁN HẬU PHẪU" : "BỆNH ÁN NỘI KHOA / TIỀN PHẪU"}) ===\n`;
+        let ctx = `=== HỒ SƠ LÂM SÀNG (${isHauPhau ? "BỆNH ÁN HẬU PHẪU" : (isNhi ? "BỆNH ÁN NHI KHOA" : "BỆNH ÁN NỘI KHOA / TIỀN PHẪU")}) ===\n`;
         
-        ctx += `I. HÀNH CHÍNH:\n- Bệnh nhân: ${val('ho_ten')} | Tuổi: ${val('tuoi')} | Giới: ${val('gioi_tinh')} | Dân tộc: ${val('dan_tok')} | Nghề: ${val('nghe_nghiep')}\n`;
+        ctx += `I. HÀNH CHÍNH:\n- Bệnh nhân: ${val('ho_ten')} | Tuổi: ${isNhi ? getPediatricAgeText() : `${val('tuoi')} tuổi`} | Giới: ${val('gioi_tinh')} | Dân tộc: ${val('dan_tok')} | Nghề: ${val('nghe_nghiep')}\n`;
         ctx += `II. LÝ DO VÀO VIỆN: ${val('ly_do_vao_vien')}\n\n`;
 
         ctx += `III. BỆNH SỬ:\n`;
@@ -1656,7 +1795,11 @@ document.addEventListener('click', function(e) {
         }
         ctx += `\n`;
 
-        ctx += `IV. TIỀN SỬ:\n- Nội khoa: ${val('ts_noi_khoa')}\n- Ngoại khoa & Dị ứng: ${val('ts_ngoai_khoa')}\n- Thói quen/Lối sống: ${val('ts_loi_song')}\n- Gia đình: ${val('ts_gia_dinh')}\n\n`;
+        if (isNhi) {
+            ctx += `IV. TIỀN SỬ NHI KHOA:\n- Bệnh lý: ${val('ts_benh_ly')}\n- Dinh dưỡng: ${val('ts_dinh_duong')}\n- Sản khoa: ${val('ts_san_khoa')}\n- Tiêm chủng: ${val('ts_tiem_chung')}\n- Phát triển tâm thần vận động: ${val('ts_pt_tam_than_van_dong')}\n- Dịch tễ: ${val('ts_dich_te')}\n- Dị ứng: ${val('ts_di_ung')}\n- Gia đình: ${val('ts_gia_dinh_nhi')}\n\n`;
+        } else {
+            ctx += `IV. TIỀN SỬ:\n- Nội khoa: ${val('ts_noi_khoa')}\n- Ngoại khoa & Dị ứng: ${val('ts_ngoai_khoa')}\n- Thói quen/Lối sống: ${val('ts_loi_song')}\n- Gia đình: ${val('ts_gia_dinh')}\n\n`;
+        }
 
         ctx += `V. THĂM KHÁM LÂM SÀNG:\n`;
         if (isHauPhau) {
@@ -1669,6 +1812,7 @@ document.addEventListener('click', function(e) {
         ctx += `- Khám toàn thân: ${val('kham_toan_than')}\n`;
         ctx += `- Sinh hiệu: Mạch ${val('sh_mach')} ck/p | HA ${val('sh_ha')} mmHg | Nhiệt độ ${val('sh_nhiet_do')}°C | Nhịp thở ${val('sh_nhip_tho')} l/p | SpO2: ${val('sh_spo2')}%\n`;
         ctx += `- Thể trạng: Chiều cao ${val('sh_chieu_cao')} cm | Cân nặng ${val('sh_can_nang')} kg\n`;
+        if (isNhi) ctx += `- Dinh dưỡng & phát triển: ${val('kham_dinh_duong_phat_trien')}\n`;
         ctx += `- Khám các cơ quan:\n`;
         ctx += `  + Tuần hoàn: ${val('kham_tuan_hoan')}\n  + Hô hấp: ${val('kham_ho_hap')}\n  + Tiêu hóa: ${val('kham_tieu_hoa')}\n  + Thần kinh: ${val('kham_than_kinh')}\n  + Tiết niệu: ${val('kham_tiet_nieu')}\n  + Cơ xương khớp: ${val('kham_co_xuong_khop')}\n  + Khác: ${val('kham_co_quan_khac')}\n\n`;
 
