@@ -4,6 +4,5 @@ jinja2
 python-multipart
 google-genai
 fpdf2
-python-pptx
 pillow
 python-docx

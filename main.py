@@ -794,12 +794,19 @@ async def export_docx(data: dict):
     sh_str = f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"
     add_field(f"{exam_offset + 2}. Dấu hiệu sinh tồn", sh_str)
     
-    for number, (label, key) in enumerate([
+    organs = [
         ("Tuần hoàn", "kham_tuan_hoan"), ("Hô hấp", "kham_ho_hap"),
         ("Tiêu hóa", "kham_tieu_hoa"), ("Thần kinh", "kham_than_kinh"),
         ("Thận - Tiết niệu", "kham_tiet_nieu"), ("Cơ xương khớp", "kham_co_xuong_khop"),
         ("Cơ quan khác", "kham_co_quan_khac")
-    ], start=exam_offset + 3):
+    ]
+    favored_organ = data.get("uu_tien_co_quan", "none")
+    if favored_organ != "none":
+        prioritized = [organ for organ in organs if organ[1] == favored_organ]
+        remaining = [organ for organ in organs if organ[1] != favored_organ]
+        organs = prioritized + remaining
+
+    for number, (label, key) in enumerate(organs, start=exam_offset + 3):
         add_field(f"{number}. {label}", data.get(key))
 
     # 6. TÓM TẮT BỆNH ÁN
