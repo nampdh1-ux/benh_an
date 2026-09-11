@@ -95,6 +95,23 @@ def get_benh_su_text(payload: Dict[str, Any]) -> str:
         return f"- Trước mổ: {payload.get('bs_truoc_mo', '')}\n- Trong mổ: {payload.get('bs_trong_mo', '')}\n- Sau mổ: {payload.get('bs_sau_mo', '')}"
     return payload.get("benh_su", "")
 
+def get_prioritized_organs(payload: Dict[str, Any]):
+    organs = [
+        ("Tuần hoàn", "kham_tuan_hoan"),
+        ("Hô hấp", "kham_ho_hap"),
+        ("Tiêu hóa", "kham_tieu_hoa"),
+        ("Thần kinh", "kham_than_kinh"),
+        ("Thận - Tiết niệu", "kham_tiet_nieu"),
+        ("Cơ xương khớp", "kham_co_xuong_khop"),
+        ("Các cơ quan khác", "kham_co_quan_khac")
+    ]
+    favored_key = payload.get("uu_tien_co_quan", "none")
+    if favored_key != "none":
+        organs = [organ for organ in organs if organ[1] == favored_key] + [
+            organ for organ in organs if organ[1] != favored_key
+        ]
+    return organs
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
@@ -491,20 +508,7 @@ async def api_export_pdf(payload: Dict[str, Any]):
         else:
             pdf.add_subsec("3. Thăm khám hiện tại - Các cơ quan:")
 
-        organs = [
-            ("Tuần hoàn", "kham_tuan_hoan"),
-            ("Hô hấp", "kham_ho_hap"),
-            ("Tiêu hóa", "kham_tieu_hoa"),
-            ("Thần kinh", "kham_than_kinh"),
-            ("Thận - Tiết niệu", "kham_tiet_nieu"),
-            ("Cơ xương khớp", "kham_co_xuong_khop"),
-            ("Các cơ quan khác", "kham_co_quan_khac")
-        ]
-        fav_key = payload.get("uu_tien_co_quan", "none")
-        if fav_key != "none":
-            fav = [o for o in organs if o[1] == fav_key]
-            others = [o for o in organs if o[1] != fav_key]
-            organs = fav + others
+        organs = get_prioritized_organs(payload)
 
         for name, key in organs:
             pdf.add_subsec(f"- {name}:")
@@ -631,16 +635,15 @@ async def preview_docx(data: dict):
         field("3. Tiền sử bản thân (Lối sống)", data.get("ts_loi_song")),
         field("4. Tiền sử gia đình", data.get("ts_gia_dinh"))
     ]))
+    preview_organs = get_prioritized_organs(data)
+    preview_exam_offset = 3 if is_hau_phau else 1
     content += section("V", "THĂM KHÁM LÂM SÀNG", "".join([
         field("1. Thời điểm khám", data.get("ngay_hau_phau")) if is_hau_phau else field("1. Thăm khám lúc vào viện", data.get("kham_vao_vien")),
         field("2. Vết mổ", data.get("kham_vet_mo")) if is_hau_phau else "",
         field("3. Dẫn lưu", data.get("kham_dan_luu")) if is_hau_phau else "",
         field("4. Khám toàn thân", data.get("kham_toan_than")) if is_hau_phau else field("2. Khám toàn thân", data.get("kham_toan_than")),
         field("5. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%") if is_hau_phau else field("3. Dấu hiệu sinh tồn", f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"),
-        field("6. Tuần hoàn", data.get("kham_tuan_hoan")) if is_hau_phau else field("4. Tuần hoàn", data.get("kham_tuan_hoan")), field("7. Hô hấp", data.get("kham_ho_hap")) if is_hau_phau else field("5. Hô hấp", data.get("kham_ho_hap")),
-        field("8. Tiêu hóa", data.get("kham_tieu_hoa")) if is_hau_phau else field("6. Tiêu hóa", data.get("kham_tieu_hoa")), field("9. Thần kinh", data.get("kham_than_kinh")) if is_hau_phau else field("7. Thần kinh", data.get("kham_than_kinh")),
-        field("10. Thận - Tiết niệu", data.get("kham_tiet_nieu")) if is_hau_phau else field("8. Thận - Tiết niệu", data.get("kham_tiet_nieu")), field("11. Cơ xương khớp", data.get("kham_co_xuong_khop")) if is_hau_phau else field("9. Cơ xương khớp", data.get("kham_co_xuong_khop")),
-        field("12. Cơ quan khác", data.get("kham_co_quan_khac")) if is_hau_phau else field("10. Cơ quan khác", data.get("kham_co_quan_khac"))
+        *[field(f"{preview_exam_offset + 3 + index}. {label}", data.get(key)) for index, (label, key) in enumerate(preview_organs)]
     ]))
     content += section("VI", "TÓM TẮT BỆNH ÁN", field("1. Nội dung tóm tắt", data.get("tom_tat")))
     content += section("VII", "CHẨN ĐOÁN SƠ BỘ & PHÂN BIỆT", "".join([
@@ -790,17 +793,7 @@ async def export_docx(data: dict):
     sh_str = f"Mạch: {data.get('sh_mach', '')} ck/p | HA: {data.get('sh_ha', '')} mmHg | Nhiệt độ: {data.get('sh_nhiet_do', '')} °C | Nhịp thở: {data.get('sh_nhip_tho', '')} l/p | SpO2: {data.get('sh_spo2', '')}%"
     add_field(f"{exam_offset + 2}. Dấu hiệu sinh tồn", sh_str)
     
-    organs = [
-        ("Tuần hoàn", "kham_tuan_hoan"), ("Hô hấp", "kham_ho_hap"),
-        ("Tiêu hóa", "kham_tieu_hoa"), ("Thần kinh", "kham_than_kinh"),
-        ("Thận - Tiết niệu", "kham_tiet_nieu"), ("Cơ xương khớp", "kham_co_xuong_khop"),
-        ("Cơ quan khác", "kham_co_quan_khac")
-    ]
-    favored_organ = data.get("uu_tien_co_quan", "none")
-    if favored_organ != "none":
-        prioritized = [organ for organ in organs if organ[1] == favored_organ]
-        remaining = [organ for organ in organs if organ[1] != favored_organ]
-        organs = prioritized + remaining
+    organs = get_prioritized_organs(data)
 
     for number, (label, key) in enumerate(organs, start=exam_offset + 3):
         add_field(f"{number}. {label}", data.get(key))
