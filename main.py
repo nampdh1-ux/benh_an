@@ -2,7 +2,7 @@ import io
 import re
 import base64
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Inches as DocxInches, Pt as DocxPt, RGBColor as DocxRGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from fastapi.responses import StreamingResponse
 import base64
@@ -30,9 +30,9 @@ from google import genai
 from google.genai import types
 from PIL import Image
 from pptx import Presentation
-from pptx.dml.color import RGBColor
+from pptx.dml.color import RGBColor as PptxRGBColor
 from pptx.enum.text import PP_ALIGN
-from pptx.util import Inches, Pt
+from pptx.util import Inches as PptxInches, Pt as PptxPt
 from pydantic import BaseModel
 
 app = FastAPI(title="Bệnh Án Lâm Sàng Win2K")
@@ -691,60 +691,60 @@ async def export_docx(data: dict):
 
     normal_style = doc.styles["Normal"]
     normal_style.font.name = "Times New Roman"
-    normal_style.font.size = Pt(12)
-    normal_style.paragraph_format.space_after = Pt(4)
+    normal_style.font.size = DocxPt(12)
+    normal_style.paragraph_format.space_after = DocxPt(4)
     normal_style.paragraph_format.line_spacing = 1.15
 
     # Cấu hình lề trang chuẩn văn bản y tế (1 inch ~ 2.54 cm)
     for section in doc.sections:
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
+        section.top_margin = DocxInches(1)
+        section.bottom_margin = DocxInches(1)
+        section.left_margin = DocxInches(1)
+        section.right_margin = DocxInches(1)
 
     # Tiêu đề bệnh án
     title_p = doc.add_paragraph()
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title_run = title_p.add_run("BỆNH ÁN LÂM SÀNG")
     title_run.font.name = "Times New Roman"
-    title_run.font.size = Pt(16)
+    title_run.font.size = DocxPt(16)
     title_run.bold = True
-    title_run.font.color.rgb = RGBColor(10, 36, 106) # Xanh Win2K
+    title_run.font.color.rgb = DocxRGBColor(10, 36, 106) # Xanh Win2K
 
     sub_title = doc.add_paragraph()
     sub_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     loai_ba = data.get("loai_benh_an", "Nội khoa / Tiền phẫu")
     r_sub = sub_title.add_run(f"Loại hình: {loai_ba}")
     r_sub.font.name = "Times New Roman"
-    r_sub.font.size = Pt(12)
+    r_sub.font.size = DocxPt(12)
     r_sub.italic = True
 
     doc.add_paragraph() # Khoảng trống
 
     def add_section_heading(text):
         p = doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(8)
-        p.paragraph_format.space_after = Pt(4)
+        p.paragraph_format.space_before = DocxPt(8)
+        p.paragraph_format.space_after = DocxPt(4)
         p.paragraph_format.keep_with_next = True
         run = p.add_run(text)
         run.font.name = "Times New Roman"
-        run.font.size = Pt(13)
+        run.font.size = DocxPt(13)
         run.bold = True
-        run.font.color.rgb = RGBColor(10, 36, 106)
+        run.font.color.rgb = DocxRGBColor(10, 36, 106)
 
     def add_field(label, val):
         if val and str(val).strip():
             p = doc.add_paragraph()
             p.paragraph_format.line_spacing = 1.15
-            p.paragraph_format.space_after = Pt(4)
+            p.paragraph_format.space_after = DocxPt(4)
             r_lbl = p.add_run(f"{label}: ")
             r_lbl.font.name = "Times New Roman"
-            r_lbl.font.size = Pt(12)
+            r_lbl.font.size = DocxPt(12)
             r_lbl.bold = True
             
             r_val = p.add_run(str(val))
             r_val.font.name = "Times New Roman"
-            r_val.font.size = Pt(12)
+            r_val.font.size = DocxPt(12)
 
     # 1. HÀNH CHÍNH
     add_section_heading("1. PHẦN HÀNH CHÍNH")
@@ -833,7 +833,7 @@ async def export_docx(data: dict):
             for p in cell.paragraphs:
                 for r in p.runs:
                     r.font.name = "Times New Roman"
-                    r.font.size = Pt(11)
+                    r.font.size = DocxPt(11)
                     r.bold = True
 
         for i in range(so_hang):
@@ -855,7 +855,7 @@ async def export_docx(data: dict):
                         if "," in b64:
                             b64 = b64.split(",")[1]
                         img_bytes = io.BytesIO(base64.b64decode(b64))
-                        row_cells[0].add_paragraph().add_run().add_picture(img_bytes, width=Inches(2.2))
+                        row_cells[0].add_paragraph().add_run().add_picture(img_bytes, width=DocxInches(2.2))
                     except Exception:
                         pass
 
