@@ -1307,10 +1307,13 @@ document.addEventListener('click', function(e) {
     function getPediatricAgeProfile() {
         const value = Number(document.getElementById('tuoi').value) || 0;
         const unit = document.getElementById('tuoi_don_vi').value;
-        if (unit === 'ngay' || (unit === 'thang' && value < 1)) return 'sơ sinh';
-        if (unit === 'thang' || (unit === 'nam' && value < 2)) return 'nhũ nhi';
+        if (unit === 'ngay' && value <= 28) return 'sơ sinh';
+        if (unit === 'ngay' && value <= 365) return 'nhũ nhi';
+        if (unit === 'ngay' && value <= 1825) return 'trẻ nhỏ';
+        if (unit === 'thang' && value <= 12) return 'nhũ nhi';
+        if (unit === 'thang' && value <= 60) return 'trẻ nhỏ';
         if (unit === 'nam' && value < 6) return 'trẻ nhỏ';
-        return 'trẻ lớn';
+        return 'học đường & vị thành niên';
     }
 
     function handleAgeChange() {
@@ -1342,44 +1345,44 @@ document.addEventListener('click', function(e) {
 
     const PEDIATRIC_HISTORY_TEMPLATES = {
         "sơ sinh": {
-            ts_benh_ly: "Chưa ghi nhận bệnh lý sơ sinh, không vàng da kéo dài, không sốt sau sinh.",
-            ts_dinh_duong: "Bú mẹ hoàn toàn, bắt vú tốt, không sặc, không trớ.",
-            ts_san_khoa: "Con lần ..., thai ... tuần. Đẻ thường/mổ: ..., cân nặng lúc sinh ...g. Sau sinh khóc ngay, không ngạt.",
-            ts_tiem_chung: "Đã tiêm lao (BCG) và Viêm gan B liều sơ sinh.",
-            ts_pt_tam_than_van_dong: "Phản xạ sơ sinh tốt (Moro, bú, nắm bắt), vận động tự nhiên.",
-            ts_dich_te: "Gia đình không có người mắc bệnh truyền nhiễm hoặc ho sốt.",
-            ts_di_ung: "Chưa ghi nhận dị ứng.",
-            ts_gia_dinh_nhi: "Bố mẹ khỏe mạnh, không mắc bệnh di truyền/bẩm sinh."
+            ts_benh_ly: "Chưa phát hiện dị tật bẩm sinh ngoại hình (dị tật tim, sứt môi hở hàm ếch, hậu môn màng...). Không vàng da bệnh lý, rốn khô, không sưng đỏ chảy dịch.",
+            ts_dinh_duong: "Bú mẹ hoàn toàn ngay sau sinh (trong giờ đầu), bú tốt, khớp ngậm đúng, bú theo nhu cầu khoảng 8 - 12 lần/ngày, không nôn trớ sau bú, phân su đào thải trong 24 giờ đầu, nước tiểu trong.",
+            ts_san_khoa: "Con lần 1/...; PARA ...; mẹ mang thai khỏe mạnh, khám thai định kỳ đầy đủ, test sàng lọc trước sinh (Triple/Double test, NIPT) bình thường. Mẹ tiêm đủ 2 mũi uốn ván. Không tăng huyết áp thai kỳ, đái tháo đường thai kỳ, sốt phát ban hay nhiễm trùng đường sinh dục. Đẻ thường/mổ đẻ lúc ... tuần, chuyển dạ thuận lợi, ối trong, Apgar 1 phút 8 - 9 điểm, 5 phút 9 - 10 điểm. Cân nặng lúc sinh 3200g, khóc ngay, không ngạt, không thở oxy, da hồng hào.",
+            ts_tiem_chung: "Đã tiêm 01 mũi vắc-xin viêm gan B sơ sinh trong 24 giờ đầu sau sinh và 01 mũi vắc-xin lao (BCG).",
+            ts_pt_tam_than_van_dong: "Trương lực cơ bình thường, tứ chi co gấp sinh lý. Phản xạ nắm, tìm kiếm, bú mút, Moro và bước đi tự động xuất hiện đầy đủ. Khóc to khi đói hoặc khó chịu.",
+            ts_dich_te: "Trong gia đình và xung quanh nơi ở không có người mắc bệnh truyền nhiễm, ho sốt, sởi hoặc lao.",
+            ts_di_ung: "Chưa ghi nhận dị ứng thuốc, thức ăn hay các sản phẩm chăm sóc da.",
+            ts_gia_dinh_nhi: "Bố mẹ khỏe mạnh, không kết hôn cận huyết thống. Gia đình không ai mắc rối loạn chuyển hóa bẩm sinh, bệnh tim bẩm sinh hoặc bệnh lý di truyền huyết học (Thalassemia, Hemophilia)."
         },
         "nhũ nhi": {
-            ts_benh_ly: "Chưa ghi nhận bệnh lý đáng chú ý trước đây.",
-            ts_dinh_duong: "Bú mẹ ... lần/ngày. Đang ăn dặm (bột/cháo) từ tháng thứ 6. Tăng cân đều.",
-            ts_san_khoa: "Thai đủ tháng, sinh thường, cân nặng sinh ...g, không tai biến sản khoa.",
-            ts_tiem_chung: "Đã tiêm chủng đầy đủ theo lịch TCMR (5 trong 1, Bại liệt, Phế cầu, Rota...).",
-            ts_pt_tam_than_van_dong: "Lứa tuổi nhũ nhi: Đang tập lẫy/bò/ngồi/đứng. Tương tác tốt, hóng chuyện.",
-            ts_dich_te: "Chưa ghi nhận tiếp xúc nguồn lây.",
-            ts_di_ung: "Chưa ghi nhận dị ứng thức ăn hoặc thuốc.",
-            ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý đặc biệt trong gia đình."
+            ts_benh_ly: "Chưa ghi nhận co giật sốt cao, viêm phổi hoặc nhập viện can thiệp ngoại khoa.",
+            ts_dinh_duong: "Bú mẹ hoàn toàn trong 6 tháng đầu. Từ tròn 6 tháng bắt đầu ăn bổ sung bột đặc dần/cháo xay giàu 4 nhóm chất, 2 bữa/ngày xen kẽ cữ bú mẹ. Uống vitamin D3 đều đặn 400 IU/ngày từ sau sinh. Trẻ hào hứng với bữa ăn, tiêu hóa ổn định.",
+            ts_san_khoa: "Đẻ thường đủ tháng, cân nặng lúc sinh 3100g, không ngạt sơ sinh, phát triển sau sinh thuận lợi.",
+            ts_tiem_chung: "Đã tiêm BCG và viêm gan B sơ sinh; 3 liều vắc-xin 5 trong 1 hoặc 6 trong 1 vào tháng 2, 3, 4; đã uống Rota; tiêm phế cầu theo lịch hẹn; đã tiêm sởi mũi 1 lúc 9 tháng tuổi nếu đã đến lịch.",
+            ts_pt_tam_than_van_dong: "Mốc 3 tháng: giữ cổ vững, hóng chuyện, cười thành tiếng. Mốc 6 tháng: lẫy sấp-ngửa, tự ngồi có tựa hoặc ngồi vững 6 - 8 tháng, với đồ chơi bằng hai tay, chuyển đồ chơi giữa hai tay. Mốc 9 tháng: bò/trườn, bám đứng, bập bẹ hai âm tiết, nhận biết người lạ, biết chơi ú òa.",
+            ts_dich_te: "Gia đình và người trực tiếp chăm sóc không mắc bệnh hô hấp cấp tính, sốt xuất huyết hoặc tay chân miệng.",
+            ts_di_ung: "Chưa ghi nhận dị ứng đạm sữa bò, thức ăn, thuốc hoặc viêm da cơ địa.",
+            ts_gia_dinh_nhi: "Gia đình không có tiền sử hen phế quản, chàm hoặc viêm mũi dị ứng."
         },
         "trẻ nhỏ": {
-            ts_benh_ly: "Ít ốm vặt, chưa nằm viện lần nào.",
-            ts_dinh_duong: "Ăn cơm cùng gia đình, uống thêm sữa công thức/sữa tươi. Ăn uống ngon miệng.",
-            ts_san_khoa: "Tiền sử sản khoa bình thường.",
-            ts_tiem_chung: "Đã hoàn thành các mũi tiêm cơ bản và nhắc lại theo lứa tuổi.",
-            ts_pt_tam_than_van_dong: "Phát triển vận động và ngôn ngữ phù hợp lứa tuổi (đã biết chạy, nói câu dài, tự xúc ăn...).",
-            ts_dich_te: "Bạn bè cùng lớp không có ai mắc bệnh tương tự.",
-            ts_di_ung: "Chưa ghi nhận dị ứng.",
-            ts_gia_dinh_nhi: "Gia đình không ai mắc bệnh lý mạn tính."
+            ts_benh_ly: "Thỉnh thoảng có đợt nhiễm trùng hô hấp trên nhẹ do virus, tự khỏi sau 3 - 5 ngày chăm sóc thông thường. Chưa từng nhập viện điều trị viêm phổi nặng hay phẫu thuật.",
+            ts_dinh_duong: "Cai sữa mẹ lúc 18 - 24 tháng. Hiện ăn cơm cùng gia đình 3 bữa chính/ngày và 2 bữa phụ gồm sữa tươi tiệt trùng, sữa chua, trái cây. Uống đủ nước, không biếng ăn, không ăn kén chọn; cân nặng và chiều cao theo kênh chuẩn WHO.",
+            ts_san_khoa: "Con đẻ thường, đủ tháng, không ngạt, quá trình sơ sinh ổn định.",
+            ts_tiem_chung: "Đã hoàn thành tiêm chủng cơ bản và nhắc lại; đã tiêm nhắc mũi 4 vắc-xin phối hợp lúc 18 tháng, sởi-quai bị-rubella, viêm não Nhật Bản; đã tiêm thủy đậu, viêm gan A và cúm mùa định kỳ nếu có chỉ định.",
+            ts_pt_tam_than_van_dong: "Vận động thô: đi, chạy vững, lên xuống cầu thang, đá bóng, nhảy hai chân. Vận động tinh: tự xúc ăn, xếp 6 - 8 khối gỗ, cầm bút vẽ. Ngôn ngữ: nói câu 3 - 4 từ, đặt câu hỏi, gọi tên đồ vật và tên mình. Cá nhân-xã hội: giao tiếp mắt tốt, chơi giả vờ, chia sẻ đồ chơi, tự cởi quần áo đơn giản, biết báo nhu cầu đi tiêu/tiểu.",
+            ts_dich_te: "Trường mầm non và gia đình không ghi nhận ổ dịch tay chân miệng, thủy đậu, cúm hoặc sốt xuất huyết. Đã tẩy giun định kỳ 6 tháng/lần từ trên 1 tuổi.",
+            ts_di_ung: "Chưa ghi nhận dị ứng thức ăn (hải sản, trứng, lạc...), phấn hoa hoặc thuốc kháng sinh.",
+            ts_gia_dinh_nhi: "Bố mẹ và anh chị em ruột khỏe mạnh. Không tiền sử bệnh tim mạch sớm, đái tháo đường khởi phát sớm hoặc dị ứng mạn tính."
         },
-        "trẻ lớn": {
-            ts_benh_ly: "Chưa ghi nhận bệnh lý mạn tính trước đây.",
-            ts_dinh_duong: "Chế độ ăn đa dạng, đầy đủ các nhóm chất.",
-            ts_san_khoa: "Bình thường.",
-            ts_tiem_chung: "Tiêm chủng đầy đủ.",
-            ts_pt_tam_than_van_dong: "Học tập bình thường, tham gia các hoạt động thể chất tốt.",
-            ts_dich_te: "Không có yếu tố dịch tễ.",
-            ts_di_ung: "Chưa ghi nhận dị ứng.",
-            ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý di truyền."
+        "học đường & vị thành niên": {
+            ts_benh_ly: "Thị lực tốt hoặc tật khúc xạ được chỉnh kính, không nhược thị. Không dị tật cong vẹo cột sống. Chưa phẫu thuật, không mắc bệnh mạn tính như hen, động kinh, viêm thận.",
+            ts_dinh_duong: "Chế độ ăn đa dạng theo suất ăn gia đình/bán trú, đủ năng lượng, không kiêng khem tiêu cực, uống đủ nước. Không lạm dụng nước ngọt có gas hoặc đồ ăn nhanh. BMI theo tuổi trong khoảng bách phân vị 15 - 85.",
+            ts_san_khoa: "Tiền sử chu sinh bình thường, không ghi nhận chấn thương sản khoa.",
+            ts_tiem_chung: "Đã hoàn thành vaccine cơ bản; đã tiêm nhắc Tdap lúc 9 - 11 tuổi; đã tiêm HPV 2 hoặc 3 mũi, não mô cầu ACWY/B và cúm hàng năm theo chỉ định.",
+            ts_pt_tam_than_van_dong: "Thể chất và dậy thì phù hợp tuổi, Tanner I - V. Bé gái: tuyến vú phát triển, có kinh lần đầu khoảng 11 - 13 tuổi, chu kỳ tương đối đều, không đau bụng kinh dữ dội. Bé trai: thể tích tinh hoàn tăng, vỡ giọng, xuất hiện ria mép/lông mu. Học tập và tập trung tốt, hòa nhập bạn bè, không biểu hiện ADHD, lo âu, trầm cảm hoặc rối loạn giấc ngủ.",
+            ts_dich_te: "Không tiếp xúc khói thuốc thụ động; không hút thuốc lá/thuốc lá điện tử, không dùng rượu bia hoặc chất kích thích. Tham gia hoạt động thể thao tối thiểu 60 phút/ngày.",
+            ts_di_ung: "Không có tiền sử dị ứng thuốc, hóa mỹ phẩm, thức ăn hoặc nọc côn trùng.",
+            ts_gia_dinh_nhi: "Không có người thân đột tử do tim không rõ nguyên nhân trước 50 tuổi, bệnh tim mạch sớm, tăng lipid máu gia đình hoặc rối loạn tâm thần gia đình."
         }
     };
 
@@ -1514,7 +1517,7 @@ document.addEventListener('click', function(e) {
                 kham_co_quan_khac: "- Họng sạch, amidan không sưng.\n- Da niêm mạc hồng hào."
             }
         },
-        "trẻ lớn": {
+        "học đường & vị thành niên": {
             normal: {
                 kham_tuan_hoan: "- Nhịp tim đều, T1 T2 rõ.",
                 kham_ho_hap: "- Phổi không ran, thông khí đều.",
@@ -1597,7 +1600,7 @@ document.addEventListener('click', function(e) {
                 kham_co_quan_khac: "- Khám răng sâu, lợi, amidan, tai; da tìm chàm, ban, xuất huyết; sờ hạch, tuyến giáp và đánh giá vệ sinh cá nhân."
             }
         },
-        'trẻ lớn': {
+        'học đường & vị thành niên': {
             normal: {
                 kham_tuan_hoan: "- Tim đều, mạch và huyết áp phù hợp tuổi; CRT < 2 giây, không tím, phù hoặc giảm khả năng gắng sức.",
                 kham_ho_hap: "- Nhịp thở đều, không khó thở; lồng ngực cân đối, phổi thông khí đều, không ran.",
