@@ -610,7 +610,7 @@ menu[role="tablist"] li[role="tab"] a {
                             <input type="text" id="dan_tok" value="Kinh" oninput="autoSave()">
                         </div>
                         <div class="form-group">
-                            <label>Nghề nghiệp:</label>
+                            <label id="label-nghe-nghiep">Nghề nghiệp:</label>
                             <input type="text" id="nghe_nghiep" placeholder="Cán bộ, Nông dân..." oninput="autoSave()">
                         </div>
                         <div class="form-group">
@@ -1239,6 +1239,8 @@ document.addEventListener('click', function(e) {
         document.getElementById('tuoi-hint').style.display = isNhi ? 'block' : 'none';
         document.getElementById('tuoi').max = isNhi ? '240' : '120';
         document.getElementById('wrapper-kham-nhi').style.display = isNhi ? 'block' : 'none';
+        document.getElementById('label-nghe-nghiep').innerText = isNhi ? 'Người chăm sóc chính:' : 'Nghề nghiệp:';
+        document.getElementById('nghe_nghiep').placeholder = isNhi ? 'Họ tên, quan hệ với trẻ...' : 'Cán bộ, Nông dân...';
         triggerAllTextareasExpand();
         document.getElementById('wrapper-kham-vao-vien').style.display = isHauPhau ? 'none' : 'block';
         document.getElementById('wrapper-ngay-hau-phau').style.display = isHauPhau ? 'block' : 'none';

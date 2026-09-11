@@ -518,7 +518,7 @@ async def api_export_pdf(payload: Dict[str, Any]):
         pdf.add_sec("I. PHẦN HÀNH CHÍNH")
         hc = (
             f"- Họ và tên: {str(payload.get('ho_ten', '')).upper()}   |   Tuổi: {format_age(payload)}   |   Giới tính: {payload.get('gioi_tinh')}\n"
-            f"- Dân tộc: {payload.get('dan_tok')}   |   Nghề nghiệp: {payload.get('nghe_nghiep')}\n"
+            f"- Dân tộc: {payload.get('dan_tok')}   |   {'Người chăm sóc chính' if is_nhi else 'Nghề nghiệp'}: {payload.get('nghe_nghiep')}\n"
             f"- Khoa phòng: {payload.get('khoa_phong')}   |   Địa chỉ: {payload.get('dia_chi', '')}\n"
             f"- Ngày giờ vào viện: {payload.get('ngay_vao_vien')}   |   Ngày làm BA: {payload.get('ngay_lam_benh_an', '')}\n"
             f"- Người làm bệnh án: {payload.get('sinh_vien')}"
@@ -699,7 +699,7 @@ async def preview_docx(data: dict):
     content = section("I", "PHẦN HÀNH CHÍNH", "".join([
         field("1. Họ và tên", data.get("ho_ten")), field("2. Tuổi", format_age(data)),
         field("3. Giới tính", data.get("gioi_tinh")), field("4. Dân tộc", data.get("dan_tok")),
-        field("5. Nghề nghiệp", data.get("nghe_nghiep")), field("6. Khoa / Phòng điều trị", data.get("khoa_phong")),
+        field("5. Người chăm sóc chính" if is_nhi else "5. Nghề nghiệp", data.get("nghe_nghiep")), field("6. Khoa / Phòng điều trị", data.get("khoa_phong")),
         field("7. Ngày vào viện", data.get("ngay_vao_vien")), field("8. Ngày làm bệnh án", data.get("ngay_lam_benh_an")),
         field("9. Người làm bệnh án", data.get("sinh_vien")), field("10. Địa chỉ", data.get("dia_chi"))
     ]))
@@ -838,7 +838,7 @@ async def export_docx(data: dict):
     add_field("2. Tuổi", format_age(data))
     add_field("3. Giới tính", data.get("gioi_tinh"))
     add_field("4. Dân tộc", data.get("dan_tok"))
-    add_field("5. Nghề nghiệp", data.get("nghe_nghiep"))
+    add_field("5. Người chăm sóc chính" if is_nhi else "5. Nghề nghiệp", data.get("nghe_nghiep"))
     add_field("6. Khoa / Phòng điều trị", data.get("khoa_phong"))
     add_field("7. Ngày vào viện", data.get("ngay_vao_vien"))
     add_field("8. Ngày làm bệnh án", data.get("ngay_lam_benh_an"))
