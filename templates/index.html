@@ -1622,10 +1622,65 @@ document.addEventListener('click', function(e) {
         }
     };
 
+    const PEDIATRIC_GENERAL_EXAM_TEMPLATES = {
+        "sơ sinh": "Trẻ tỉnh, khóc to, hồng hào không tím, không vàng da bệnh lý. Chi ấm, CRT < 2s. Thóp trước phẳng, kích thước 1.5x1.5 cm, đường khớp sọ không chồng. Không phù, không xuất huyết dưới da. Cân nặng: ... kg, Chiều dài: ... cm, Vòng đầu: ... cm. Dấu hiệu sinh tồn: Mạch: ... l/p, Nhịp thở: ... l/p, Nhiệt độ: ... °C, SpO2: ...%.",
+        "nhũ nhi": "Trẻ tỉnh, tiếp xúc tốt, hóng chuyện, nhận biết người quen. Da niêm mạc hồng, không phù, không xuất huyết. CRT < 2s. Thóp trước phẳng, mềm. Hạch ngoại vi không sờ thấy. Dấu hiệu sinh tồn: Mạch: ... l/p, Nhịp thở: ... l/p, Nhiệt độ: ... °C, SpO2: ...%.",
+        "trẻ nhỏ": "Trẻ tỉnh táo, nhanh nhẹn, tiếp xúc tốt, hợp tác thăm khám. Da niêm mạc hồng, tuyến giáp không to, hạch ngoại vi không sưng đau. Cân nặng, chiều cao phát triển bình thường theo biểu đồ tăng trưởng. Dấu hiệu sinh tồn: Mạch: ... l/p, Huyết áp: ... mmHg, Nhịp thở: ... l/p, Nhiệt độ: ... °C, SpO2: ...%.",
+        "học đường & vị thành niên": "Bệnh nhân tỉnh táo, tiếp xúc tốt, định hướng không gian và thời gian chính xác. Thể trạng cân đối, da niêm mạc hồng hào, không phù. Không xuất huyết dưới da, tuyến giáp không to, hạch ngoại biên không sờ chạm. Dấu hiệu sinh tồn: Mạch: ... l/p, Huyết áp: ... mmHg, Nhịp thở: ... l/p, Nhiệt độ: ... °C, SpO2: ...%."
+    };
+
+    const PEDIATRIC_NORMAL_EXAM_STANDARD = {
+        "sơ sinh": {
+            kham_tuan_hoan: "Nhịp tim đều, rõ, tần số ... ck/p. Không có tiếng thổi bệnh lý. Mạch bẹn và mạch quay bắt rõ, đều hai bên.",
+            kham_ho_hap: "Thở đều, không co kéo cơ hô hấp phụ, không thở rên, không phập phồng cánh mũi. Phổi thông khí đều hai bên, không rale.",
+            kham_tieu_hoa: "Bụng mềm, không chướng, rốn khô sạch không viêm. Gan lách không sờ thấy dưới bờ sườn. Hậu môn bình thường, đúng vị trí.",
+            kham_than_kinh: "Tứ chi co gấp sinh lý, trương lực cơ tốt. Phản xạ sơ sinh nguyên thủy đầy đủ: Moro (+), Bú mút (+), Nắm bàn tay (+).",
+            kham_tiet_nieu: "Cơ quan sinh dục ngoài bình thường, đã tiểu tiện, không phù.",
+            kham_co_xuong_khop: "Không dị tật bàn chân, cột sống nguyên vẹn không vết lõm hay búi lông.",
+            kham_co_quan_khac: "Cơ quan sinh dục ngoài bình thường, tinh hoàn đã xuống bìu 2 bên (bé trai) / môi lớn che kín môi nhỏ (bé gái). Không phát ban, không xuất huyết dưới da."
+        },
+        "nhũ nhi": {
+            kham_tuan_hoan: "Tim đều, T1 T2 rõ, không tiếng thổi. Mạch ngoại vi rõ 2 bên.",
+            kham_ho_hap: "Lồng ngực cân đối, di động đều theo nhịp thở, không rút lõm lồng ngực. Rì rào phế nang êm dịu 2 phế trường, không rale.",
+            kham_tieu_hoa: "Bụng mềm, thon đều, không chướng, không u cục. Gan lách không to.",
+            kham_than_kinh: "Trương lực cơ bình thường. Vận động thô và vận động tinh đạt mốc phát triển theo tuổi. Cổ vững, không dấu màng não.",
+            kham_tiet_nieu: "Cơ quan sinh dục ngoài bình thường, tiểu tiện phù hợp, không phù.",
+            kham_co_xuong_khop: "Khớp háng vận động linh hoạt hai bên, không có dấu hiệu trật khớp bẩm sinh.",
+            kham_co_quan_khac: "Mũi thông thoáng, họng sạch, niêm mạc miệng hồng không tưa. Màng nhĩ hai bên sáng bóng."
+        },
+        "trẻ nhỏ": {
+            kham_tuan_hoan: "Lồng ngực không biến dạng, mỏm tim đập khoang liên sườn IV-V đường giữa đòn trái. Tim đều, rõ, không tiếng tim bệnh lý.",
+            kham_ho_hap: "Thở êm, không co kéo hõm ức hay cơ liên sườn. Phổi thông khí tốt, rì rào phế nang rõ, không rale ẩm, rale rít.",
+            kham_tieu_hoa: "Bụng phẳng, mềm, không điểm đau khu trú. Gan lách không sờ chạm. Đại tiện phân vàng khuôn mềm.",
+            kham_than_kinh: "Tỉnh táo, nhận thức tốt, vận động tứ chi bình thường. Không dấu hiệu thần kinh khu trú, gáy mềm, Kernig (-).",
+            kham_tiet_nieu: "Tiểu tiện phù hợp lứa tuổi, không phù, không đau hông lưng.",
+            kham_co_xuong_khop: "Trục chi thẳng, không biến dạng khớp, dáng đi bình thường. Cột sống thẳng trục.",
+            kham_co_quan_khac: "Họng không đỏ, amiđan không sưng mủ. Da niêm mạc hồng, hạch ngoại vi không sưng đau."
+        },
+        "học đường & vị thành niên": {
+            kham_tuan_hoan: "Mỏm tim khoang liên sườn V đường trung đòn trái, diện đập bình thường. Nhịp tim đều, T1 T2 rõ, không rung miêu, không tiếng cọ màng tim, không tiếng thổi.",
+            kham_ho_hap: "Lồng ngực cân đối, di động tốt theo nhịp thở. Rung thanh đều hai bên, gõ trong. Rì rào phế nang rõ cả hai phế trường, không ran bệnh lý.",
+            kham_tieu_hoa: "Bụng thon phẳng, di động theo nhịp thở, không tuần hoàn bàng hệ. Bụng mềm, không điểm đau khu trú, phản ứng thành bụng (-). Gan lách không sờ thấy.",
+            kham_than_kinh: "Khám 12 đôi dây thần kinh sọ chưa ghi nhận tổn thương. Cơ lực tứ chi 5/5, cảm giác nông sâu bình thường. Phản xạ gân xương đều hai bên. Dấu màng não (-), Babinski (-).",
+            kham_tiet_nieu: "Chạm thận (-), bập bềnh thận (-), không đau các điểm niệu quản. Tiểu tự chủ, không buốt dắt, không phù.",
+            kham_co_xuong_khop: "Cột sống không gù vẹo, các khớp vận động trong giới hạn bình thường, không sưng nóng đỏ đau.",
+            kham_co_quan_khac: "Đang phát triển các đặc tính sinh dục phụ phù hợp giai đoạn dậy thì (Tanner ...). Mắt nhìn rõ, họng sạch."
+        }
+    };
+
+    const PEDIATRIC_DEEP_EXAM_STANDARD = {
+        kham_ho_hap: "Lồng ngực cân đối, di động nhịp nhàng theo nhịp thở, không lồng ngực hình thùng hay ức gà\nTần số thở ... chu kỳ/phút, thở êm, không thở chúm môi, không thở ngực - bụng nghịch thường\nKhông co kéo hõm ức, không rút lõm lồng ngực, không co kéo cơ ức đòn chũm và cơ liên sườn\nKhông phập phồng cánh mũi, không thở rên (grunting), không khò khè thì thở ra, không thở rít thanh quản thì hít vào (stridor)\nKhí quản nằm chính giữa, không lệch\nRung thanh đều hai bên phế trường, không tăng, không giảm\nĐộ giãn nở lồng ngực hai bên đồng đều, không điểm đau thành ngực, không tràn khí dưới da\nGõ trong toàn bộ diện phổi hai bên, không gõ đục, không gõ vang trống\nRì rào phế nang êm dịu khắp hai phế trường\nKhông nghe thấy rale rít (wheezing), không rale ngáy (rhonchi)\nKhông nghe thấy rale ẩm nhỏ hạt, rale ẩm to hạt, không rale nổ (crackles)\nKhông tiếng cọ màng phổi (pleural friction rub)",
+        kham_tuan_hoan: "Lồng ngực vùng trước tim phẳng, không biến dạng lồi ngực (precordial bulge)\nMỏm tim đập ở khoang liên sườn ..., đường giữa đòn trái, diện đập gọn 1-2 cm\nKhông có ổ đập bất thường vùng mũi ức hoặc đáy tim, dấu hiệu Hartzer (-)\nSờ không có rung miêu (thrill) ở mỏm tim, bờ trái xương ức và đáy tim\nNhịp tim đều, tần số ... chu kỳ/phút\nTiếng T1, T2 nghe rõ, tách đôi sinh lý bình thường\nKhông có tiếng T3, T4, không có tiếng click tống máu\nKhông có tiếng cọ màng tim (pericardial friction rub)\nKhông có tiếng thổi tâm thu, không có tiếng thổi tâm trương, không tiếng thổi liên tục\nMạch cảnh, mạch quay, mạch bẹn, mạch mu chân bắt rõ, đều, nảy tốt hai bên\nChênh lệch mạch chi trên - chi dưới bình thường, loại trừ hẹp eo động mạch chủ\nTĩnh mạch cổ không nổi ở tư thế Fowler 45 độ, phản hồi gan - tĩnh mạch cổ (-)\nThời gian hồi ứng mao mạch (CRT) dưới 2 giây ở cả chi trên và chi dưới",
+        kham_tieu_hoa: "Bụng thon đều, không trướng, di động nhịp nhàng theo nhịp thở, không sẹo mổ cũ\nKhông tuần hoàn bàng hệ, không dấu hiệu rắn bò, không quai ruột nổi\nRốn lõm tự nhiên, không viêm đỏ, không rỉ dịch, không thoát vị rốn\nTiếng nhu động ruột nghe rõ, tần số khoảng ... lần/phút, không tăng âm sắc, không tiếng thổi động mạch chủ bụng hay động mạch thận\nBụng mềm, không đề kháng thành bụng, không phản ứng phúc mạc (peritoneal signs)\nĐiểm đau ruột thừa (McBurney, Lanz) (-), dấu hiệu Rovsing (-)\nDấu hiệu Murphy (-)\nKhông có khối u cục bất thường trong ổ bụng\nGan: Chiều cao gan khoảng ... cm trên đường giữa đòn phải, bờ gan mềm mại, ranh giới rõ, không sờ thấy dưới bờ sườn, ấn không đau\nLách: Gõ vùng Traube trong, lách không sờ thấy dưới bờ sườn trái\nGõ bụng trong đều, không đục vùng thấp, dấu hiệu sóng vỗ (-)\nThăm trực tràng (khi có chỉ định): Cơ thắt hậu môn co bóp tốt, lòng trực tràng trơn láng không u polyp, bóng trực tràng rỗng/phân mềm vàng, găng không dính máu hay nhầy mủ",
+        kham_than_kinh: "Đánh giá tri giác: Trẻ tỉnh táo, tiếp xúc tốt, điểm Glasgow (hoặc Pediatric Glasgow Coma Scale) đạt 15/15 điểm (Mắt: 4, Lời nói: 5, Vận động: 6)\nDấu hiệu màng não: Cổ mềm, dấu hiệu Kernig (-), dấu hiệu Brudzinski (-)\nĐồng tử hai bên tròn đều, đường kính ... mm, phản xạ ánh sáng trực tiếp và đồng ứng nhanh nhạy cả hai bên\nVận động nhãn cầu linh hoạt theo các hướng, không rung giật nhãn cầu (nystagmus), không lác\nMặt cân đối, rãnh mũi má đều hai bên, không liệt dây thần kinh số VII ngoại vi\nCử động vòm họng tốt, phản xạ nuốt bình thường, lưỡi vận động cân đối chính giữa\nCơ lực tứ chi đều hai bên, đạt mức 5/5\nTrương lực cơ: Độ ve vẩy, độ duỗi, độ chắc cơ bình thường, không co cứng, không nhẽo mềm\nPhản xạ gân xương: Phản xạ gân cơ nhị đầu, tam đầu, bánh chè, gót nhạy vừa phải và đối xứng hai bên\nPhản xạ da lòng bàn chân đáp ứng gấp, dấu hiệu Babinski (-)\nCảm giác nông (đau, nhiệt, xúc giác) và cảm giác sâu nguyên vẹn\nThực hiện các nghiệm pháp phối hợp vận động tốt: Ngón tay chỉ mũi chính xác, nghiệm pháp lật úp bàn tay nhịp nhàng\nDáng đi bình thường, giữ thăng bằng tốt, dấu hiệu Romberg (-)\nKhông có cử động bất thường: Không run khi nghỉ, không múa giật, không tic",
+        kham_tiet_nieu: "Vùng hố thắt lưng hai bên phẳng, không sưng đỏ, không phù nề\nChạm thận (-), Bập bềnh thận (-) hai bên\nẤn các điểm niệu quản trên và điểm niệu quản giữa hai bên không đau\nKhông có cầu bàng quang, gõ vùng hạ vị không đục\nTiểu tự chủ, không tiểu buốt, không tiểu rắt, nước tiểu vàng trong, lượng nước tiểu ước tính ... ml/kg/giờ\nCơ quan sinh dục ngoài phát triển đúng lứa tuổi và giới tính\nBé trai: Lỗ niệu đạo mở đúng đỉnh quy đầu, không lỗ tiểu thấp (hypospadias), bao quy đầu không hẹp khít; hai tinh hoàn nằm trong bìu, kích thước tương đương nhau, mật độ chắc, không ứ nước màng tinh hoàn, không thoát vị bẹn\nBé gái: Môi lớn, môi nhỏ, âm vật hình thái bình thường, không dính môi nhỏ, lỗ âm đạo và lỗ niệu đạo mở riêng biệt rõ ràng, không tiết dịch bất thường",
+        kham_co_quan_khac: "Vành tai hai bên cân đối, không dị tật, rãnh sau tai không sưng đỏ, ấn vùng xương chũm và bình tai không đau\nỐng tai ngoài thông thoáng, không dị vật, không ứ đọng ráy tai, không chảy dịch hay mủ\nMàng nhĩ hai bên sáng, nguyên vẹn, nón sáng (tam giác sáng) rõ, không sung huyết đỏ, không phồng, không thủng\nTháp mũi thẳng trục, không biến dạng sụn hay xương mũi\nHốc mũi thông thoáng, niêm mạc cuốn mũi hồng ẩm, không sưng nề phì đại, không có polyp, không chảy máu mũi, không ứ đọng dịch nhầy mủ\nMôi hồng ẩm, không sứt môi, khoang miệng sạch, không loét niêm mạc (aphthous), không có nốt Koplik\nVòm khẩu cái nguyên vẹn, lưỡi gà nằm chính giữa, di động tốt khi phát âm\nNiêm mạc họng đỏ nhẹ/hồng, thành sau họng không có hạt lympho quá phát, không đọng dịch nhầy chảy từ cửa mũi sau\nAmiđan hai bên kích thước độ I-II, bề mặt hồng nhẵn, không sưng đỏ, không có giả mạc, không chấm mủ trắng, không bít tắc đường thở\nMắt nhìn rõ, họng sạch; đang phát triển các đặc tính sinh dục phụ phù hợp giai đoạn dậy thì (Tanner ...).",
+        kham_co_xuong_khop: "Dáng đi cân đối, trục cơ thể thẳng, không đi khập khiễng, không đi bằng mũi chân\nCột sống trục thẳng, đường cong sinh lý bình thường, không gù vẹo (scoliosis), nghiệm pháp Adams (-)\nHai vai, hai mào chậu cân bằng cùng độ cao\nKhông biến dạng lồng ngực và khung chậu\nCác khớp lớn và nhỏ (vai, khuỷu, cổ tay, háng, gối, cổ chân) không sưng, không nóng, không đỏ, không biến dạng\nBiên độ vận động chủ động và thụ động của tất cả các khớp trong giới hạn bình thường\nTrục các chi thẳng, không có dấu hiệu chân vòng kiềng (Genu varum) hay chân chữ X (Genu valgum) bệnh lý\nKhông teo cơ cục bộ, cơ lực các nhóm cơ gốc chi và ngọn chi đạt 5/5\nChiều dài tương đối và tuyệt đối hai chi dưới bằng nhau\nNghiệm pháp tầm soát khớp háng (ở trẻ nhỏ): Nghiệm pháp Ortolani (-), nghiệm pháp Barlow (-), nếp lằn mông và đùi cân xứng hai bên\nBàn chân phẳng sinh lý hoặc có vòm gan chân bình thường, không bàn chân khoèo (clubfoot)"
+    };
+
     function getPediatricExamTemplate(ageProfile, modeKey, organKey) {
-        const base = PEDIATRIC_EXAM_TEMPLATES[ageProfile][modeKey][organKey] || '';
-        const detail = PEDIATRIC_EXAM_DETAILS[ageProfile][modeKey][organKey] || '';
-        return `${base}${detail ? `\n${detail}` : ''}`;
+        if (modeKey === 'detailed') return PEDIATRIC_DEEP_EXAM_STANDARD[organKey] || '';
+        return PEDIATRIC_NORMAL_EXAM_STANDARD[ageProfile][organKey] || '';
     }
 
     function applyFocusedExamTemplate() {
@@ -1663,7 +1718,11 @@ document.addEventListener('click', function(e) {
         
         if (isNhi) {
             const ageProfile = getPediatricAgeProfile();
-            findings = Object.fromEntries(Object.keys(PEDIATRIC_EXAM_TEMPLATES[ageProfile].normal).map(key => [key, getPediatricExamTemplate(ageProfile, 'normal', key)]));
+            findings = Object.fromEntries(Object.keys(PEDIATRIC_NORMAL_EXAM_STANDARD[ageProfile]).map(key => [key, getPediatricExamTemplate(ageProfile, 'normal', key)]));
+            const generalExam = document.getElementById('kham_toan_than');
+            if (generalExam && !generalExam.value.trim()) generalExam.value = PEDIATRIC_GENERAL_EXAM_TEMPLATES[ageProfile];
+            const nutritionExam = document.getElementById('kham_dinh_duong_phat_trien');
+            if (nutritionExam && !nutritionExam.value.trim()) nutritionExam.value = `Đánh giá dinh dưỡng và phát triển phù hợp nhóm tuổi: ${ageProfile}. Cân nặng: ... kg, chiều cao/chiều dài: ... cm, vòng đầu: ... cm.`;
         } else {
             findings = NORMAL_FINDINGS;
         }
