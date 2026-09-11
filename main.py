@@ -15,6 +15,7 @@ import random
 import re
 import smtplib
 import unicodedata
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -878,10 +879,12 @@ async def export_docx(data: dict):
     doc.save(target_stream)
     target_stream.seek(0)
 
-    ten_benh_nhan = str(data.get("ho_ten") or "Ho_So").strip().replace(" ", "_")
-    filename = f"Benh_An_{ten_benh_nhan}.docx"
+    ten_benh_nhan = str(data.get("ho_ten") or "Ho_So").strip()
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", strip_accents(ten_benh_nhan)).strip("._") or "Ho_So"
+    filename = f"Benh_An_{safe_name}.docx"
+    encoded_filename = urllib.parse.quote(f"Benh_An_{ten_benh_nhan.replace(' ', '_')}.docx", safe="")
     return StreamingResponse(
         target_stream,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}; filename*=UTF-8''{encoded_filename}"}
     )
