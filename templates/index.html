@@ -822,6 +822,12 @@ menu[role="tablist"] li[role="tab"] a {
                             <option value="kham_co_xuong_khop">Cơ xương khớp</option>
                             <option value="kham_co_quan_khac">Cơ quan khác</option>
                         </select>
+                        <label for="mau_kham_co_quan" style="font-weight: bold;">Mẫu khám:</label>
+                        <select id="mau_kham_co_quan" style="width: auto;" onchange="applyFocusedExamTemplate()">
+                            <option value="co_ban">Cơ bản</option>
+                            <option value="chuyen_sau">Chuyên sâu</option>
+                        </select>
+                        <button type="button" onclick="applyFocusedExamTemplate()">Áp dụng mẫu khám</button>
                         <button type="button" onclick="fillNormalOrgans()">⚡ Điền khám bình thường</button>
                         <button type="button" onclick="clearOrgans()">🔄 Đặt lại</button>
                     </div>
@@ -1242,6 +1248,34 @@ document.addEventListener('click', function(e) {
         kham_co_quan_khac: "- Mắt, Tai - Mũi - Họng, Răng - Hàm - Mặt: Chưa ghi nhận bất thường."
     };
 
+    const DETAILED_FINDINGS = {
+        kham_tuan_hoan: "- Lồng ngực cân đối, không biến dạng, không tuần hoàn bàng hệ.\n- Mỏm tim ở khoang liên sườn V, đường giữa đòn trái, diện đập khoảng 1-2 cm, không lệch.\n- Nhịp tim đều, tần số phù hợp, T1 T2 rõ, không nghe tiếng thổi bệnh lý, không tiếng ngựa phi.\n- Mạch ngoại vi hai bên rõ, đều, đối xứng; không có dấu hiệu thiếu máu đầu chi.\n- Tĩnh mạch cổ không nổi khi nằm đầu cao 45 độ; không phù ngoại biên.",
+        kham_ho_hap: "- Lồng ngực cân đối, di động đều theo nhịp thở, không co kéo cơ hô hấp phụ.\n- Nhịp thở đều, không khó thở, không tím môi đầu chi.\n- Rung thanh hai bên tương đương, không tăng hoặc giảm khu trú.\n- Gõ trong hai phế trường, không vùng đục hoặc vang bất thường.\n- Rì rào phế nang rõ và đều hai bên, không ran ẩm, ran nổ, ran rít hoặc ran ngáy.\n- Không đau khi ấn dọc các cung sườn.",
+        kham_tieu_hoa: "- Bụng cân đối, di động theo nhịp thở, không chướng, không sẹo mổ cũ, không tuần hoàn bàng hệ.\n- Nhu động ruột khoảng 4-6 lần/phút, không nghe tiếng thổi bất thường.\n- Bụng mềm, không phản ứng thành bụng, không cảm ứng phúc mạc, không điểm đau khu trú.\n- Gan, lách không sờ thấy dưới bờ sườn; không sờ thấy khối bất thường.\n- Không đau hạ sườn phải, không dấu Murphy; không cổ trướng.\n- Hậu môn - trực tràng: chưa ghi nhận bất thường khi chưa có chỉ định thăm khám.",
+        kham_than_kinh: "- Bệnh nhân tỉnh táo, tiếp xúc tốt, định hướng thời gian, không gian và bản thân tốt; Glasgow 15 điểm.\n- Không rối loạn ngôn ngữ, không dấu màng não, không co giật.\n- Đồng tử hai bên đều, tròn, phản xạ ánh sáng còn; vận nhãn không hạn chế.\n- Sức cơ 5/5 ở bốn chi, trương lực cơ và phản xạ gân xương hai bên tương đương.\n- Cảm giác nông và sâu chưa ghi nhận rối loạn; không dấu thần kinh khu trú.\n- Nghiệm pháp tiểu não và dáng đi chưa ghi nhận bất thường.",
+        kham_tiet_nieu: "- Hố thắt lưng hai bên cân đối, không sưng nóng đỏ, không đau khi gõ.\n- Chạm thận âm tính, bập bềnh thận âm tính, rung thận âm tính.\n- Không đau các điểm niệu quản trên và giữa; không cầu bàng quang.\n- Tiểu tiện tự chủ, màu sắc và số lượng nước tiểu chưa ghi nhận bất thường.\n- Không phù mi mắt, không phù chi dưới; không ghi nhận dấu mất nước.",
+        kham_co_xuong_khop: "- Tư thế và dáng đi cân đối, không biến dạng trục chi hoặc cột sống.\n- Các khớp không sưng, nóng, đỏ, đau; không tràn dịch khớp.\n- Tầm vận động chủ động và thụ động của các khớp trong giới hạn bình thường.\n- Sức cơ hai bên tương đương, không teo cơ, không co rút.\n- Không đau khu trú dọc cột sống, không hạn chế vận động do đau.\n- Không ghi nhận dấu viêm tại các điểm bám gân khi thăm khám.",
+        kham_co_quan_khac: "- Mắt: kết mạc không sung huyết, không vàng; đồng tử đều, phản xạ ánh sáng còn.\n- Tai - Mũi - Họng: chưa ghi nhận dịch bất thường hoặc sung huyết rõ.\n- Răng - Hàm - Mặt: niêm mạc miệng ẩm, không loét, không sưng nề.\n- Hạch ngoại vi không sờ thấy; tuyến giáp không to.\n- Da không phát ban, không xuất huyết dưới da, không loét tỳ đè."
+    };
+
+    function applyFocusedExamTemplate() {
+        const organKey = document.getElementById('uu_tien_co_quan').value;
+        const templateMode = document.getElementById('mau_kham_co_quan').value;
+        if (organKey === 'none') {
+            alert('Vui lòng chọn một cơ quan ưu tiên trước.');
+            return;
+        }
+
+        const field = document.getElementById(organKey);
+        if (!field || field.value.trim()) return;
+
+        field.value = templateMode === 'chuyen_sau'
+            ? DETAILED_FINDINGS[organKey]
+            : NORMAL_FINDINGS[organKey];
+        autoSave();
+        triggerAllTextareasExpand();
+    }
+
     function fillNormalOrgans() {
         for (const [key, val] of Object.entries(NORMAL_FINDINGS)) {
             const el = document.getElementById(key);
@@ -1268,6 +1302,9 @@ document.addEventListener('click', function(e) {
             if (favBox) container.prepend(favBox);
         }
         autoSave();
+        if (document.getElementById('mau_kham_co_quan').value === 'chuyen_sau') {
+            applyFocusedExamTemplate();
+        }
     }
 
     function calcBMI() {
