@@ -1324,28 +1324,73 @@ document.addEventListener('click', function(e) {
         autoSave();
     }
 
-    const NORMAL_PEDIATRIC_HISTORY = {
-        ts_benh_ly: "Chưa ghi nhận bệnh lý đáng chú ý.",
-        ts_dinh_duong: "Ăn uống phù hợp lứa tuổi, tăng trưởng và dinh dưỡng trước đây bình thường.",
-        ts_san_khoa: "Thai đủ tháng, sinh thường, không ghi nhận biến cố sản khoa đáng chú ý.",
-        ts_tiem_chung: "Đã tiêm chủng đầy đủ theo chương trình tiêm chủng mở rộng phù hợp lứa tuổi.",
-        ts_pt_tam_than_van_dong: "Phát triển tâm thần vận động phù hợp lứa tuổi.",
-        ts_dich_te: "Chưa ghi nhận tiếp xúc nguồn lây hoặc yếu tố dịch tễ đặc biệt.",
-        ts_di_ung: "Chưa ghi nhận dị ứng thuốc, thức ăn hoặc dị nguyên khác.",
-        ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý di truyền hoặc bệnh lý đặc biệt trong gia đình."
+
+
+
+
+
+
+
+
+
+    const PEDIATRIC_HISTORY_TEMPLATES = {
+        sơ sinh: {
+            ts_benh_ly: "Chưa ghi nhận bệnh lý sơ sinh, không vàng da kéo dài, không sốt sau sinh.",
+            ts_dinh_duong: "Bú mẹ hoàn toàn, bắt vú tốt, không sặc, không trớ.",
+            ts_san_khoa: "Con lần ..., thai ... tuần. Đẻ thường/mổ: ..., cân nặng lúc sinh ...g. Sau sinh khóc ngay, không ngạt.",
+            ts_tiem_chung: "Đã tiêm lao (BCG) và Viêm gan B liều sơ sinh.",
+            ts_pt_tam_than_van_dong: "Phản xạ sơ sinh tốt (Moro, bú, nắm bắt), vận động tự nhiên.",
+            ts_dich_te: "Gia đình không có người mắc bệnh truyền nhiễm hoặc ho sốt.",
+            ts_di_ung: "Chưa ghi nhận dị ứng.",
+            ts_gia_dinh_nhi: "Bố mẹ khỏe mạnh, không mắc bệnh di truyền/bẩm sinh."
+        },
+        nhũ nhi: {
+            ts_benh_ly: "Chưa ghi nhận bệnh lý đáng chú ý trước đây.",
+            ts_dinh_duong: "Bú mẹ ... lần/ngày. Đang ăn dặm (bột/cháo) từ tháng thứ 6. Tăng cân đều.",
+            ts_san_khoa: "Thai đủ tháng, sinh thường, cân nặng sinh ...g, không tai biến sản khoa.",
+            ts_tiem_chung: "Đã tiêm chủng đầy đủ theo lịch TCMR (5 trong 1, Bại liệt, Phế cầu, Rota...).",
+            ts_pt_tam_than_van_dong: "Lứa tuổi nhũ nhi: Đang tập lẫy/bò/ngồi/đứng. Tương tác tốt, hóng chuyện.",
+            ts_dich_te: "Chưa ghi nhận tiếp xúc nguồn lây.",
+            ts_di_ung: "Chưa ghi nhận dị ứng thức ăn hoặc thuốc.",
+            ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý đặc biệt trong gia đình."
+        },
+        "trẻ nhỏ": {
+            ts_benh_ly: "Ít ốm vặt, chưa nằm viện lần nào.",
+            ts_dinh_duong: "Ăn cơm cùng gia đình, uống thêm sữa công thức/sữa tươi. Ăn uống ngon miệng.",
+            ts_san_khoa: "Tiền sử sản khoa bình thường.",
+            ts_tiem_chung: "Đã hoàn thành các mũi tiêm cơ bản và nhắc lại theo lứa tuổi.",
+            ts_pt_tam_than_van_dong: "Phát triển vận động và ngôn ngữ phù hợp lứa tuổi (đã biết chạy, nói câu dài, tự xúc ăn...).",
+            ts_dich_te: "Bạn bè cùng lớp không có ai mắc bệnh tương tự.",
+            ts_di_ung: "Chưa ghi nhận dị ứng.",
+            ts_gia_dinh_nhi: "Gia đình không ai mắc bệnh lý mạn tính."
+        },
+        "trẻ lớn": {
+            ts_benh_ly: "Chưa ghi nhận bệnh lý mạn tính trước đây.",
+            ts_dinh_duong: "Chế độ ăn đa dạng, đầy đủ các nhóm chất.",
+            ts_san_khoa: "Bình thường.",
+            ts_tiem_chung: "Tiêm chủng đầy đủ.",
+            ts_pt_tam_than_van_dong: "Học tập bình thường, tham gia các hoạt động thể chất tốt.",
+            ts_dich_te: "Không có yếu tố dịch tễ.",
+            ts_di_ung: "Chưa ghi nhận dị ứng.",
+            ts_gia_dinh_nhi: "Chưa ghi nhận bệnh lý di truyền."
+        }
     };
 
     function fillNormalPediatricHistory() {
-        const ageText = getPediatricAgeText();
+
         const ageProfile = getPediatricAgeProfile();
-        const nutritionText = ageProfile === 'sơ sinh' || ageProfile === 'nhũ nhi'
-            ? `Dinh dưỡng phù hợp ${ageProfile}, bú mẹ hoặc sữa phù hợp lứa tuổi, chưa ghi nhận khó khăn nuôi dưỡng.`
-            : `Ăn uống phù hợp lứa tuổi, tăng trưởng và dinh dưỡng trước đây bình thường.`;
-        const developmentText = `Phát triển tâm thần vận động phù hợp lứa tuổi (${ageProfile}, ${ageText}).`;
-        for (const [key, value] of Object.entries(NORMAL_PEDIATRIC_HISTORY)) {
+
+
+
+
+
+        const template = PEDIATRIC_HISTORY_TEMPLATES[ageProfile];
+        
+        for (const [key, value] of Object.entries(template)) {
             const el = document.getElementById(key);
             if (el && !el.value.trim()) {
-                el.value = key === 'ts_dinh_duong' ? nutritionText : (key === 'ts_pt_tam_than_van_dong' ? developmentText : value);
+
+                el.value = value;
             }
         }
         autoSave();
@@ -1362,25 +1407,25 @@ document.addEventListener('click', function(e) {
         kham_co_quan_khac: "- Mắt, Tai - Mũi - Họng, Răng - Hàm - Mặt: Chưa ghi nhận bất thường."
     };
 
-    const NORMAL_PEDIATRIC_FINDINGS = {
-        kham_tuan_hoan: "- Tim đều, T1 T2 rõ, không nghe tiếng thổi bệnh lý.",
-        kham_ho_hap: "- Lồng ngực cân đối, di động đều; rì rào phế nang rõ hai bên, không ran.",
-        kham_tieu_hoa: "- Bụng mềm, không chướng, không điểm đau; gan lách không to.",
-        kham_than_kinh: "- Tỉnh, tiếp xúc phù hợp lứa tuổi; không dấu thần kinh khu trú.",
-        kham_tiet_nieu: "- Không phù, không đau hông lưng; tiểu tiện chưa ghi nhận bất thường.",
-        kham_co_xuong_khop: "- Vận động các chi phù hợp lứa tuổi, không sưng đau hoặc hạn chế vận động.",
-        kham_co_quan_khac: "- Tai mũi họng, da và hạch ngoại vi chưa ghi nhận bất thường."
-    };
 
-    const DETAILED_PEDIATRIC_FINDINGS = {
-        kham_tuan_hoan: "- Nhịp tim đều, T1 T2 rõ, không tiếng thổi; mạch ngoại vi rõ và đối xứng, không tím, không phù.",
-        kham_ho_hap: "- Nhịp thở phù hợp lứa tuổi, không co kéo; gõ trong, rì rào phế nang rõ, không ran.",
-        kham_tieu_hoa: "- Bụng mềm, nhu động ruột phù hợp, không phản ứng thành bụng; gan lách không to, không khối bất thường.",
-        kham_than_kinh: "- Tri giác và tương tác phù hợp lứa tuổi; trương lực, sức cơ, phản xạ và vận động phù hợp, không dấu khu trú.",
-        kham_tiet_nieu: "- Không phù, không mất nước; hố thắt lưng không đau, không sờ thấy thận hoặc cầu bàng quang.",
-        kham_co_xuong_khop: "- Tư thế và vận động phù hợp lứa tuổi; khớp không sưng nóng đỏ đau, không biến dạng.",
-        kham_co_quan_khac: "- Niêm mạc miệng ẩm; tai mũi họng, da, hạch ngoại vi và tuyến giáp chưa ghi nhận bất thường."
-    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     const DETAILED_FINDINGS = {
         kham_tuan_hoan: "- Lồng ngực cân đối, không biến dạng, không tuần hoàn bàng hệ.\n- Mỏm tim ở khoang liên sườn V, đường giữa đòn trái, diện đập khoảng 1-2 cm, không lệch.\n- Nhịp tim đều, tần số phù hợp, T1 T2 rõ, không nghe tiếng thổi bệnh lý, không tiếng ngựa phi.\n- Mạch ngoại vi hai bên rõ, đều, đối xứng; không có dấu hiệu thiếu máu đầu chi.\n- Tĩnh mạch cổ không nổi khi nằm đầu cao 45 độ; không phù ngoại biên.",
@@ -1390,6 +1435,89 @@ document.addEventListener('click', function(e) {
         kham_tiet_nieu: "- Hố thắt lưng hai bên cân đối, không sưng nóng đỏ, không đau khi gõ.\n- Chạm thận âm tính, bập bềnh thận âm tính, rung thận âm tính.\n- Không đau các điểm niệu quản trên và giữa; không cầu bàng quang.\n- Tiểu tiện tự chủ, màu sắc và số lượng nước tiểu chưa ghi nhận bất thường.\n- Không phù mi mắt, không phù chi dưới; không ghi nhận dấu mất nước.",
         kham_co_xuong_khop: "- Tư thế và dáng đi cân đối, không biến dạng trục chi hoặc cột sống.\n- Các khớp không sưng, nóng, đỏ, đau; không tràn dịch khớp.\n- Tầm vận động chủ động và thụ động của các khớp trong giới hạn bình thường.\n- Sức cơ hai bên tương đương, không teo cơ, không co rút.\n- Không đau khu trú dọc cột sống, không hạn chế vận động do đau.\n- Không ghi nhận dấu viêm tại các điểm bám gân khi thăm khám.",
         kham_co_quan_khac: "- Mắt: kết mạc không sung huyết, không vàng; đồng tử đều, phản xạ ánh sáng còn.\n- Tai - Mũi - Họng: chưa ghi nhận dịch bất thường hoặc sung huyết rõ.\n- Răng - Hàm - Mặt: niêm mạc miệng ẩm, không loét, không sưng nề.\n- Hạch ngoại vi không sờ thấy; tuyến giáp không to.\n- Da không phát ban, không xuất huyết dưới da, không loét tỳ đè."
+    };
+
+    const PEDIATRIC_EXAM_TEMPLATES = {
+        sơ sinh: {
+            normal: {
+                kham_tuan_hoan: "- Tim đều, tần số 120-140 lần/phút. T1, T2 rõ, không tiếng thổi.\n- Mạch ngoại vi bắt rõ, đối xứng.",
+                kham_ho_hap: "- Nhịp thở đều, 40-50 lần/phút, không co kéo cơ hô hấp.\n- Phổi thông khí đều hai bên, không ran.",
+                kham_tieu_hoa: "- Bụng mềm, không chướng. Gan lách không to.\n- Đã đại tiện phân su trong 24h đầu.",
+                kham_than_kinh: "- Tỉnh, khóc to khi kích thích. Các phản xạ sơ sinh (Moro, bú, nắm) tốt.\n- Thóp trước phẳng, kích thước bình thường.",
+                kham_tiet_nieu: "- Không phù. Bộ phận sinh dục ngoài bình thường, đã tiểu tiện.",
+                kham_co_xuong_khop: "- Vận động các chi tự nhiên, không giới hạn vận động khớp háng.",
+                kham_co_quan_khac: "- Da hồng, không vàng da, không phát ban. Rốn khô, sạch."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Lồng ngực cân đối. Mỏm tim ở khoang liên sườn IV đường vú trái.\n- Nhịp tim đều, tần số 135 lần/phút. T1, T2 rõ, không nghe tiếng thổi bệnh lý.\n- Mạch quay, mạch bẹn bắt rõ, đều hai bên. Thời gian làm đầy mao mạch (CRT) < 2 giây.\n- Không tím trung tâm, không phù.",
+                kham_ho_hap: "- Nhịp thở 45 lần/phút, thở đều, không có cơn ngừng thở.\n- Không có dấu hiệu gắng sức (không phập phồng cánh mũi, không rút lõm lồng ngực/hố trên đòn).\n- Rì rào phế nang rõ, đều hai bên, không nghe thấy ran ẩm, ran nổ hay tiếng rít.",
+                kham_tieu_hoa: "- Bụng thon, tham gia nhịp thở tốt, không chướng bụng, không tuần hoàn bàng hệ.\n- Bụng mềm, nhu động ruột bình thường. Gan 2cm dưới bờ sườn, bờ mềm, mặt nhẵn. Lách không sờ thấy.\n- Hậu môn vị trí bình thường, đã đi ngoài phân su vàng.",
+                kham_than_kinh: "- Trạng thái thức tỉnh: Khóc to, cử động tứ chi chủ động. Glasgow sơ sinh đạt điểm tối đa.\n- Các phản xạ sơ sinh: Moro (+), nắm bắt bàn tay bàn chân (+), tìm vú và bú (+) mạnh, đối xứng.\n- Thóp trước phẳng, kích thước 2x2 cm. Các đường khớp không chồng, không giãn.\n- Trương lực cơ bình thường, tư thế co nhẹ tứ chi đặc trưng.",
+                kham_tiet_nieu: "- Không sờ thấy khối vùng hông lưng. Cầu bàng quang (-).\n- Bộ phận sinh dục ngoài: Nam (hai tinh hoàn trong bìu, lỗ tiểu đỉnh quy đầu); Nữ (môi lớn che kín môi bé, không tiết dịch bất thường).\n- Không phù.",
+                kham_co_xuong_khop: "- Cột sống cân đối, không có lỗ rò hay khối thoát vị vùng cùng cụt.\n- Các khớp vận động tự do. Nghiệm pháp Ortolani và Barlow âm tính (không trật khớp háng bẩm sinh).",
+                kham_co_quan_khac: "- Da hồng hào, không vàng da, không xuất huyết, không có bớt sắc tố lớn.\n- Rốn khô, dây rốn đang rụng, không sưng tấy chân rốn.\n- Mắt, tai, mũi họng: Chưa phát hiện bất thường bẩm sinh."
+            }
+        },
+        nhũ nhi: {
+            normal: {
+                kham_tuan_hoan: "- Tim đều, T1 T2 rõ, mạch quay rõ.",
+                kham_ho_hap: "- Thở đều, không khò khè, phổi không ran.",
+                kham_tieu_hoa: "- Bụng mềm, gan lách không to.",
+                kham_than_kinh: "- Tỉnh, tương tác tốt với mẹ, thóp trước phẳng.",
+                kham_tiet_nieu: "- Không phù, tiểu tiện bình thường.",
+                kham_co_xuong_khop: "- Vận động tứ chi bình thường.",
+                kham_co_quan_khac: "- Da niêm mạc hồng."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Nhịp tim đều, tần số ... lần/phút (phù hợp lứa tuổi). T1, T2 rõ, không tiếng thổi.\n- Mạch ngoại vi bắt rõ, đều hai bên. CRT < 2s.\n- Diện đập mỏm tim ở khoang liên sườn IV đường giữa đòn trái.",
+                kham_ho_hap: "- Nhịp thở ... lần/phút, thở đều, di động theo nhịp bụng.\n- Không co kéo cơ hô hấp phụ, không rút lõm lồng ngực.\n- Thông khí phổi tốt, rì rào phế nang êm dịu, không ran.",
+                kham_tieu_hoa: "- Bụng mềm, không chướng, nhu động ruột bình thường.\n- Gan ... cm dưới bờ sườn, lách không to.\n- Đại tiện phân vàng, mềm.",
+                kham_than_kinh: "- Tỉnh táo, lanh lợi, biết hóng chuyện và nhận biết người quen.\n- Thóp trước phẳng, kích thước ... cm. Vòng đầu ... cm.\n- Không có dấu hiệu thần kinh khu trú, không co giật.",
+                kham_tiet_nieu: "- Vùng hông lưng không đau, không sờ thấy khối thận.\n- Bộ phận sinh dục ngoài bình thường.",
+                kham_co_xuong_khop: "- Xương khớp không biến dạng, vận động chủ động tốt.\n- Trương lực cơ và phản xạ gân xương bình thường.",
+                kham_co_quan_khac: "- Da hồng, không phát ban, không xuất huyết dưới da.\n- Hạch ngoại vi và tuyến giáp không to."
+            }
+        },
+        "trẻ nhỏ": {
+            normal: {
+                kham_tuan_hoan: "- Tim đều, nhịp tim ... lần/phút. Không tiếng thổi.",
+                kham_ho_hap: "- Thở đều, phổi thông khí rõ.",
+                kham_tieu_hoa: "- Bụng mềm, không điểm đau.",
+                kham_than_kinh: "- Tỉnh, tiếp xúc tốt, trả lời được các câu hỏi đơn giản.",
+                kham_tiet_nieu: "- Không phù, tiểu tự chủ.",
+                kham_co_xuong_khop: "- Đi lại, chạy nhảy bình thường.",
+                kham_co_quan_khac: "- Tai mũi họng sạch."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Tim đều, tần số ... lần/phút. T1, T2 rõ, không có tiếng thổi bệnh lý.\n- Diện đập mỏm tim ở khoang liên sườn IV-V đường vú trái.\n- Mạch quay rõ, đều hai bên.",
+                kham_ho_hap: "- Lồng ngực cân đối, di động theo nhịp thở.\n- Rì rào phế nang rõ, đều hai bên phế trường, không ran.\n- Không có tình trạng khó thở, không tím tái.",
+                kham_tieu_hoa: "- Bụng mềm, di động theo nhịp thở, không sẹo mổ cũ.\n- Gan, lách không sờ thấy. Không có khối u cục bất thường.\n- Các điểm đau ngoại khoa âm tính.",
+                kham_than_kinh: "- Trẻ tỉnh táo, tiếp xúc tốt, thực hiện được các y lệnh đơn giản.\n- Không dấu hiệu màng não, không dấu thần kinh khu trú.\n- Phát triển tâm thần vận động phù hợp lứa tuổi.",
+                kham_tiet_nieu: "- Không phù, không có cầu bàng quang.\n- Tiểu tiện bình thường, nước tiểu vàng trong.",
+                kham_co_xuong_khop: "- Các khớp vận động linh hoạt, không sưng đau.\n- Cột sống không gù vẹo.",
+                kham_co_quan_khac: "- Họng sạch, amidan không sưng.\n- Da niêm mạc hồng hào."
+            }
+        },
+        "trẻ lớn": {
+            normal: {
+                kham_tuan_hoan: "- Nhịp tim đều, T1 T2 rõ.",
+                kham_ho_hap: "- Phổi không ran, thông khí đều.",
+                kham_tieu_hoa: "- Bụng mềm, gan lách không to.",
+                kham_than_kinh: "- Tỉnh, tiếp xúc tốt.",
+                kham_tiet_nieu: "- Tiểu bình thường.",
+                kham_co_xuong_khop: "- Vận động bình thường.",
+                kham_co_quan_khac: "- Chưa ghi nhận bất thường."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Tim đều, T1, T2 rõ, tần số ... lần/phút. Không tiếng tim bệnh lý.\n- Mạch ngoại vi rõ, huyết áp ... mmHg.",
+                kham_ho_hap: "- Lồng ngực cân đối. Rì rào phế nang rõ, không ran.\n- Nhịp thở ... lần/phút, không khó thở.",
+                kham_tieu_hoa: "- Bụng mềm, không điểm đau khu trú.\n- Gan lách không to, nhu động ruột bình thường.",
+                kham_than_kinh: "- Tỉnh táo, tiếp xúc tốt, định hướng thời gian không gian tốt.\n- Không có dấu hiệu thần kinh khu trú.",
+                kham_tiet_nieu: "- Chạm thận (-), bập bềnh thận (-).\n- Tiểu tự chủ, không buốt dắt.",
+                kham_co_xuong_khop: "- Hệ cơ xương khớp phát triển bình thường.\n- Vận động các khớp trong giới hạn bình thường.",
+                kham_co_quan_khac: "- Các cơ quan khác chưa phát hiện bất thường."
+            }
+        }
     };
 
     function applyFocusedExamTemplate() {
@@ -1404,15 +1532,34 @@ document.addEventListener('click', function(e) {
         if (!field || field.value.trim()) return;
 
         const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
-        const normalFindings = isNhi ? NORMAL_PEDIATRIC_FINDINGS : NORMAL_FINDINGS;
-        const detailedFindings = isNhi ? DETAILED_PEDIATRIC_FINDINGS : DETAILED_FINDINGS;
-        field.value = templateMode === 'chuyen_sau' ? detailedFindings[organKey] : normalFindings[organKey];
+
+
+
+        if (isNhi) {
+            const ageProfile = getPediatricAgeProfile();
+            const modeKey = templateMode === 'chuyen_sau' ? 'detailed' : 'normal';
+            field.value = PEDIATRIC_EXAM_TEMPLATES[ageProfile][modeKey][organKey];
+        } else {
+            const normalFindings = NORMAL_FINDINGS;
+            const detailedFindings = DETAILED_FINDINGS;
+            field.value = templateMode === 'chuyen_sau' ? detailedFindings[organKey] : normalFindings[organKey];
+        }
         autoSave();
         triggerAllTextareasExpand();
     }
 
     function fillNormalOrgans() {
-        const findings = document.getElementById('current_loai_ba').value === 'Nhi khoa' ? NORMAL_PEDIATRIC_FINDINGS : NORMAL_FINDINGS;
+
+        const isNhi = document.getElementById('current_loai_ba').value === 'Nhi khoa';
+        let findings;
+        
+        if (isNhi) {
+            const ageProfile = getPediatricAgeProfile();
+            findings = PEDIATRIC_EXAM_TEMPLATES[ageProfile]['normal'];
+        } else {
+            findings = NORMAL_FINDINGS;
+        }
+
         for (const [key, val] of Object.entries(findings)) {
             const el = document.getElementById(key);
             if (el && !el.value.trim()) el.value = val;
