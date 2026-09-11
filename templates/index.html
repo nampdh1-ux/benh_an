@@ -714,7 +714,8 @@ menu[role="tablist"] li[role="tab"] a {
                             <div class="form-group"><label>7. Tiền sử dị ứng:</label><textarea id="ts_di_ung" rows="3" oninput="autoSave()"></textarea></div>
                             <div class="form-group"><label>8. Tiền sử gia đình:</label><textarea id="ts_gia_dinh_nhi" rows="3" oninput="autoSave()"></textarea></div>
                         </div>
-                        <button type="button" onclick="fillNormalPediatricHistory()"><img src="/static/icon/w98_help_book_big.png" alt="" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">Điền tiền sử nhi khoa bình thường</button>
+                        <button type="button" onclick="fillNormalPediatricHistory()"><img src="/static/icon/w98_help_book_big.png" alt="" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">Điền tiền sử theo tuổi</button>
+                        <button type="button" onclick="clearPediatricHistory()"><img src="/static/icon/w98_recycle_bin_full_cool.png" alt="" style="width: 14px; height: 14px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px;">Xoá toàn bộ tiền sử</button>
                     </div>
                 </div>
             </details>
@@ -1321,6 +1322,10 @@ document.addEventListener('click', function(e) {
             ageInput.max = '120';
             ageInput.placeholder = '45';
         }
+        if (isNhi) {
+            fillNormalPediatricHistory();
+            fillNormalOrgans();
+        }
         autoSave();
     }
 
@@ -1334,7 +1339,7 @@ document.addEventListener('click', function(e) {
 
 
     const PEDIATRIC_HISTORY_TEMPLATES = {
-        sơ sinh: {
+        "sơ sinh": {
             ts_benh_ly: "Chưa ghi nhận bệnh lý sơ sinh, không vàng da kéo dài, không sốt sau sinh.",
             ts_dinh_duong: "Bú mẹ hoàn toàn, bắt vú tốt, không sặc, không trớ.",
             ts_san_khoa: "Con lần ..., thai ... tuần. Đẻ thường/mổ: ..., cân nặng lúc sinh ...g. Sau sinh khóc ngay, không ngạt.",
@@ -1392,6 +1397,15 @@ document.addEventListener('click', function(e) {
 
                 el.value = value;
             }
+        }
+        autoSave();
+        triggerAllTextareasExpand();
+    }
+
+    function clearPediatricHistory() {
+        for (const key of Object.keys(PEDIATRIC_HISTORY_TEMPLATES["sơ sinh"])) {
+            const field = document.getElementById(key);
+            if (field) field.value = '';
         }
         autoSave();
         triggerAllTextareasExpand();
@@ -1520,6 +1534,95 @@ document.addEventListener('click', function(e) {
         }
     };
 
+    const PEDIATRIC_EXAM_DETAILS = {
+        'sơ sinh': {
+            normal: {
+                kham_tuan_hoan: "- CRT dưới 3 giây, đầu chi ấm, không tím trung tâm, không phù.",
+                kham_ho_hap: "- Không phập phồng cánh mũi, không rên, không ngừng thở; SpO2 phù hợp nếu có đo.",
+                kham_tieu_hoa: "- Bú và nuốt được, không nôn xanh; nhu động ruột có, hậu môn thông.",
+                kham_than_kinh: "- Trương lực cơ và đáp ứng kích thích phù hợp tuổi; không li bì, không kích thích bất thường.",
+                kham_tiet_nieu: "- Đã đi tiểu trong 24 giờ đầu; niêm mạc ẩm, không dấu mất nước.",
+                kham_co_xuong_khop: "- Không dị tật chi, bàn chân hoặc cột sống; vận động hai bên tương đương.",
+                kham_co_quan_khac: "- Không dị tật hình thái rõ ở mặt, miệng, tai; da không xuất huyết dưới da."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Đánh giá tần số và nhịp tim theo tuổi thai; mạch cánh tay, bẹn rõ; CRT < 3 giây; không tiếng thổi, không dấu suy tuần hoàn.",
+                kham_ho_hap: "- Đếm nhịp thở đủ một phút; không cơn ngừng thở, rên, phập phồng cánh mũi hay rút lõm; nghe phổi từng vùng, đối xứng.",
+                kham_tieu_hoa: "- Đánh giá khả năng bú, phối hợp bú-nuốt-thở; bụng mềm, không chướng, không nôn dịch mật; theo dõi phân su và phân chuyển tiếp.",
+                kham_than_kinh: "- Đánh giá mức độ tỉnh, tiếng khóc, tư thế, trương lực, đối xứng vận động; Moro, tìm vú, bú, nắm, duỗi chéo phù hợp; thóp và đường khớp bình thường.",
+                kham_tiet_nieu: "- Xác nhận thời điểm tiểu lần đầu, lượng tiểu tương đối, màu nước tiểu; khám hông lưng, bàng quang và cơ quan sinh dục tìm dị tật.",
+                kham_co_xuong_khop: "- Quan sát cột sống, nếp lằn mông, chi và ngón; nghiệm pháp Barlow/Ortolani hai bên; không gãy xương hoặc hạn chế vận động.",
+                kham_co_quan_khac: "- Khám da tìm vàng da theo vùng, ban, bớt, xuất huyết; khám mắt, khẩu cái, tai, hậu môn, rốn và các dấu dị tật bẩm sinh."
+            }
+        },
+        'nhũ nhi': {
+            normal: {
+                kham_tuan_hoan: "- CRT < 2 giây, đầu chi ấm, không tím, không phù; mạch ngoại vi hai bên tương đương.",
+                kham_ho_hap: "- Không rút lõm, không phập phồng cánh mũi, không cơn ngừng thở; bú không tím hoặc vã mồ hôi.",
+                kham_tieu_hoa: "- Bú tốt, không nôn vọt/nôn xanh; bụng mềm, đại tiện phù hợp, không mất nước.",
+                kham_than_kinh: "- Đáp ứng ánh sáng và âm thanh, tương tác với người chăm sóc; vận động hai bên đối xứng, thóp phẳng.",
+                kham_tiet_nieu: "- Số lần tiểu và màu nước tiểu phù hợp; không phù, không dấu mất nước.",
+                kham_co_xuong_khop: "- Đạt vận động phù hợp tháng tuổi; không hạn chế khớp, không biến dạng, không đau khi vận động.",
+                kham_co_quan_khac: "- Da sạch, không hăm lan rộng; miệng không tưa, mũi thông, hạch ngoại vi không to."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Đánh giá nhịp tim lúc yên và khi bú, tiếng thổi, mạch bẹn, CRT, nhiệt độ đầu chi; tìm tím, gan to, vã mồ hôi hoặc thở nhanh khi bú.",
+                kham_ho_hap: "- Đếm nhịp thở đủ một phút khi trẻ yên; quan sát rút lõm, cánh mũi, tím, cơn ngừng thở; nghe ran và thông khí từng bên.",
+                kham_tieu_hoa: "- Hỏi lượng bú, số cữ, nôn trớ, phân; đánh giá môi ẩm, nước mắt, da, thóp; bụng, gan lách và khối bất thường.",
+                kham_than_kinh: "- Đánh giá tương tác, nhìn theo, quay đầu theo âm thanh, cầm nắm, lẫy/ngồi theo tháng tuổi; thóp, vòng đầu, trương lực, phản xạ và dấu màng não.",
+                kham_tiet_nieu: "- Hỏi số tã ướt, màu và mùi nước tiểu; khám phù, mất nước, hông lưng, bàng quang và cơ quan sinh dục ngoài.",
+                kham_co_xuong_khop: "- Đánh giá trương lực, đối xứng vận động, lẫy/ngồi/bò/đứng theo tuổi; khám khớp háng, cột sống, trục chi và dấu còi xương.",
+                kham_co_quan_khac: "- Khám mắt, tai, mũi, họng, răng miệng, da, hạch; tìm tưa miệng, viêm tai, chàm, bớt bất thường và dấu thiếu vi chất."
+            }
+        },
+        'trẻ nhỏ': {
+            normal: {
+                kham_tuan_hoan: "- CRT < 2 giây, mạch đều hai bên, không tím, không phù; không mệt hoặc vã mồ hôi khi vận động.",
+                kham_ho_hap: "- Nhịp thở phù hợp tuổi, không co kéo; nói/chơi được, phổi thông khí đều, không ran.",
+                kham_tieu_hoa: "- Ăn uống và đại tiện phù hợp; bụng mềm, không chướng, gan lách không to.",
+                kham_than_kinh: "- Tương tác và ngôn ngữ phù hợp tuổi, đi/chạy vững; không co giật hay dấu khu trú.",
+                kham_tiet_nieu: "- Tiểu tiện phù hợp giai đoạn phát triển, không phù, không đau hông lưng.",
+                kham_co_xuong_khop: "- Dáng đi, chạy, leo cầu thang phù hợp; khớp và cột sống không biến dạng.",
+                kham_co_quan_khac: "- Răng miệng, tai mũi họng, da và hạch ngoại vi chưa ghi nhận bất thường."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Đo mạch và huyết áp đúng băng quấn; nghe tim đủ các ổ, đánh giá tiếng thổi, mạch bẹn, CRT; tìm gan to, tím, phù hoặc hạn chế vận động.",
+                kham_ho_hap: "- Đếm nhịp thở khi trẻ yên; quan sát co kéo, cánh mũi, tím; khám rung thanh, gõ, rì rào phế nang và ran từng vùng.",
+                kham_tieu_hoa: "- Đánh giá khẩu phần, nhai nuốt, nôn, phân; khám nhu động, điểm đau, phản ứng thành bụng, gan lách, khối và dấu mất nước.",
+                kham_than_kinh: "- Đánh giá giao tiếp, ngôn ngữ, hiểu lệnh, dáng đi, phối hợp; khám đồng tử, dây sọ phù hợp, trương lực, sức cơ, phản xạ và dấu màng não.",
+                kham_tiet_nieu: "- Hỏi tiểu dầm/tiểu buốt, lượng và màu nước tiểu; khám phù, huyết áp, hông lưng, cầu bàng quang và cơ quan sinh dục ngoài.",
+                kham_co_xuong_khop: "- Đánh giá dáng đi, trục chi, bàn chân, cột sống, tầm vận động, sức cơ; tìm dấu còi xương, đau xương, sưng nóng khớp.",
+                kham_co_quan_khac: "- Khám răng sâu, lợi, amidan, tai; da tìm chàm, ban, xuất huyết; sờ hạch, tuyến giáp và đánh giá vệ sinh cá nhân."
+            }
+        },
+        'trẻ lớn': {
+            normal: {
+                kham_tuan_hoan: "- Tim đều, mạch và huyết áp phù hợp tuổi; CRT < 2 giây, không tím, phù hoặc giảm khả năng gắng sức.",
+                kham_ho_hap: "- Nhịp thở đều, không khó thở; lồng ngực cân đối, phổi thông khí đều, không ran.",
+                kham_tieu_hoa: "- Ăn uống, đại tiện bình thường; bụng mềm, không đau, gan lách không to.",
+                kham_than_kinh: "- Tỉnh, định hướng và giao tiếp phù hợp; vận động, cảm giác và phản xạ chưa ghi nhận bất thường.",
+                kham_tiet_nieu: "- Tiểu tự chủ, không buốt dắt, không phù, không đau hông lưng.",
+                kham_co_xuong_khop: "- Dáng đi, tư thế và vận động khớp bình thường; không đau hoặc biến dạng.",
+                kham_co_quan_khac: "- Mắt, tai mũi họng, răng miệng, da, hạch và tuyến giáp chưa ghi nhận bất thường."
+            },
+            detailed: {
+                kham_tuan_hoan: "- Đo huyết áp hai tay khi cần, bắt mạch ngoại vi và mạch bẹn; nghe tim đủ ổ, đánh giá tiếng thổi, CRT, tím, phù và khả năng gắng sức.",
+                kham_ho_hap: "- Đếm nhịp thở, SpO2; quan sát kiểu thở và lồng ngực; khám rung thanh, gõ, rì rào phế nang, ran và dấu suy hô hấp.",
+                kham_tieu_hoa: "- Khai thác ăn uống, phân, đau bụng, nôn; khám nhìn, nghe nhu động, sờ điểm đau, phản ứng thành bụng, gan lách, khối và cổ trướng.",
+                kham_than_kinh: "- Đánh giá tri giác, định hướng, ngôn ngữ, dây sọ, vận động, sức cơ, trương lực, phản xạ, cảm giác, phối hợp, dáng đi và dấu màng não.",
+                kham_tiet_nieu: "- Hỏi tiểu buốt, tiểu máu, tiểu đêm, phù; đo huyết áp, khám hông lưng, điểm niệu quản, bàng quang và cơ quan sinh dục phù hợp tuổi.",
+                kham_co_xuong_khop: "- Khám tư thế, cột sống, trục chi, cơ, khớp, tầm vận động chủ động/thụ động; tìm sưng nóng đỏ đau, yếu cơ và hạn chế chức năng.",
+                kham_co_quan_khac: "- Khám thị lực định hướng, tai mũi họng, răng lợi; da và niêm mạc; hạch, tuyến giáp; đánh giá dậy thì theo tuổi khi phù hợp."
+            }
+        }
+    };
+
+    function getPediatricExamTemplate(ageProfile, modeKey, organKey) {
+        const base = PEDIATRIC_EXAM_TEMPLATES[ageProfile][modeKey][organKey] || '';
+        const detail = PEDIATRIC_EXAM_DETAILS[ageProfile][modeKey][organKey] || '';
+        return `${base}${detail ? `\n${detail}` : ''}`;
+    }
+
     function applyFocusedExamTemplate() {
         const organKey = document.getElementById('uu_tien_co_quan').value;
         const templateMode = document.getElementById('mau_kham_co_quan').value;
@@ -1538,7 +1641,7 @@ document.addEventListener('click', function(e) {
         if (isNhi) {
             const ageProfile = getPediatricAgeProfile();
             const modeKey = templateMode === 'chuyen_sau' ? 'detailed' : 'normal';
-            field.value = PEDIATRIC_EXAM_TEMPLATES[ageProfile][modeKey][organKey];
+            field.value = getPediatricExamTemplate(ageProfile, modeKey, organKey);
         } else {
             const normalFindings = NORMAL_FINDINGS;
             const detailedFindings = DETAILED_FINDINGS;
@@ -1555,7 +1658,7 @@ document.addEventListener('click', function(e) {
         
         if (isNhi) {
             const ageProfile = getPediatricAgeProfile();
-            findings = PEDIATRIC_EXAM_TEMPLATES[ageProfile]['normal'];
+            findings = Object.fromEntries(Object.keys(PEDIATRIC_EXAM_TEMPLATES[ageProfile].normal).map(key => [key, getPediatricExamTemplate(ageProfile, 'normal', key)]));
         } else {
             findings = NORMAL_FINDINGS;
         }
